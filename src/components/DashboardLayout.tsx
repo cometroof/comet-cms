@@ -24,6 +24,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
 
   const navigation = [
     { name: "Dashboard", href: "/dashboard", icon: Home },
+    { name: "Home", href: "/home", icon: Home },
     { name: "Articles", href: "/dashboard/articles", icon: FileText },
     { name: "Settings", href: "/dashboard/settings", icon: Settings },
   ];

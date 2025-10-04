@@ -9,10 +9,10 @@
     --background: 0 0% 100%;
     --foreground: 220 13% 13%;
     
-    /* Brand slate colors inspired by roofing materials */
-    --primary: 215 25% 27%;
+    /* Brand red colors */
+    --primary: 358 85% 52%;
     --primary-foreground: 0 0% 98%;
-    --primary-glow: 215 25% 35%;
+    --primary-glow: 358 85% 60%;
     
     /* Warm accent colors */
     --accent: 25 95% 53%;
@@ -68,9 +68,9 @@
     --background: 220 13% 9%;
     --foreground: 220 13% 91%;
     
-    --primary: 25 95% 53%;
-    --primary-foreground: 220 13% 9%;
-    --primary-glow: 25 85% 58%;
+    --primary: 358 85% 52%;
+    --primary-foreground: 0 0% 98%;
+    --primary-glow: 358 85% 60%;
     
     --accent: 215 25% 35%;
     --accent-foreground: 220 13% 91%;
