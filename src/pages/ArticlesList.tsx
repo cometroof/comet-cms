@@ -2,26 +2,13 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Plus, 
-  Search, 
-  Edit, 
-  Trash2, 
-  Eye, 
-  Calendar,
-  Filter
-} from "lucide-react";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { FileText, Plus, Search, Edit, Trash2, Eye, GripVertical, Calendar } from "lucide-react";
+import { toast } from "sonner";
+import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 
 // Mock data - replace with actual data from your backend
 const mockArticles = [
@@ -75,16 +62,28 @@ const mockArticles = [
 const ArticlesList = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [articles, setArticles] = useState(mockArticles);
 
-  const filteredArticles = mockArticles.filter(article => {
+  const filteredArticles = articles.filter(article => {
     const matchesSearch = article.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          article.slug.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === "all" || article.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
-  const getStatusVariant = (status: string) => {
-    return status === "published" ? "default" : "secondary";
+  const handleDelete = (id: number) => {
+    toast.success("Article deleted successfully");
+  };
+
+  const onDragEnd = (result: DropResult) => {
+    if (!result.destination) return;
+
+    const items = Array.from(filteredArticles);
+    const [reorderedItem] = items.splice(result.source.index, 1);
+    items.splice(result.destination.index, 0, reorderedItem);
+
+    setArticles(items);
+    toast.success("Article order updated");
   };
 
   const getStatusColor = (status: string) => {
@@ -191,67 +190,80 @@ const ArticlesList = () => {
 
             {/* Articles Table */}
             <div className="rounded-lg border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Title</TableHead>
-                    <TableHead>Slug</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Published</TableHead>
-                    <TableHead>Views</TableHead>
-                    <TableHead>Author</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredArticles.map((article) => (
-                    <TableRow key={article.id}>
-                      <TableCell className="font-medium">
-                        {article.title}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground font-mono text-sm">
-                        {article.slug}
-                      </TableCell>
-                      <TableCell>
-                        <Badge className={getStatusColor(article.status)}>
-                          {article.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {article.publishedDate ? (
-                          <div className="flex items-center gap-2">
-                            <Calendar className="w-4 h-4 text-muted-foreground" />
-                            {new Date(article.publishedDate).toLocaleDateString()}
-                          </div>
-                        ) : (
-                          <span className="text-muted-foreground">-</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Eye className="w-4 h-4 text-muted-foreground" />
-                          {article.views.toLocaleString()}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {article.author}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <Link to={`/dashboard/articles/edit/${article.id}`}>
-                            <Button variant="ghost" size="sm">
-                              <Edit className="w-4 h-4" />
-                            </Button>
-                          </Link>
-                          <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
+              <DragDropContext onDragEnd={onDragEnd}>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-12"></TableHead>
+                      <TableHead>Title</TableHead>
+                      <TableHead>Slug</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Published</TableHead>
+                      <TableHead>Views</TableHead>
+                      <TableHead>Author</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <Droppable droppableId="articles">
+                    {(provided) => (
+                      <TableBody ref={provided.innerRef} {...provided.droppableProps}>
+                        {filteredArticles.map((article, index) => (
+                          <Draggable key={article.id} draggableId={article.id.toString()} index={index}>
+                            {(provided, snapshot) => (
+                              <TableRow
+                                ref={provided.innerRef}
+                                {...provided.draggableProps}
+                                className={snapshot.isDragging ? "bg-muted" : ""}
+                              >
+                                <TableCell {...provided.dragHandleProps}>
+                                  <GripVertical className="h-5 w-5 text-muted-foreground cursor-grab active:cursor-grabbing" />
+                                </TableCell>
+                                <TableCell className="font-medium">{article.title}</TableCell>
+                                <TableCell className="text-muted-foreground font-mono text-sm">{article.slug}</TableCell>
+                                <TableCell>
+                                  <Badge className={getStatusColor(article.status)}>
+                                    {article.status}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell>
+                                  {article.publishedDate ? (
+                                    <div className="flex items-center gap-2">
+                                      <Calendar className="w-4 h-4 text-muted-foreground" />
+                                      {new Date(article.publishedDate).toLocaleDateString()}
+                                    </div>
+                                  ) : (
+                                    <span className="text-muted-foreground">-</span>
+                                  )}
+                                </TableCell>
+                                <TableCell>
+                                  <div className="flex items-center gap-2">
+                                    <Eye className="w-4 h-4 text-muted-foreground" />
+                                    {article.views.toLocaleString()}
+                                  </div>
+                                </TableCell>
+                                <TableCell className="text-muted-foreground">{article.author}</TableCell>
+                                <TableCell className="text-right">
+                                  <div className="flex justify-end gap-2">
+                                    <Button variant="ghost" size="sm" asChild>
+                                      <Link to={`/dashboard/articles/edit/${article.id}`}>
+                                        <Edit className="w-4 h-4" />
+                                      </Link>
+                                    </Button>
+                                    <Button variant="ghost" size="sm" onClick={() => handleDelete(article.id)}>
+                                      <Trash2 className="w-4 h-4" />
+                                    </Button>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            )}
+                          </Draggable>
+                        ))}
+                        {provided.placeholder}
+                      </TableBody>
+                    )}
+                  </Droppable>
+                </Table>
+              </DragDropContext>
             </div>
           </CardContent>
         </Card>

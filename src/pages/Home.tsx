@@ -4,11 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Search, Edit, Trash2, ChevronUp, ChevronDown, ImageIcon } from "lucide-react";
+import { Plus, Search, Edit, Trash2, GripVertical, Image as ImageIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import SliderFormDialog from "@/components/SliderFormDialog";
 import ImageSelectorDialog from "@/components/ImageSelectorDialog";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
+import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 
 // Mock data types
 type Slider = {
@@ -32,7 +33,6 @@ type HomeCovers = {
 };
 
 const Home = () => {
-  const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [sliderDialogOpen, setSliderDialogOpen] = useState(false);
   const [editingSlider, setEditingSlider] = useState<Slider | null>(null);
@@ -93,28 +93,24 @@ const Home = () => {
 
   const handleDeleteSlider = (id: string) => {
     setSliders(sliders.filter((s) => s.id !== id));
-    toast({
-      title: "Success",
-      description: "Slider deleted successfully",
-    });
+    toast.success("Slider deleted successfully");
   };
 
-  const handleMoveSlider = (id: string, direction: "up" | "down") => {
-    const index = sliders.findIndex((s) => s.id === id);
-    if ((direction === "up" && index === 0) || (direction === "down" && index === sliders.length - 1)) {
-      return;
-    }
+  const onDragEnd = (result: DropResult) => {
+    if (!result.destination) return;
 
-    const newSliders = [...sliders];
-    const targetIndex = direction === "up" ? index - 1 : index + 1;
-    [newSliders[index], newSliders[targetIndex]] = [newSliders[targetIndex], newSliders[index]];
+    const items = Array.from(filteredSliders);
+    const [reorderedItem] = items.splice(result.source.index, 1);
+    items.splice(result.destination.index, 0, reorderedItem);
 
     // Update order values
-    newSliders.forEach((slider, idx) => {
-      slider.order = idx + 1;
-    });
+    const updatedItems = items.map((item, index) => ({
+      ...item,
+      order: index + 1,
+    }));
 
-    setSliders(newSliders);
+    setSliders(updatedItems);
+    toast.success("Slider order updated");
   };
 
   const handleSaveSlider = (sliderData: Partial<Slider>) => {
@@ -125,10 +121,7 @@ const Home = () => {
           ? { ...s, ...sliderData, updated_at: new Date().toISOString() }
           : s
       ));
-      toast({
-        title: "Success",
-        description: "Slider updated successfully",
-      });
+      toast.success("Slider updated successfully");
     } else {
       // Create new
       const newSlider: Slider = {
@@ -139,10 +132,7 @@ const Home = () => {
         updated_at: new Date().toISOString(),
       };
       setSliders([...sliders, newSlider]);
-      toast({
-        title: "Success",
-        description: "Slider created successfully",
-      });
+      toast.success("Slider created successfully");
     }
     setSliderDialogOpen(false);
   };
@@ -153,10 +143,7 @@ const Home = () => {
       [type === "projects" ? "projects_cover_image" : "distribution_cover_image"]: imageUrl,
       updated_at: new Date().toISOString(),
     });
-    toast({
-      title: "Success",
-      description: `${type === "projects" ? "Projects" : "Distribution"} cover image updated successfully`,
-    });
+    toast.success(`${type === "projects" ? "Projects" : "Distribution"} cover image updated successfully`);
   };
 
   return (
@@ -195,81 +182,72 @@ const Home = () => {
             </div>
 
             <div className="border rounded-lg">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-20">Thumbnail</TableHead>
-                    <TableHead>Title (EN)</TableHead>
-                    <TableHead className="w-20">Order</TableHead>
-                    <TableHead className="w-32 text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredSliders.length === 0 ? (
+              <DragDropContext onDragEnd={onDragEnd}>
+                <Table>
+                  <TableHeader>
                     <TableRow>
-                      <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
-                        No sliders found
-                      </TableCell>
+                      <TableHead className="w-12"></TableHead>
+                      <TableHead className="w-24">Thumbnail</TableHead>
+                      <TableHead>Title (EN)</TableHead>
+                      <TableHead>Order</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
-                  ) : (
-                    filteredSliders.map((slider, index) => (
-                      <TableRow key={slider.id}>
-                        <TableCell>
-                          <img
-                            src={slider.image}
-                            alt={slider.title_en}
-                            className="w-16 h-12 object-cover rounded"
-                          />
-                        </TableCell>
-                        <TableCell className="font-medium">{slider.title_en}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1">
-                            <Badge variant="outline">{slider.order}</Badge>
-                            <div className="flex flex-col">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-5 w-5 p-0"
-                                onClick={() => handleMoveSlider(slider.id, "up")}
-                                disabled={index === 0}
-                              >
-                                <ChevronUp className="w-3 h-3" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-5 w-5 p-0"
-                                onClick={() => handleMoveSlider(slider.id, "down")}
-                                disabled={index === filteredSliders.length - 1}
-                              >
-                                <ChevronDown className="w-3 h-3" />
-                              </Button>
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleEditSlider(slider)}
-                            >
-                              <Edit className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDeleteSlider(slider.id)}
-                            >
-                              <Trash2 className="w-4 h-4 text-destructive" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <Droppable droppableId="sliders">
+                    {(provided) => (
+                      <TableBody ref={provided.innerRef} {...provided.droppableProps}>
+                        {filteredSliders.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                              No sliders found
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                          filteredSliders.map((slider, index) => (
+                            <Draggable key={slider.id} draggableId={slider.id} index={index}>
+                              {(provided, snapshot) => (
+                                <TableRow
+                                  ref={provided.innerRef}
+                                  {...provided.draggableProps}
+                                  className={snapshot.isDragging ? "bg-muted" : ""}
+                                >
+                                  <TableCell {...provided.dragHandleProps}>
+                                    <GripVertical className="h-5 w-5 text-muted-foreground cursor-grab active:cursor-grabbing" />
+                                  </TableCell>
+                                  <TableCell>
+                                    <div className="w-16 h-12 bg-muted rounded overflow-hidden flex items-center justify-center">
+                                      {slider.image ? (
+                                        <img src={slider.image} alt={slider.title_en} className="w-full h-full object-cover" />
+                                      ) : (
+                                        <ImageIcon className="w-6 h-6 text-muted-foreground" />
+                                      )}
+                                    </div>
+                                  </TableCell>
+                                  <TableCell className="font-medium">{slider.title_en}</TableCell>
+                                  <TableCell>
+                                    <Badge variant="outline">{slider.order}</Badge>
+                                  </TableCell>
+                                  <TableCell className="text-right">
+                                    <div className="flex justify-end gap-2">
+                                      <Button variant="ghost" size="sm" onClick={() => handleEditSlider(slider)}>
+                                        <Edit className="w-4 h-4" />
+                                      </Button>
+                                      <Button variant="ghost" size="sm" onClick={() => handleDeleteSlider(slider.id)}>
+                                        <Trash2 className="w-4 h-4" />
+                                      </Button>
+                                    </div>
+                                  </TableCell>
+                                </TableRow>
+                              )}
+                            </Draggable>
+                          ))
+                        )}
+                        {provided.placeholder}
+                      </TableBody>
+                    )}
+                  </Droppable>
+                </Table>
+              </DragDropContext>
             </div>
           </CardContent>
         </Card>

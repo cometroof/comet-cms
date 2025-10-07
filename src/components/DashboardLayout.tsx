@@ -70,8 +70,8 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                   className={cn(
                     "flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors",
                     isActive(item.href)
-                      ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                      : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
+                      ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm"
+                      : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-white/5"
                   )}
                 >
                   <Icon className="w-5 h-5" />
@@ -84,8 +84,8 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           {/* User section */}
           <div className="p-4 border-t border-sidebar-border">
             <div className="flex items-center gap-3 px-3 py-2 mb-2">
-              <div className="w-8 h-8 bg-sidebar-accent rounded-full flex items-center justify-center">
-                <User className="w-4 h-4 text-sidebar-accent-foreground" />
+              <div className="w-8 h-8 bg-sidebar-primary/20 rounded-full flex items-center justify-center">
+                <User className="w-4 h-4 text-sidebar-foreground" />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-sidebar-foreground truncate">
@@ -99,7 +99,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
             <Button
               variant="ghost"
               size="sm"
-              className="w-full justify-start gap-2 text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
+              className="w-full justify-start gap-2 text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-white/5"
               onClick={() => window.location.href = "/login"}
             >
               <LogOut className="w-4 h-4" />
