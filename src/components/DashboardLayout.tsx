@@ -124,23 +124,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       {/* Main content */}
       <div className="lg:pl-64">
         {/* Top bar */}
-        <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background px-4 sm:px-6">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="lg:hidden"
-            onClick={() => setSidebarOpen(true)}
-          >
-            <Menu className="w-5 h-5" />
-          </Button>
-
-          <div className="flex-1" />
-
-          <Button size="sm" className="gap-2">
-            <Plus className="w-4 h-4" />
-            New Article
-          </Button>
-        </header>
+        <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background px-4 sm:px-6"></header>
 
         {/* Page content */}
         <main className="flex-1 p-4 sm:p-6">{children}</main>
