@@ -15,7 +15,7 @@ import {
 import { RichTextEditor } from "@/components/RichTextEditor";
 import { Plus, Trash2, Save } from "lucide-react";
 import { toast } from "sonner";
-import type { Contacts, Province, City } from "@/types/contacts-location";
+import type { Contacts, Province, City } from "./types";
 
 const ContactsLocation = () => {
   // Mock data for contacts

@@ -10,27 +10,7 @@ import SliderFormDialog from "@/components/SliderFormDialog";
 import ImageSelectorDialog from "@/components/ImageSelectorDialog";
 import { toast } from "sonner";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
-
-// Mock data types
-type Slider = {
-  id: string;
-  image: string;
-  title_en: string;
-  title_id: string;
-  description_en: string;
-  description_id: string;
-  link?: string;
-  link_text?: string;
-  order: number;
-  created_at: string;
-  updated_at: string;
-};
-
-type HomeCovers = {
-  projects_cover_image: string;
-  distribution_cover_image: string;
-  updated_at: string;
-};
+import { Slider, HomeCovers } from "./types";
 
 const Home = () => {
   const [searchQuery, setSearchQuery] = useState("");

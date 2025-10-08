@@ -12,28 +12,7 @@ import CertificateFormDialog from "@/components/CertificateFormDialog";
 import FileUploadDialog from "@/components/FileUploadDialog";
 import { useToast } from "@/hooks/use-toast";
 import { Progress } from "@/components/ui/progress";
-
-type CompanyProfile = {
-  id: string;
-  file_url: string;
-  filename: string;
-  file_size: number;
-  uploaded_at: string;
-  updated_at: string;
-};
-
-type Certificate = {
-  id: string;
-  name: string;
-  info: string;
-  is_important: boolean;
-  description_en: string;
-  description_id: string;
-  file_url: string;
-  filename: string;
-  created_at: string;
-  updated_at: string;
-};
+import { CompanyProfile, Certificate } from "./types";
 
 const Files = () => {
   const { toast } = useToast();

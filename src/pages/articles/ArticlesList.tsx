@@ -9,60 +9,73 @@ import { Badge } from "@/components/ui/badge";
 import { FileText, Plus, Search, Edit, Trash2, Eye, GripVertical, Calendar } from "lucide-react";
 import { toast } from "sonner";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
+import { Article } from "./types";
 
-// Mock data - replace with actual data from your backend
-const mockArticles = [
+const mockArticles: Article[] = [
   {
     id: 1,
     title: "Best Roofing Materials for 2024",
     slug: "best-roofing-materials-2024",
+    content: "",
     status: "published",
     publishedDate: "2024-03-15",
     views: 1234,
-    author: "John Smith"
+    author: "John Smith",
+    createdAt: "2024-03-15",
+    updatedAt: "2024-03-15"
   },
   {
     id: 2,
     title: "How to Choose the Right Contractor",
     slug: "choose-right-contractor",
+    content: "",
     status: "draft",
-    publishedDate: null,
     views: 0,
-    author: "Jane Doe"
+    author: "Jane Doe",
+    createdAt: "2024-03-14",
+    updatedAt: "2024-03-14"
   },
   {
     id: 3,
     title: "Seasonal Roof Maintenance Tips",
     slug: "seasonal-roof-maintenance",
+    content: "",
     status: "published",
     publishedDate: "2024-03-12",
     views: 856,
-    author: "Mike Johnson"
+    author: "Mike Johnson",
+    createdAt: "2024-03-12",
+    updatedAt: "2024-03-12"
   },
   {
     id: 4,
     title: "Commercial vs Residential Roofing",
     slug: "commercial-vs-residential",
+    content: "",
     status: "published",
     publishedDate: "2024-03-10",
     views: 678,
-    author: "Sarah Wilson"
+    author: "Sarah Wilson",
+    createdAt: "2024-03-10",
+    updatedAt: "2024-03-10"
   },
   {
     id: 5,
     title: "Emergency Roof Repair Guide",
     slug: "emergency-roof-repair-guide",
+    content: "",
     status: "draft",
-    publishedDate: null,
     views: 0,
-    author: "John Smith"
+    author: "John Smith",
+    createdAt: "2024-03-09",
+    updatedAt: "2024-03-09"
   },
 ];
 
 const ArticlesList = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [articles, setArticles] = useState(mockArticles);
+  const [articles, setArticles] = useState<Article[]>(mockArticles);
 
   const filteredArticles = articles.filter(article => {
     const matchesSearch = article.title.toLowerCase().includes(searchTerm.toLowerCase()) ||

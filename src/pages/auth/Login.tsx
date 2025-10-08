@@ -5,10 +5,13 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Eye, EyeOff, Shield, Hammer } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { LoginFormData } from "./types";
 
 const Login = () => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [formData, setFormData] = useState<LoginFormData>({
+    email: "",
+    password: ""
+  });
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
@@ -17,14 +20,12 @@ const Login = () => {
     e.preventDefault();
     setIsLoading(true);
 
-    // Mock login - replace with real authentication
     setTimeout(() => {
-      if (email && password) {
+      if (formData.email && formData.password) {
         toast({
           title: "Login Successful",
           description: "Welcome to the Roofing CMS Dashboard",
         });
-        // Navigate to dashboard - will be implemented with routing
         window.location.href = "/dashboard";
       } else {
         toast({
@@ -40,7 +41,6 @@ const Login = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-muted via-background to-accent-soft flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        {/* Logo and Branding */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-primary rounded-xl mb-4 shadow-lg">
             <Hammer className="w-8 h-8 text-primary-foreground" />
@@ -49,7 +49,6 @@ const Login = () => {
           <p className="text-muted-foreground">Content Management System</p>
         </div>
 
-        {/* Login Card */}
         <Card className="shadow-xl border-0 bg-card/50 backdrop-blur-sm">
           <CardHeader className="space-y-1 text-center">
             <CardTitle className="text-xl font-semibold flex items-center justify-center gap-2">
@@ -68,8 +67,8 @@ const Login = () => {
                   id="email"
                   type="email"
                   placeholder="admin@roofingcompany.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  value={formData.email}
+                  onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
                   className="h-11"
                   required
                 />
@@ -82,8 +81,8 @@ const Login = () => {
                     id="password"
                     type={showPassword ? "text" : "password"}
                     placeholder="Enter your password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    value={formData.password}
+                    onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
                     className="h-11 pr-10"
                     required
                   />
@@ -117,7 +116,6 @@ const Login = () => {
           </CardContent>
         </Card>
 
-        {/* Footer */}
         <div className="text-center mt-8 text-sm text-muted-foreground">
           <p>© 2024 Roofing Company CMS. All rights reserved.</p>
         </div>

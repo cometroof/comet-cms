@@ -18,35 +18,7 @@ import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea
 import CategoryFormDialog from "@/components/CategoryFormDialog";
 import ProjectFormDialog from "@/components/ProjectFormDialog";
 import { useToast } from "@/hooks/use-toast";
-
-interface Category {
-  id: string;
-  name: string;
-  slug: string;
-  deleted_at: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-interface ProjectImage {
-  id: string;
-  image_url: string;
-  is_highlight: boolean;
-  order: number;
-}
-
-interface Project {
-  id: string;
-  name: string;
-  location_text: string;
-  location_link: string;
-  roof_type: string;
-  category_id: string;
-  order: number;
-  images: ProjectImage[];
-  created_at: string;
-  updated_at: string;
-}
+import { Category, Project, ProjectImage } from "./types";
 
 const Projects = () => {
   const { toast } = useToast();

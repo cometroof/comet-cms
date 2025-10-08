@@ -1,15 +1,17 @@
 import { ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { 
-  FileText, 
-  Home, 
-  LogOut, 
-  Menu, 
-  Plus, 
+import {
+  Home,
+  LogOut,
+  Menu,
+  Plus,
   Settings,
   Hammer,
-  User
+  User,
+  Newspaper,
+  Files,
+  MapPinPlus,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -26,9 +28,13 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     { name: "Dashboard", href: "/dashboard", icon: Home },
     { name: "Home", href: "/home", icon: Home },
     { name: "Projects", href: "/projects", icon: Hammer },
-    { name: "Files", href: "/files", icon: FileText },
-    { name: "Articles", href: "/dashboard/articles", icon: FileText },
-    { name: "Contacts & Location", href: "/contacts-location", icon: Settings },
+    { name: "Files", href: "/files", icon: Files },
+    { name: "Articles", href: "/dashboard/articles", icon: Newspaper },
+    {
+      name: "Contacts & Location",
+      href: "/contacts-location",
+      icon: MapPinPlus,
+    },
     { name: "Settings", href: "/dashboard/settings", icon: Settings },
   ];
 
@@ -38,17 +44,19 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     <div className="min-h-screen bg-background">
       {/* Mobile sidebar backdrop */}
       {sidebarOpen && (
-        <div 
+        <div
           className="fixed inset-0 z-40 bg-background/80 backdrop-blur-sm lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
       {/* Sidebar */}
-      <div className={cn(
-        "fixed inset-y-0 left-0 z-50 w-64 bg-sidebar border-r border-sidebar-border transform transition-transform duration-200 ease-in-out lg:translate-x-0",
-        sidebarOpen ? "translate-x-0" : "-translate-x-full"
-      )}>
+      <div
+        className={cn(
+          "fixed inset-y-0 left-0 z-50 w-64 bg-sidebar border-r border-sidebar-border transform transition-transform duration-200 ease-in-out lg:translate-x-0",
+          sidebarOpen ? "translate-x-0" : "-translate-x-full",
+        )}
+      >
         <div className="flex flex-col h-full">
           {/* Logo */}
           <div className="flex items-center gap-3 px-6 py-5 border-b border-sidebar-border">
@@ -56,7 +64,9 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
               <Hammer className="w-5 h-5 text-sidebar-primary-foreground" />
             </div>
             <div>
-              <h1 className="text-lg font-bold text-sidebar-foreground">RoofCMS</h1>
+              <h1 className="text-lg font-bold text-sidebar-foreground">
+                RoofCMS
+              </h1>
               <p className="text-xs text-sidebar-foreground/70">Admin Panel</p>
             </div>
           </div>
@@ -73,7 +83,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                     "flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors",
                     isActive(item.href)
                       ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm"
-                      : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-white/5"
+                      : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-white/5",
                   )}
                 >
                   <Icon className="w-5 h-5" />
@@ -102,7 +112,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
               variant="ghost"
               size="sm"
               className="w-full justify-start gap-2 text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-white/5"
-              onClick={() => window.location.href = "/login"}
+              onClick={() => (window.location.href = "/login")}
             >
               <LogOut className="w-4 h-4" />
               Sign Out
@@ -123,9 +133,9 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           >
             <Menu className="w-5 h-5" />
           </Button>
-          
+
           <div className="flex-1" />
-          
+
           <Button size="sm" className="gap-2">
             <Plus className="w-4 h-4" />
             New Article
@@ -133,9 +143,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         </header>
 
         {/* Page content */}
-        <main className="flex-1 p-4 sm:p-6">
-          {children}
-        </main>
+        <main className="flex-1 p-4 sm:p-6">{children}</main>
       </div>
     </div>
   );

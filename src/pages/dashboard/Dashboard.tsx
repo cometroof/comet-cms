@@ -1,9 +1,10 @@
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { FileText, Eye, Calendar, TrendingUp } from "lucide-react";
+import { DashboardStats, RecentArticle } from "./types";
 
 const Dashboard = () => {
-  const stats = [
+  const stats: DashboardStats[] = [
     {
       title: "Total Articles",
       value: "24",
@@ -34,7 +35,7 @@ const Dashboard = () => {
     },
   ];
 
-  const recentArticles = [
+  const recentArticles: RecentArticle[] = [
     {
       title: "Best Roofing Materials for 2024",
       status: "Published",
@@ -64,7 +65,6 @@ const Dashboard = () => {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        {/* Page Header */}
         <div>
           <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
           <p className="text-muted-foreground mt-2">
@@ -72,7 +72,6 @@ const Dashboard = () => {
           </p>
         </div>
 
-        {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {stats.map((stat) => {
             const Icon = stat.icon;
@@ -103,7 +102,6 @@ const Dashboard = () => {
           })}
         </div>
 
-        {/* Recent Articles */}
         <Card>
           <CardHeader>
             <CardTitle>Recent Articles</CardTitle>

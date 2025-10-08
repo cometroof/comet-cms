@@ -3,17 +3,14 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Index from "./pages/Index";
-import Login from "./pages/Login";
-import Dashboard from "./pages/Dashboard";
-import Home from "./pages/Home";
-import Projects from "./pages/Projects";
-import Files from "./pages/Files";
-import ArticlesList from "./pages/ArticlesList";
-import ArticleCreate from "./pages/ArticleCreate";
-import ArticleEdit from "./pages/ArticleEdit";
-import ContactsLocation from "./pages/ContactsLocation";
-import NotFound from "./pages/NotFound";
+import { IndexDashboard, Dashboard } from "./pages/dashboard";
+import { Login } from "./pages/auth";
+import { Home } from "./pages/home";
+import { Projects } from "./pages/projects";
+import { Files } from "./pages/files";
+import { ContactsLocation } from "./pages/contacts-location";
+import { ArticlesList, ArticleCreate, ArticleEdit } from "./pages/articles";
+import { NotFound } from "./pages/errors";
 
 const queryClient = new QueryClient();
 
@@ -24,15 +21,21 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Index />} />
+          <Route path="/" element={<IndexDashboard />} />
           <Route path="/login" element={<Login />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/home" element={<Home />} />
           <Route path="/projects" element={<Projects />} />
           <Route path="/files" element={<Files />} />
           <Route path="/dashboard/articles" element={<ArticlesList />} />
-          <Route path="/dashboard/articles/create" element={<ArticleCreate />} />
-          <Route path="/dashboard/articles/edit/:id" element={<ArticleEdit />} />
+          <Route
+            path="/dashboard/articles/create"
+            element={<ArticleCreate />}
+          />
+          <Route
+            path="/dashboard/articles/edit/:id"
+            element={<ArticleEdit />}
+          />
           <Route path="/contacts-location" element={<ContactsLocation />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
