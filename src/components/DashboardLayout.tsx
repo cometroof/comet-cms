@@ -28,6 +28,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     { name: "Projects", href: "/projects", icon: Hammer },
     { name: "Files", href: "/files", icon: FileText },
     { name: "Articles", href: "/dashboard/articles", icon: FileText },
+    { name: "Contacts & Location", href: "/contacts-location", icon: Settings },
     { name: "Settings", href: "/dashboard/settings", icon: Settings },
   ];
 
