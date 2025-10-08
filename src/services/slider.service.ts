@@ -6,7 +6,9 @@ const TABLE_NAME = "slider";
 /**
  * Get all sliders by type
  */
-export const getSlidersByType = async (type: string = "home-cover"): Promise<Slider[]> => {
+export const getSlidersByType = async (
+  type: string = "home-cover",
+): Promise<Slider[]> => {
   const { data, error } = await supabase
     .from(TABLE_NAME)
     .select("*")
@@ -61,7 +63,7 @@ export const getSliderById = async (id: string): Promise<Slider | null> => {
  * Create a new slider
  */
 export const createSlider = async (
-  slider: Omit<Slider, "id" | "created_at" | "updated_at">
+  slider: Omit<Slider, "id" | "created_at" | "updated_at">,
 ): Promise<Slider | null> => {
   const { data, error } = await supabase
     .from(TABLE_NAME)
@@ -82,7 +84,7 @@ export const createSlider = async (
  */
 export const updateSlider = async (
   id: string,
-  updates: Partial<Omit<Slider, "id" | "created_at" | "updated_at">>
+  updates: Partial<Omit<Slider, "id" | "created_at" | "updated_at">>,
 ): Promise<Slider | null> => {
   const { data, error } = await supabase
     .from(TABLE_NAME)
@@ -103,10 +105,7 @@ export const updateSlider = async (
  * Delete a slider
  */
 export const deleteSlider = async (id: string): Promise<boolean> => {
-  const { error } = await supabase
-    .from(TABLE_NAME)
-    .delete()
-    .eq("id", id);
+  const { error } = await supabase.from(TABLE_NAME).delete().eq("id", id);
 
   if (error) {
     console.error("Error deleting slider:", error);
@@ -120,15 +119,12 @@ export const deleteSlider = async (id: string): Promise<boolean> => {
  * Update slider order (reorder sliders)
  */
 export const updateSliderOrder = async (
-  sliders: Array<{ id: string; order: number }>
+  sliders: Array<{ id: string; order: number }>,
 ): Promise<boolean> => {
   try {
     // Update each slider's order
     const updates = sliders.map(({ id, order }) =>
-      supabase
-        .from(TABLE_NAME)
-        .update({ order })
-        .eq("id", id)
+      supabase.from(TABLE_NAME).update({ order }).eq("id", id),
     );
 
     await Promise.all(updates);
@@ -143,10 +139,7 @@ export const updateSliderOrder = async (
  * Delete all sliders of a specific type
  */
 export const deleteSlidersByType = async (type: string): Promise<boolean> => {
-  const { error } = await supabase
-    .from(TABLE_NAME)
-    .delete()
-    .eq("type", type);
+  const { error } = await supabase.from(TABLE_NAME).delete().eq("type", type);
 
   if (error) {
     console.error("Error deleting sliders by type:", error);
@@ -160,7 +153,7 @@ export const deleteSlidersByType = async (type: string): Promise<boolean> => {
  * Bulk upsert sliders (for seeding or restoration)
  */
 export const bulkUpsertSliders = async (
-  sliders: Omit<Slider, "created_at" | "updated_at">[]
+  sliders: Omit<Slider, "created_at" | "updated_at">[],
 ): Promise<boolean> => {
   const { error } = await supabase
     .from(TABLE_NAME)

@@ -6,11 +6,20 @@ export interface Slider {
   title_id: string;
   description_en: string;
   description_id: string;
-  link?: string;
-  link_text?: string;
+  link: string | null;
+  link_text: string | null;
   order: number;
-  created_at: string;
-  updated_at: string;
+  created_at: string | null;
+  updated_at: string | null;
+}
+
+export interface Cover {
+  id: string;
+  type: string;
+  image: string;
+  order: number;
+  created_at: string | null;
+  updated_at: string | null;
 }
 
 export interface HomeCovers {
