@@ -4,8 +4,6 @@ import { Button } from "@/components/ui/button";
 import {
   Home,
   LogOut,
-  Menu,
-  Plus,
   Settings,
   Hammer,
   User,
@@ -60,8 +58,9 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         <div className="flex flex-col h-full">
           {/* Logo */}
           <div className="flex items-center gap-3 px-6 py-5 border-b border-sidebar-border">
-            <div className="flex items-center justify-center w-10 h-10 bg-sidebar-primary rounded-lg">
-              <Hammer className="w-5 h-5 text-sidebar-primary-foreground" />
+            <div className="flex items-center justify-center w-10 h-10 bg-sidebar-foreground rounded-lg">
+              {/*<Hammer className="w-5 h-5 text-sidebar-primary-foreground" />*/}
+              <img className="size-5" src="/comet-icon.svg" alt="Comet Icon" />
             </div>
             <div>
               <h1 className="text-lg font-bold text-sidebar-foreground">
