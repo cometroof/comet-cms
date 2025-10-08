@@ -12,6 +12,7 @@ import Files from "./pages/Files";
 import ArticlesList from "./pages/ArticlesList";
 import ArticleCreate from "./pages/ArticleCreate";
 import ArticleEdit from "./pages/ArticleEdit";
+import ContactsLocation from "./pages/ContactsLocation";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -32,6 +33,7 @@ const App = () => (
           <Route path="/dashboard/articles" element={<ArticlesList />} />
           <Route path="/dashboard/articles/create" element={<ArticleCreate />} />
           <Route path="/dashboard/articles/edit/:id" element={<ArticleEdit />} />
+          <Route path="/contacts-location" element={<ContactsLocation />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
