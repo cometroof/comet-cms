@@ -1,5 +1,6 @@
 export interface Slider {
   id: string;
+  type: string;
   image: string;
   title_en: string;
   title_id: string;
