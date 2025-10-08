@@ -24,9 +24,9 @@ const App = () => (
           <Route path="/" element={<IndexDashboard />} />
           <Route path="/login" element={<Login />} />
           <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/home" element={<Home />} />
-          <Route path="/projects" element={<Projects />} />
-          <Route path="/files" element={<Files />} />
+          <Route path="/dashboard/home" element={<Home />} />
+          <Route path="/dashboard/projects" element={<Projects />} />
+          <Route path="/dashboard/files" element={<Files />} />
           <Route path="/dashboard/articles" element={<ArticlesList />} />
           <Route
             path="/dashboard/articles/create"
@@ -36,7 +36,10 @@ const App = () => (
             path="/dashboard/articles/edit/:id"
             element={<ArticleEdit />}
           />
-          <Route path="/contacts-location" element={<ContactsLocation />} />
+          <Route
+            path="/dashboard/contacts-location"
+            element={<ContactsLocation />}
+          />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

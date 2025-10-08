@@ -26,13 +26,13 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
 
   const navigation = [
     { name: "Dashboard", href: "/dashboard", icon: Home },
-    { name: "Home", href: "/home", icon: Home },
-    { name: "Projects", href: "/projects", icon: Hammer },
-    { name: "Files", href: "/files", icon: Files },
+    { name: "Home", href: "/dashboard/home", icon: Home },
+    { name: "Projects", href: "/dashboard/projects", icon: Hammer },
+    { name: "Files", href: "/dashboard/files", icon: Files },
     { name: "Articles", href: "/dashboard/articles", icon: Newspaper },
     {
       name: "Contacts & Location",
-      href: "/contacts-location",
+      href: "/dashboard/contacts-location",
       icon: MapPinPlus,
     },
     { name: "Settings", href: "/dashboard/settings", icon: Settings },
