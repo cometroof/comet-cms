@@ -12,8 +12,19 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
-import { Plus, Trash2, Loader2, GripVertical } from "lucide-react";
+import { Plus, Trash2, Loader2, GripVertical, X } from "lucide-react";
 import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -27,14 +38,27 @@ import * as contactsLocationService from "@/services/contacts-location.service";
 
 interface LocationsTabProps {}
 
+interface LocationInput {
+  id: string;
+  name: string;
+  link: string;
+}
+
 export const LocationsTab = ({}: LocationsTabProps) => {
   const queryClient = useQueryClient();
   const [newLocation, setNewLocation] = useState({
     area: "",
-    name: "",
-    link: "",
   });
+  const [locationInputs, setLocationInputs] = useState<LocationInput[]>([
+    { id: crypto.randomUUID(), name: "", link: "" },
+  ]);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [areaDialogOpen, setAreaDialogOpen] = useState(false);
+  const [selectedAreaId, setSelectedAreaId] = useState<string>("");
+  const [areaLocationInputs, setAreaLocationInputs] = useState<LocationInput[]>(
+    [{ id: crypto.randomUUID(), name: "", link: "" }],
+  );
+  const [loadingSubmit, setLoadingSubmit] = useState<boolean>(false);
 
   // Query to fetch all areas
   const {
@@ -54,13 +78,10 @@ export const LocationsTab = ({}: LocationsTabProps) => {
     }) => contactsLocationService.addLocation(params.area, params.location),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["areas"] });
-      setNewLocation({ area: "", name: "", link: "" });
-      setDialogOpen(false);
-      toast.success("Location added successfully");
     },
     onError: (error) => {
       console.error("Error adding location:", error);
-      toast.error("Failed to add location");
+      throw error;
     },
   });
 
@@ -77,26 +98,32 @@ export const LocationsTab = ({}: LocationsTabProps) => {
     },
   });
 
+  // Mutation to delete an area
+  const deleteAreaMutation = useMutation({
+    mutationFn: contactsLocationService.deleteArea,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["areas"] });
+      toast.success("Area deleted successfully");
+    },
+    onError: (error) => {
+      console.error("Error deleting area:", error);
+      toast.error("Failed to delete area");
+    },
+  });
+
   // Mutation to reorder areas
   const reorderAreasMutation = useMutation({
     mutationFn: contactsLocationService.reorderAreas,
     onMutate: async (newAreas) => {
-      // Cancel outgoing refetches
       await queryClient.cancelQueries({ queryKey: ["areas"] });
-
-      // Snapshot previous value
       const previousAreas = queryClient.getQueryData(["areas"]);
-
-      // Optimistically update
       queryClient.setQueryData(["areas"], newAreas);
-
       return { previousAreas };
     },
     onSuccess: () => {
       toast.success("Area order updated");
     },
     onError: (error, _, context) => {
-      // Revert on error
       if (context?.previousAreas) {
         queryClient.setQueryData(["areas"], context.previousAreas);
       }
@@ -111,14 +138,10 @@ export const LocationsTab = ({}: LocationsTabProps) => {
       contactsLocationService.reorderLocations(params.areaId, params.locations),
     onMutate: async ({ areaId, locations }) => {
       await queryClient.cancelQueries({ queryKey: ["areas"] });
-
       const previousAreas = queryClient.getQueryData(["areas"]);
-
-      // Optimistically update
       queryClient.setQueryData(["areas"], (old: Area[] = []) =>
         old.map((a) => (a.id === areaId ? { ...a, locations } : a)),
       );
-
       return { previousAreas };
     },
     onSuccess: () => {
@@ -133,27 +156,175 @@ export const LocationsTab = ({}: LocationsTabProps) => {
     },
   });
 
-  const handleAddLocation = () => {
+  const handleAddLocations = async () => {
     if (!newLocation.area.trim()) {
       toast.error("Please enter area name");
       return;
     }
-    if (!newLocation.name.trim()) {
-      toast.error("Please enter location name");
+
+    const validLocations = locationInputs.filter((loc) => loc.name.trim());
+    if (validLocations.length === 0) {
+      toast.error("Please enter at least one location name");
       return;
     }
 
-    addLocationMutation.mutate({
-      area: newLocation.area,
-      location: {
-        name: newLocation.name,
-        link: newLocation.link,
-      },
-    });
+    try {
+      let successCount = 0;
+      let failCount = 0;
+
+      for (const location of validLocations) {
+        try {
+          setLoadingSubmit(true);
+          await addLocationMutation.mutateAsync({
+            area: newLocation.area,
+            location: {
+              name: location.name,
+              link: location.link,
+            },
+          });
+          setLoadingSubmit(false);
+          successCount++;
+        } catch (error) {
+          failCount++;
+          console.error("Failed to add location:", location.name, error);
+        }
+      }
+
+      if (successCount > 0) {
+        toast.success(
+          `Successfully added ${successCount} location${successCount !== 1 ? "s" : ""}`,
+        );
+      }
+      if (failCount > 0) {
+        toast.error(
+          `Failed to add ${failCount} location${failCount !== 1 ? "s" : ""}`,
+        );
+      }
+
+      setNewLocation({ area: "" });
+      setLocationInputs([{ id: crypto.randomUUID(), name: "", link: "" }]);
+      setDialogOpen(false);
+    } catch (error) {
+      console.error("Error in bulk add:", error);
+    }
   };
 
   const handleDeleteLocation = (locationId: string) => {
     deleteLocationMutation.mutate(locationId);
+  };
+
+  const handleDeleteArea = (areaId: string) => {
+    deleteAreaMutation.mutate(areaId);
+  };
+
+  const handleAddLocationsToArea = async () => {
+    const validLocations = areaLocationInputs.filter((loc) => loc.name.trim());
+    if (validLocations.length === 0) {
+      toast.error("Please enter at least one location name");
+      return;
+    }
+
+    const selectedArea = areas.find((a) => a.id === selectedAreaId);
+    if (!selectedArea) {
+      toast.error("Area not found");
+      return;
+    }
+
+    try {
+      let successCount = 0;
+      let failCount = 0;
+
+      for (const location of validLocations) {
+        try {
+          setLoadingSubmit(true);
+          await addLocationMutation.mutateAsync({
+            area: selectedArea.name,
+            location: {
+              name: location.name,
+              link: location.link,
+            },
+          });
+          successCount++;
+          setLoadingSubmit(false);
+        } catch (error) {
+          failCount++;
+          console.error("Failed to add location:", location.name, error);
+        }
+      }
+
+      if (successCount > 0) {
+        toast.success(
+          `Successfully added ${successCount} location${successCount !== 1 ? "s" : ""}`,
+        );
+      }
+      if (failCount > 0) {
+        toast.error(
+          `Failed to add ${failCount} location${failCount !== 1 ? "s" : ""}`,
+        );
+      }
+
+      setAreaLocationInputs([{ id: crypto.randomUUID(), name: "", link: "" }]);
+      setAreaDialogOpen(false);
+    } catch (error) {
+      console.error("Error in bulk add to area:", error);
+    }
+  };
+
+  const openAddLocationDialog = (areaId: string) => {
+    setSelectedAreaId(areaId);
+    setAreaDialogOpen(true);
+  };
+
+  const addNewLocationInput = () => {
+    setLocationInputs([
+      ...locationInputs,
+      { id: crypto.randomUUID(), name: "", link: "" },
+    ]);
+  };
+
+  const removeLocationInput = (id: string) => {
+    if (locationInputs.length > 1) {
+      setLocationInputs(locationInputs.filter((input) => input.id !== id));
+    }
+  };
+
+  const updateLocationInput = (
+    id: string,
+    field: "name" | "link",
+    value: string,
+  ) => {
+    setLocationInputs(
+      locationInputs.map((input) =>
+        input.id === id ? { ...input, [field]: value } : input,
+      ),
+    );
+  };
+
+  const addNewAreaLocationInput = () => {
+    setAreaLocationInputs([
+      ...areaLocationInputs,
+      { id: crypto.randomUUID(), name: "", link: "" },
+    ]);
+  };
+
+  const removeAreaLocationInput = (id: string) => {
+    if (areaLocationInputs.length > 1) {
+      setAreaLocationInputs(
+        areaLocationInputs.filter((input) => input.id !== id),
+      );
+    }
+  };
+
+  const updateAreaLocationInput = (
+    id: string,
+    field: "name" | "link",
+    value: string,
+  ) => {
+    setAreaLocationInputs(
+      areaLocationInputs.map((input) =>
+        input.id === id ? { ...input, [field]: value } : input,
+      ),
+    );
   };
 
   const onDragEndAreas = (result: DropResult) => {
@@ -198,82 +369,227 @@ export const LocationsTab = ({}: LocationsTabProps) => {
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
         <CardTitle>Location Management</CardTitle>
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="w-4 h-4 mr-2" />
-              Add Location
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[500px]">
-            <DialogHeader>
-              <DialogTitle>Add New Location</DialogTitle>
-              <DialogDescription>
-                Add a new location with area information. Fill in the details
-                below.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="dialog_area">Area</Label>
-                <Input
-                  id="dialog_area"
-                  placeholder="Enter area name (e.g., Jakarta Selatan)"
-                  value={newLocation.area}
-                  onChange={(e) =>
-                    setNewLocation({
-                      ...newLocation,
-                      area: e.target.value,
-                    })
-                  }
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="dialog_location_name">Location Name</Label>
-                <Input
-                  id="dialog_location_name"
-                  placeholder="Enter location name"
-                  value={newLocation.name}
-                  onChange={(e) =>
-                    setNewLocation({
-                      ...newLocation,
-                      name: e.target.value,
-                    })
-                  }
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="dialog_location_link">
-                  Location Link (Optional)
-                </Label>
-                <Input
-                  id="dialog_location_link"
-                  type="url"
-                  placeholder="https://maps.google.com/?q=..."
-                  value={newLocation.link}
-                  onChange={(e) =>
-                    setNewLocation({
-                      ...newLocation,
-                      link: e.target.value,
-                    })
-                  }
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setDialogOpen(false);
-                  setNewLocation({ area: "", name: "", link: "" });
-                }}
-              >
-                Cancel
+        <div className="flex gap-2">
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="w-4 h-4 mr-2" />
+                Add Location
               </Button>
-              <Button onClick={handleAddLocation}>Add Location</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[500px] max-h-[80vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Add New Location</DialogTitle>
+                <DialogDescription>
+                  Add new locations with area information. You can add multiple
+                  locations at once.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="dialog_area">Area</Label>
+                  <Input
+                    id="dialog_area"
+                    placeholder="Enter area name (e.g., Jakarta Selatan)"
+                    value={newLocation.area}
+                    onChange={(e) =>
+                      setNewLocation({
+                        ...newLocation,
+                        area: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+
+                <div className="space-y-4">
+                  <Label>Locations</Label>
+                  {locationInputs.map((input, index) => (
+                    <div
+                      key={input.id}
+                      className="space-y-2 p-3 border rounded-lg bg-muted/30"
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium text-muted-foreground">
+                          Location {index + 1}
+                        </span>
+                        {locationInputs.length > 1 && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6"
+                            onClick={() => removeLocationInput(input.id)}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                      <div className="space-y-2">
+                        <Input
+                          placeholder="Location name"
+                          value={input.name}
+                          onChange={(e) =>
+                            updateLocationInput(
+                              input.id,
+                              "name",
+                              e.target.value,
+                            )
+                          }
+                        />
+                        <Input
+                          type="url"
+                          placeholder="Location link (optional)"
+                          value={input.link}
+                          onChange={(e) =>
+                            updateLocationInput(
+                              input.id,
+                              "link",
+                              e.target.value,
+                            )
+                          }
+                        />
+                      </div>
+                    </div>
+                  ))}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                    onClick={addNewLocationInput}
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Another Location
+                  </Button>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setDialogOpen(false);
+                    setNewLocation({ area: "" });
+                    setLocationInputs([
+                      { id: crypto.randomUUID(), name: "", link: "" },
+                    ]);
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button onClick={handleAddLocations} disabled={loadingSubmit}>
+                  {loadingSubmit && (
+                    <Loader2 className="animate-spin size-3 mr-1" />
+                  )}
+                  Add {locationInputs.filter((l) => l.name.trim()).length}{" "}
+                  Location
+                  {locationInputs.filter((l) => l.name.trim()).length !== 1
+                    ? "s"
+                    : ""}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          {/* Dialog for adding location to specific area */}
+          <Dialog open={areaDialogOpen} onOpenChange={setAreaDialogOpen}>
+            <DialogContent className="sm:max-w-[500px] max-h-[80vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Add Location to Area</DialogTitle>
+                <DialogDescription>
+                  Add new locations to{" "}
+                  {areas.find((a) => a.id === selectedAreaId)?.name ||
+                    "this area"}
+                  . You can add multiple locations at once.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="space-y-4">
+                  <Label>Locations</Label>
+                  {areaLocationInputs.map((input, index) => (
+                    <div
+                      key={input.id}
+                      className="space-y-2 p-3 border rounded-lg bg-muted/30"
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium text-muted-foreground">
+                          Location {index + 1}
+                        </span>
+                        {areaLocationInputs.length > 1 && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6"
+                            onClick={() => removeAreaLocationInput(input.id)}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                      <div className="space-y-2">
+                        <Input
+                          placeholder="Location name"
+                          value={input.name}
+                          onChange={(e) =>
+                            updateAreaLocationInput(
+                              input.id,
+                              "name",
+                              e.target.value,
+                            )
+                          }
+                        />
+                        <Input
+                          type="url"
+                          placeholder="Location link (optional)"
+                          value={input.link}
+                          onChange={(e) =>
+                            updateAreaLocationInput(
+                              input.id,
+                              "link",
+                              e.target.value,
+                            )
+                          }
+                        />
+                      </div>
+                    </div>
+                  ))}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                    onClick={addNewAreaLocationInput}
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Another Location
+                  </Button>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setAreaDialogOpen(false);
+                    setAreaLocationInputs([
+                      { id: crypto.randomUUID(), name: "", link: "" },
+                    ]);
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleAddLocationsToArea}
+                  disabled={loadingSubmit}
+                >
+                  {loadingSubmit && (
+                    <Loader2 className="animate-spin size-3 mr-1" />
+                  )}
+                  Add {areaLocationInputs.filter((l) => l.name.trim()).length}{" "}
+                  Location
+                  {areaLocationInputs.filter((l) => l.name.trim()).length !== 1
+                    ? "s"
+                    : ""}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="space-y-4">
@@ -319,12 +635,63 @@ export const LocationsTab = ({}: LocationsTabProps) => {
                                   {area.name}
                                 </h4>
                               </div>
-                              <span className="text-sm text-muted-foreground">
-                                {area.locations.length}{" "}
-                                {area.locations.length === 1
-                                  ? "location"
-                                  : "locations"}
-                              </span>
+                              <div className="flex items-center gap-3">
+                                <span className="text-sm text-muted-foreground">
+                                  {area.locations.length}{" "}
+                                  {area.locations.length === 1
+                                    ? "location"
+                                    : "locations"}
+                                </span>
+                                <div className="flex items-center gap-2">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() =>
+                                      openAddLocationDialog(area.id)
+                                    }
+                                  >
+                                    <Plus className="w-4 h-4 mr-1" />
+                                    Add
+                                  </Button>
+                                  <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                      <Button size="sm" variant="ghost">
+                                        <Trash2 className="w-4 h-4 text-destructive" />
+                                      </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                      <AlertDialogHeader>
+                                        <AlertDialogTitle>
+                                          Delete Area
+                                        </AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                          Are you sure you want to delete "
+                                          {area.name}"? This will also delete
+                                          all {area.locations.length} location
+                                          {area.locations.length !== 1
+                                            ? "s"
+                                            : ""}{" "}
+                                          in this area. This action cannot be
+                                          undone.
+                                        </AlertDialogDescription>
+                                      </AlertDialogHeader>
+                                      <AlertDialogFooter>
+                                        <AlertDialogCancel>
+                                          Cancel
+                                        </AlertDialogCancel>
+                                        <AlertDialogAction
+                                          onClick={() =>
+                                            handleDeleteArea(area.id)
+                                          }
+                                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                        >
+                                          Delete
+                                        </AlertDialogAction>
+                                      </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                  </AlertDialog>
+                                </div>
+                              </div>
                             </div>
 
                             {/* Locations within Area */}
@@ -384,18 +751,45 @@ export const LocationsTab = ({}: LocationsTabProps) => {
                                                     )}
                                                   </div>
                                                 </div>
-                                                <Button
-                                                  variant="ghost"
-                                                  size="icon"
-                                                  onClick={() =>
-                                                    handleDeleteLocation(
-                                                      location.id,
-                                                    )
-                                                  }
-                                                  className="ml-2 shrink-0"
-                                                >
-                                                  <Trash2 className="w-4 h-4 text-destructive" />
-                                                </Button>
+                                                <AlertDialog>
+                                                  <AlertDialogTrigger asChild>
+                                                    <Button
+                                                      variant="ghost"
+                                                      size="icon"
+                                                      className="ml-2 shrink-0"
+                                                    >
+                                                      <Trash2 className="w-4 h-4 text-destructive" />
+                                                    </Button>
+                                                  </AlertDialogTrigger>
+                                                  <AlertDialogContent>
+                                                    <AlertDialogHeader>
+                                                      <AlertDialogTitle>
+                                                        Delete Area
+                                                      </AlertDialogTitle>
+                                                      <AlertDialogDescription>
+                                                        Are you sure you want to
+                                                        delete this location?
+                                                        This action cannot be
+                                                        undone.
+                                                      </AlertDialogDescription>
+                                                    </AlertDialogHeader>
+                                                    <AlertDialogFooter>
+                                                      <AlertDialogCancel>
+                                                        Cancel
+                                                      </AlertDialogCancel>
+                                                      <AlertDialogAction
+                                                        onClick={() =>
+                                                          handleDeleteLocation(
+                                                            location.id,
+                                                          )
+                                                        }
+                                                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                                      >
+                                                        Delete
+                                                      </AlertDialogAction>
+                                                    </AlertDialogFooter>
+                                                  </AlertDialogContent>
+                                                </AlertDialog>
                                               </div>
                                             )}
                                           </Draggable>

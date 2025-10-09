@@ -426,3 +426,117 @@ export const bulkUpsertData = async (
 
   return true;
 };
+
+/**
+ * Bulk add locations to areas
+ * Each entry should contain { area, name, link }
+ */
+export const bulkAddLocations = async (
+  locations: Array<{ area: string; name: string; link?: string }>,
+): Promise<{ success: number; failed: number; errors: string[] }> => {
+  const areas = await getAllAreas();
+  const areasMap = new Map<string, Area>();
+
+  // Create a map of existing areas (case-insensitive)
+  areas.forEach((area) => {
+    areasMap.set(area.name.toLowerCase(), area);
+  });
+
+  let success = 0;
+  let failed = 0;
+  const errors: string[] = [];
+
+  // Group locations by area
+  const locationsByArea = new Map<
+    string,
+    Array<{ name: string; link?: string }>
+  >();
+
+  locations.forEach((loc, index) => {
+    if (!loc.area?.trim()) {
+      failed++;
+      errors.push(`Row ${index + 1}: Area name is required`);
+      return;
+    }
+    if (!loc.name?.trim()) {
+      failed++;
+      errors.push(`Row ${index + 1}: Location name is required`);
+      return;
+    }
+
+    const areaKey = loc.area.toLowerCase();
+    if (!locationsByArea.has(areaKey)) {
+      locationsByArea.set(areaKey, []);
+    }
+    locationsByArea.get(areaKey)!.push({
+      name: loc.name.trim(),
+      link: loc.link?.trim() || "",
+    });
+  });
+
+  // Process each area
+  for (const [areaKey, areaLocations] of locationsByArea.entries()) {
+    try {
+      let area = areasMap.get(areaKey);
+
+      // Create area if it doesn't exist
+      if (!area) {
+        const maxAreaOrder =
+          areas.length > 0 ? Math.max(...areas.map((a) => a.order || 0)) : 0;
+
+        area = {
+          id: `${Date.now()}-${Math.random().toString(36).substring(7)}`,
+          name: areaLocations[0]
+            ? locations.find((l) => l.area.toLowerCase() === areaKey)?.area ||
+              areaKey
+            : areaKey,
+          order: maxAreaOrder + areas.length + 1,
+          locations: [],
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+        areas.push(area);
+        areasMap.set(areaKey, area);
+      }
+
+      // Get current max order for this area
+      let maxLocationOrder =
+        area.locations.length > 0
+          ? Math.max(...area.locations.map((l) => l.order || 0))
+          : 0;
+
+      // Add all locations to this area
+      areaLocations.forEach((location) => {
+        const newLocation: Location = {
+          id: `${Date.now()}-${Math.random().toString(36).substring(7)}`,
+          name: location.name,
+          link: location.link || "",
+          order: ++maxLocationOrder,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+        area!.locations.push(newLocation);
+        success++;
+      });
+
+      area.updated_at = new Date().toISOString();
+    } catch (error) {
+      failed += areaLocations.length;
+      errors.push(`Failed to add locations to area "${areaKey}": ${error}`);
+    }
+  }
+
+  // Save all changes
+  if (success > 0) {
+    const saveSuccess = await updateAllAreas(areas);
+    if (!saveSuccess) {
+      return {
+        success: 0,
+        failed: success + failed,
+        errors: ["Failed to save changes to database", ...errors],
+      };
+    }
+  }
+
+  return { success, failed, errors };
+};
