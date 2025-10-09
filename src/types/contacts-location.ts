@@ -24,9 +24,18 @@ export interface Contacts {
 
 export interface Location {
   id: string;
-  province_code: string;
   name: string;
   link: string; // Google Maps or location link
+  order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Area {
+  id: string;
+  name: string;
+  order: number;
+  locations: Location[];
   created_at: string;
   updated_at: string;
 }

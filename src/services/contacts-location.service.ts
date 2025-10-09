@@ -4,6 +4,7 @@ import type {
   Contacts,
   Province,
   Location,
+  Area,
 } from "@/types/contacts-location";
 import provinceData from "@/pages/contacts-location/province.json";
 
@@ -113,139 +114,282 @@ export const getProvinces = async (): Promise<Province[]> => {
 };
 
 /**
- * Get locations by province code
+ * Get all areas with their locations (stored under data_type: "location_product")
+ * Returns areas sorted by order
  */
-export const getLocationsByProvince = async (
-  provinceCode: string,
-): Promise<Location[]> => {
-  const value = await getValueByType(`location_${provinceCode}`);
+export const getAllAreas = async (): Promise<Area[]> => {
+  const value = await getValueByType("location_product");
 
   if (!value) return [];
 
   try {
-    return JSON.parse(value);
+    const areas = JSON.parse(value);
+    // Sort areas by order and locations within each area
+    return areas
+      .sort((a: Area, b: Area) => (a.order || 0) - (b.order || 0))
+      .map((area: Area) => ({
+        ...area,
+        locations: (area.locations || []).sort(
+          (a, b) => (a.order || 0) - (b.order || 0),
+        ),
+      }));
   } catch (error) {
-    console.error("Error parsing locations:", error);
+    console.error("Error parsing areas:", error);
     return [];
   }
 };
 
 /**
- * Get all locations
+ * Update all areas (stored under data_type: "location_product")
  */
-export const getAllLocations = async (): Promise<Location[]> => {
-  const { data, error } = await supabase
-    .from(TABLE_NAME)
-    .select("*")
-    .like("type", "location_%");
+export const updateAllAreas = async (areas: Area[]): Promise<boolean> => {
+  return setValueByType("location_product", JSON.stringify(areas));
+};
 
-  if (error) {
-    console.error("Error fetching locations:", error);
-    return [];
+/**
+ * Get a specific area by ID
+ */
+export const getAreaById = async (areaId: string): Promise<Area | null> => {
+  const areas = await getAllAreas();
+  return areas.find((a) => a.id === areaId) || null;
+};
+
+/**
+ * Get a specific area by name
+ */
+export const getAreaByName = async (areaName: string): Promise<Area | null> => {
+  const areas = await getAllAreas();
+  return (
+    areas.find((a) => a.name.toLowerCase() === areaName.toLowerCase()) || null
+  );
+};
+
+/**
+ * Add a new area
+ */
+export const addArea = async (areaName: string): Promise<Area | null> => {
+  const areas = await getAllAreas();
+
+  // Check if area already exists
+  const existingArea = areas.find(
+    (a) => a.name.toLowerCase() === areaName.toLowerCase(),
+  );
+  if (existingArea) {
+    return existingArea;
   }
 
-  const allLocations: Location[] = [];
+  // Set order as the highest order + 1
+  const maxOrder =
+    areas.length > 0 ? Math.max(...areas.map((a) => a.order || 0)) : 0;
 
-  data.forEach((item) => {
-    try {
-      const locations = JSON.parse(item.value);
-      allLocations.push(...locations);
-    } catch (error) {
-      console.error(`Error parsing locations from ${item.type}:`, error);
-    }
-  });
-
-  return allLocations;
-};
-
-/**
- * Update locations for a province
- */
-export const updateLocationsForProvince = async (
-  provinceCode: string,
-  locations: Location[],
-): Promise<boolean> => {
-  return setValueByType(`location_${provinceCode}`, JSON.stringify(locations));
-};
-
-/**
- * Add a new location
- */
-export const addLocation = async (
-  location: Omit<Location, "id" | "created_at" | "updated_at">,
-): Promise<Location | null> => {
-  const locations = await getLocationsByProvince(location.province_code);
-
-  const newLocation: Location = {
+  const newArea: Area = {
     id: Date.now().toString(),
-    ...location,
+    name: areaName,
+    order: maxOrder + 1,
+    locations: [],
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   };
 
-  locations.push(newLocation);
-  const success = await updateLocationsForProvince(
-    location.province_code,
-    locations,
-  );
+  areas.push(newArea);
+  const success = await updateAllAreas(areas);
+
+  return success ? newArea : null;
+};
+
+/**
+ * Add a new location to an area
+ */
+export const addLocation = async (
+  areaName: string,
+  location: Omit<Location, "id" | "created_at" | "updated_at">,
+): Promise<Location | null> => {
+  const areas = await getAllAreas();
+
+  // Find or create area
+  let area = areas.find((a) => a.name.toLowerCase() === areaName.toLowerCase());
+
+  if (!area) {
+    // Create new area if it doesn't exist
+    const maxAreaOrder =
+      areas.length > 0 ? Math.max(...areas.map((a) => a.order || 0)) : 0;
+
+    area = {
+      id: Date.now().toString(),
+      name: areaName,
+      order: maxAreaOrder + 1,
+      locations: [],
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+    areas.push(area);
+  }
+
+  // Set order as the highest order + 1 within this area
+  const maxLocationOrder =
+    area.locations.length > 0
+      ? Math.max(...area.locations.map((l) => l.order || 0))
+      : 0;
+
+  // Add location to area
+  const newLocation: Location = {
+    id: Date.now().toString(),
+    ...location,
+    order: maxLocationOrder + 1,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  };
+
+  area.locations.push(newLocation);
+  area.updated_at = new Date().toISOString();
+
+  const success = await updateAllAreas(areas);
 
   return success ? newLocation : null;
 };
 
 /**
- * Update a location
+ * Update a location within an area
  */
 export const updateLocation = async (
   locationId: string,
   updates: Partial<Location>,
 ): Promise<boolean> => {
-  const allLocations = await getAllLocations();
-  const location = allLocations.find((l) => l.id === locationId);
+  const areas = await getAllAreas();
+  let found = false;
 
-  if (!location) return false;
+  const updatedAreas = areas.map((area) => {
+    const updatedLocations = area.locations.map((location) => {
+      if (location.id === locationId) {
+        found = true;
+        return {
+          ...location,
+          ...updates,
+          updated_at: new Date().toISOString(),
+        };
+      }
+      return location;
+    });
 
-  const locations = await getLocationsByProvince(location.province_code);
-  const updatedLocations = locations.map((l) =>
-    l.id === locationId
-      ? { ...l, ...updates, updated_at: new Date().toISOString() }
-      : l,
-  );
+    if (found) {
+      return {
+        ...area,
+        locations: updatedLocations,
+        updated_at: new Date().toISOString(),
+      };
+    }
+    return area;
+  });
 
-  return updateLocationsForProvince(location.province_code, updatedLocations);
+  if (!found) return false;
+
+  return updateAllAreas(updatedAreas);
 };
 
 /**
- * Delete a location
+ * Delete a location from an area
  */
 export const deleteLocation = async (locationId: string): Promise<boolean> => {
-  const allLocations = await getAllLocations();
-  const location = allLocations.find((l) => l.id === locationId);
+  const areas = await getAllAreas();
+  let found = false;
 
-  if (!location) return false;
+  const updatedAreas = areas.map((area) => {
+    const filteredLocations = area.locations.filter((location) => {
+      if (location.id === locationId) {
+        found = true;
+        return false;
+      }
+      return true;
+    });
 
-  const locations = await getLocationsByProvince(location.province_code);
-  const filtered = locations.filter((l) => l.id !== locationId);
+    if (found) {
+      return {
+        ...area,
+        locations: filteredLocations,
+        updated_at: new Date().toISOString(),
+      };
+    }
+    return area;
+  });
 
-  return updateLocationsForProvince(location.province_code, filtered);
+  if (!found) return false;
+
+  return updateAllAreas(updatedAreas);
 };
 
 /**
- * Delete all locations for a province
+ * Delete an area and all its locations
  */
-export const deleteLocationsByProvince = async (
-  provinceCode: string,
-): Promise<boolean> => {
+export const deleteArea = async (areaId: string): Promise<boolean> => {
+  const areas = await getAllAreas();
+  const filtered = areas.filter((a) => a.id !== areaId);
+
+  return updateAllAreas(filtered);
+};
+
+/**
+ * Delete all areas and locations
+ */
+export const deleteAllAreas = async (): Promise<boolean> => {
   const { error } = await supabase
     .from(TABLE_NAME)
     .delete()
-    .eq("type", `location_${provinceCode}`);
+    .eq("type", "location_product");
 
   if (error) {
-    console.error("Error deleting locations:", error);
+    console.error("Error deleting areas:", error);
     return false;
   }
 
   return true;
+};
+
+/**
+ * Reorder areas
+ */
+export const reorderAreas = async (
+  reorderedAreas: Area[],
+): Promise<boolean> => {
+  // Update order numbers based on array position
+  const areasWithUpdatedOrder = reorderedAreas.map((area, index) => ({
+    ...area,
+    order: index + 1,
+    updated_at: new Date().toISOString(),
+  }));
+
+  return updateAllAreas(areasWithUpdatedOrder);
+};
+
+/**
+ * Reorder locations within an area
+ */
+export const reorderLocations = async (
+  areaId: string,
+  reorderedLocations: Location[],
+): Promise<boolean> => {
+  const areas = await getAllAreas();
+
+  const updatedAreas = areas.map((area) => {
+    if (area.id === areaId) {
+      // Update order numbers based on array position
+      const locationsWithUpdatedOrder = reorderedLocations.map(
+        (location, index) => ({
+          ...location,
+          order: index + 1,
+          updated_at: new Date().toISOString(),
+        }),
+      );
+
+      return {
+        ...area,
+        locations: locationsWithUpdatedOrder,
+        updated_at: new Date().toISOString(),
+      };
+    }
+    return area;
+  });
+
+  return updateAllAreas(updatedAreas);
 };
 
 /**
