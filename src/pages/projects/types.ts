@@ -20,13 +20,17 @@ export interface Project {
   location_text: string;
   location_link: string;
   roof_type: string;
-  category_id: string;
+  category_id: string; // Kept for backward compatibility, but will be deprecated
+  category_ids: string[]; // New field for multiple categories
   order: number;
   images: ProjectImage[];
   created_at: string;
   updated_at: string;
 }
 
-export type CategoryFormData = Omit<Category, "id" | "created_at" | "updated_at" | "deleted_at">;
+export type CategoryFormData = Omit<
+  Category,
+  "id" | "created_at" | "updated_at" | "deleted_at"
+>;
 export type ProjectFormData = Omit<Project, "id" | "created_at" | "updated_at">;
 export type ProjectImageFormData = Omit<ProjectImage, "id">;

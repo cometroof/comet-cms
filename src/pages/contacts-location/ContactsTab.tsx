@@ -51,7 +51,8 @@ export const ContactsTab = ({ initialContacts }: ContactsTabProps) => {
 
         <div className="space-y-2">
           <Label htmlFor="head_office_link">
-            Head Office Link (Google Maps)
+            Head Office Link{" "}
+            <span className="text-xs text-primary">(Google Maps Embed)</span>
           </Label>
           <Input
             id="head_office_link"
@@ -109,7 +110,7 @@ export const ContactsTab = ({ initialContacts }: ContactsTabProps) => {
             />
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-2 py-2 px-3 rounded-md bg-green-100 border border-green-800">
             <Label htmlFor="whatsapp">WhatsApp Contact Service</Label>
             <Input
               id="whatsapp"

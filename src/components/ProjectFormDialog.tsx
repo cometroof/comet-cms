@@ -9,18 +9,24 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, Star } from "lucide-react";
+import { Plus, Trash2, Star, X } from "lucide-react";
 import ImageSelectorDialog from "./ImageSelectorDialog";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 interface Category {
   id: string;
@@ -43,6 +49,7 @@ interface Project {
   location_link: string;
   roof_type: string;
   category_id: string;
+  category_ids: string[];
   order: number;
   images: ProjectImage[];
   created_at: string;
@@ -70,9 +77,13 @@ const ProjectFormDialog = ({
   const [locationLink, setLocationLink] = useState("");
   const [roofType, setRoofType] = useState("");
   const [categoryId, setCategoryId] = useState("");
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
+  const [categoryPopoverOpen, setCategoryPopoverOpen] = useState(false);
   const [images, setImages] = useState<ProjectImage[]>([]);
   const [imageDialogOpen, setImageDialogOpen] = useState(false);
-  const [editingImageIndex, setEditingImageIndex] = useState<number | null>(null);
+  const [editingImageIndex, setEditingImageIndex] = useState<number | null>(
+    null,
+  );
 
   useEffect(() => {
     if (project) {
@@ -81,6 +92,7 @@ const ProjectFormDialog = ({
       setLocationLink(project.location_link);
       setRoofType(project.roof_type);
       setCategoryId(project.category_id);
+      setSelectedCategoryIds(project.category_ids || []);
       setImages(project.images);
     } else {
       setName("");
@@ -88,6 +100,7 @@ const ProjectFormDialog = ({
       setLocationLink("");
       setRoofType("");
       setCategoryId("");
+      setSelectedCategoryIds([]);
       setImages([]);
     }
   }, [project, open]);
@@ -99,7 +112,7 @@ const ProjectFormDialog = ({
 
   const handleImageSelect = (imageUrl: string) => {
     const newImage: ProjectImage = {
-      id: Date.now().toString(),
+      id: `temp-${Date.now()}`, // Temporary ID for UI, will be removed before saving
       image_url: imageUrl,
       is_highlight: false,
       order: images.length,
@@ -110,9 +123,10 @@ const ProjectFormDialog = ({
 
   const handleToggleHighlight = (index: number) => {
     setImages(
-      images.map((img, i) =>
-        i === index ? { ...img, is_highlight: !img.is_highlight } : img
-      )
+      images.map((img, i) => ({
+        ...img,
+        is_highlight: i === index ? !img.is_highlight : false,
+      })),
     );
   };
 
@@ -178,10 +192,10 @@ const ProjectFormDialog = ({
       return;
     }
 
-    if (!categoryId) {
+    if (!selectedCategoryIds || selectedCategoryIds.length === 0) {
       toast({
         title: "Validation Error",
-        description: "Please select a category",
+        description: "Please select at least one category",
         variant: "destructive",
       });
       return;
@@ -197,16 +211,17 @@ const ProjectFormDialog = ({
     }
 
     const now = new Date().toISOString();
-    const projectData: Project = {
-      id: project?.id || "",
+    const projectData: any = {
+      ...(project?.id && { id: project.id }), // Only include id if editing
       name: name.trim(),
       location_text: locationText.trim(),
       location_link: locationLink.trim(),
       roof_type: roofType.trim(),
-      category_id: categoryId,
+      category_id: selectedCategoryIds[0] || "", // Keep for backward compatibility
+      category_ids: selectedCategoryIds,
       order: project?.order || 0,
       images: images.map((img, index) => ({ ...img, order: index })),
-      created_at: project?.created_at || now,
+      ...(project?.created_at && { created_at: project.created_at }),
       updated_at: now,
     };
 
@@ -277,21 +292,80 @@ const ProjectFormDialog = ({
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="category">
-                    Category <span className="text-destructive">*</span>
+                  <Label>
+                    Categories <span className="text-destructive">*</span>
                   </Label>
-                  <Select value={categoryId} onValueChange={setCategoryId}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categories.map((category) => (
-                        <SelectItem key={category.id} value={category.id}>
-                          {category.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Popover
+                    open={categoryPopoverOpen}
+                    onOpenChange={setCategoryPopoverOpen}
+                  >
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        className="w-full justify-start text-left font-normal"
+                      >
+                        {selectedCategoryIds.length > 0
+                          ? `${selectedCategoryIds.length} selected`
+                          : "Select categories..."}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-full p-0" align="start">
+                      <Command>
+                        <CommandInput placeholder="Search categories..." />
+                        <CommandEmpty>No category found.</CommandEmpty>
+                        <CommandGroup className="max-h-64 overflow-auto">
+                          {categories.map((category) => (
+                            <CommandItem
+                              key={category.id}
+                              onSelect={() => {
+                                setSelectedCategoryIds((prev) =>
+                                  prev.includes(category.id)
+                                    ? prev.filter((id) => id !== category.id)
+                                    : [...prev, category.id],
+                                );
+                              }}
+                            >
+                              <Checkbox
+                                checked={selectedCategoryIds.includes(
+                                  category.id,
+                                )}
+                                className="mr-2"
+                              />
+                              {category.name}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                  {selectedCategoryIds.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {selectedCategoryIds.map((catId) => {
+                        const category = categories.find((c) => c.id === catId);
+                        return category ? (
+                          <Badge
+                            key={catId}
+                            variant="secondary"
+                            className="gap-1"
+                          >
+                            {category.name}
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setSelectedCategoryIds((prev) =>
+                                  prev.filter((id) => id !== catId),
+                                )
+                              }
+                              className="ml-1 hover:bg-secondary-foreground/20 rounded-full"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </Badge>
+                        ) : null;
+                      })}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -337,7 +411,9 @@ const ProjectFormDialog = ({
                             <Checkbox
                               id={`highlight-${index}`}
                               checked={image.is_highlight}
-                              onCheckedChange={() => handleToggleHighlight(index)}
+                              onCheckedChange={() =>
+                                handleToggleHighlight(index)
+                              }
                             />
                             <Label
                               htmlFor={`highlight-${index}`}
