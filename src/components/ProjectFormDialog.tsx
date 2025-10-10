@@ -13,8 +13,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, Star, X } from "lucide-react";
+import { Plus, Trash2, Star, X, Loader2 } from "lucide-react";
 import ImageSelectorDialog from "./ImageSelectorDialog";
+import { generateSlug } from "@/pages/projects/utils";
 import {
   Command,
   CommandEmpty,
@@ -45,6 +46,7 @@ interface ProjectImage {
 interface Project {
   id: string;
   name: string;
+  slug: string;
   location_text: string;
   location_link: string;
   roof_type: string;
@@ -62,6 +64,7 @@ interface ProjectFormDialogProps {
   project?: Project;
   categories: Category[];
   onSave: (project: Project) => void;
+  isLoading?: boolean;
 }
 
 const ProjectFormDialog = ({
@@ -70,9 +73,11 @@ const ProjectFormDialog = ({
   project,
   categories,
   onSave,
+  isLoading = false,
 }: ProjectFormDialogProps) => {
   const { toast } = useToast();
   const [name, setName] = useState("");
+  const [slug, setSlug] = useState("");
   const [locationText, setLocationText] = useState("");
   const [locationLink, setLocationLink] = useState("");
   const [roofType, setRoofType] = useState("");
@@ -88,6 +93,7 @@ const ProjectFormDialog = ({
   useEffect(() => {
     if (project) {
       setName(project.name);
+      setSlug(project.slug);
       setLocationText(project.location_text);
       setLocationLink(project.location_link);
       setRoofType(project.roof_type);
@@ -96,6 +102,7 @@ const ProjectFormDialog = ({
       setImages(project.images);
     } else {
       setName("");
+      setSlug("");
       setLocationText("");
       setLocationLink("");
       setRoofType("");
@@ -104,6 +111,14 @@ const ProjectFormDialog = ({
       setImages([]);
     }
   }, [project, open]);
+
+  // Auto-generate slug when name changes
+  useEffect(() => {
+    if (name && !project) {
+      // Only auto-generate for new projects
+      setSlug(generateSlug(name));
+    }
+  }, [name, project]);
 
   const handleAddImage = () => {
     setEditingImageIndex(null);
@@ -211,9 +226,12 @@ const ProjectFormDialog = ({
     }
 
     const now = new Date().toISOString();
+    const finalSlug = slug.trim() || generateSlug(name);
+
     const projectData: any = {
       ...(project?.id && { id: project.id }), // Only include id if editing
       name: name.trim(),
+      slug: finalSlug,
       location_text: locationText.trim(),
       location_link: locationLink.trim(),
       roof_type: roofType.trim(),
@@ -250,7 +268,24 @@ const ProjectFormDialog = ({
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Enter project name"
                   maxLength={200}
+                  disabled={isLoading}
                 />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="slug">
+                  Slug <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="slug"
+                  value={slug}
+                  onChange={(e) => setSlug(e.target.value)}
+                  placeholder="auto-generated-slug"
+                  disabled={isLoading}
+                />
+                <p className="text-xs text-muted-foreground">
+                  URL-friendly identifier (auto-generated from name)
+                </p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -263,6 +298,7 @@ const ProjectFormDialog = ({
                     value={locationText}
                     onChange={(e) => setLocationText(e.target.value)}
                     placeholder="e.g. Jakarta, Indonesia"
+                    disabled={isLoading}
                   />
                 </div>
 
@@ -274,6 +310,7 @@ const ProjectFormDialog = ({
                     onChange={(e) => setLocationLink(e.target.value)}
                     placeholder="https://maps.google.com/..."
                     type="url"
+                    disabled={isLoading}
                   />
                 </div>
               </div>
@@ -288,6 +325,7 @@ const ProjectFormDialog = ({
                     value={roofType}
                     onChange={(e) => setRoofType(e.target.value)}
                     placeholder="e.g. Metal Roof"
+                    disabled={isLoading}
                   />
                 </div>
 
@@ -304,6 +342,7 @@ const ProjectFormDialog = ({
                         variant="outline"
                         role="combobox"
                         className="w-full justify-start text-left font-normal"
+                        disabled={isLoading}
                       >
                         {selectedCategoryIds.length > 0
                           ? `${selectedCategoryIds.length} selected`
@@ -380,6 +419,7 @@ const ProjectFormDialog = ({
                     size="sm"
                     onClick={handleAddImage}
                     className="gap-2"
+                    disabled={isLoading}
                   >
                     <Plus className="h-4 w-4" />
                     Add Image
@@ -414,6 +454,7 @@ const ProjectFormDialog = ({
                               onCheckedChange={() =>
                                 handleToggleHighlight(index)
                               }
+                              disabled={isLoading}
                             />
                             <Label
                               htmlFor={`highlight-${index}`}
@@ -427,6 +468,7 @@ const ProjectFormDialog = ({
                             variant="ghost"
                             size="sm"
                             onClick={() => handleRemoveImage(index)}
+                            disabled={isLoading}
                           >
                             <Trash2 className="h-3 w-3" />
                           </Button>
@@ -443,11 +485,19 @@ const ProjectFormDialog = ({
                 type="button"
                 variant="outline"
                 onClick={() => onOpenChange(false)}
+                disabled={isLoading}
               >
                 Cancel
               </Button>
-              <Button type="submit">
-                {project ? "Update" : "Create"} Project
+              <Button type="submit" disabled={isLoading}>
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    {project ? "Updating..." : "Creating..."}
+                  </>
+                ) : (
+                  <>{project ? "Update" : "Create"} Project</>
+                )}
               </Button>
             </DialogFooter>
           </form>

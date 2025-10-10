@@ -123,12 +123,12 @@ export const projectsApi = {
   },
 
   async create(project: Omit<Project, "id" | "created_at" | "updated_at">) {
-    const { images, category_ids, ...projectData } = project;
+    const { images, category_ids, slug, ...projectData } = project;
 
     // Insert project
     const { data: newProject, error: projectError } = await supabase
       .from("projects")
-      .insert([projectData])
+      .insert([{ ...projectData, slug }])
       .select()
       .single();
 
@@ -181,12 +181,12 @@ export const projectsApi = {
   },
 
   async update(id: string, project: Partial<Project>) {
-    const { images, category_ids, ...projectData } = project;
+    const { images, category_ids, slug, ...projectData } = project;
 
     // Update project
     const { data: updatedProject, error: projectError } = await supabase
       .from("projects")
-      .update({ ...projectData, updated_at: new Date().toISOString() })
+      .update({ ...projectData, slug, updated_at: new Date().toISOString() })
       .eq("id", id)
       .select()
       .single();

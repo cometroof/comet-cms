@@ -175,6 +175,7 @@ const ProjectsTab = () => {
               <TableRow>
                 <TableHead className="w-12"></TableHead>
                 <TableHead>Name</TableHead>
+                <TableHead>Slug</TableHead>
                 <TableHead>Location</TableHead>
                 <TableHead>Roof Type</TableHead>
                 <TableHead>Categories</TableHead>
@@ -192,7 +193,7 @@ const ProjectsTab = () => {
                     {filteredProjects.length === 0 ? (
                       <TableRow>
                         <TableCell
-                          colSpan={7}
+                          colSpan={8}
                           className="text-center py-8 text-muted-foreground"
                         >
                           No projects found
@@ -216,6 +217,11 @@ const ProjectsTab = () => {
                               </TableCell>
                               <TableCell className="font-medium">
                                 {project.name}
+                              </TableCell>
+                              <TableCell>
+                                <code className="text-xs bg-muted px-2 py-1 rounded">
+                                  {project.slug}
+                                </code>
                               </TableCell>
                               <TableCell>
                                 <div className="flex items-center gap-2">
@@ -312,6 +318,7 @@ const ProjectsTab = () => {
         project={editingProject}
         categories={categories.filter((cat) => !cat.deleted_at)}
         onSave={handleProjectSave}
+        isLoading={createProject.isPending || updateProject.isPending}
       />
     </>
   );

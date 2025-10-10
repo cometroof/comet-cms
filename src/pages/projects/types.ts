@@ -18,6 +18,7 @@ export interface ProjectImage {
 export interface Project {
   id: string;
   name: string;
+  slug: string;
   location_text: string;
   location_link: string;
   roof_type: string;
