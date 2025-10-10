@@ -66,147 +66,6 @@ export type Database = {
         };
         Relationships: [];
       };
-      project_categories: {
-        Row: {
-          id: string;
-          name: string;
-          slug: string;
-          deleted_at: string | null;
-          created_at: string;
-          updated_at: string;
-        };
-        Insert: {
-          id?: string;
-          name: string;
-          slug: string;
-          deleted_at?: string | null;
-          created_at?: string;
-          updated_at?: string;
-        };
-        Update: {
-          id?: string;
-          name?: string;
-          slug?: string;
-          deleted_at?: string | null;
-          created_at?: string;
-          updated_at?: string;
-        };
-        Relationships: [];
-      };
-      projects: {
-        Row: {
-          id: string;
-          name: string;
-          location_text: string;
-          location_link: string;
-          roof_type: string;
-          category_id: string;
-          order: number;
-          created_at: string;
-          updated_at: string;
-        };
-        Insert: {
-          id?: string;
-          name: string;
-          location_text: string;
-          location_link: string;
-          roof_type: string;
-          category_id: string;
-          order?: number;
-          created_at?: string;
-          updated_at?: string;
-        };
-        Update: {
-          id?: string;
-          name?: string;
-          location_text?: string;
-          location_link?: string;
-          roof_type?: string;
-          category_id?: string;
-          order?: number;
-          created_at?: string;
-          updated_at?: string;
-        };
-        Relationships: [
-          {
-            foreignKeyName: "projects_category_id_fkey";
-            columns: ["category_id"];
-            referencedRelation: "project_categories";
-            referencedColumns: ["id"];
-          },
-        ];
-      };
-      project_images: {
-        Row: {
-          id: string;
-          project_id: string;
-          image_url: string;
-          is_highlight: boolean;
-          order: number;
-          created_at: string;
-          updated_at: string;
-        };
-        Insert: {
-          id?: string;
-          project_id: string;
-          image_url: string;
-          is_highlight?: boolean;
-          order?: number;
-          created_at?: string;
-          updated_at?: string;
-        };
-        Update: {
-          id?: string;
-          project_id?: string;
-          image_url?: string;
-          is_highlight?: boolean;
-          order?: number;
-          created_at?: string;
-          updated_at?: string;
-        };
-        Relationships: [
-          {
-            foreignKeyName: "project_images_project_id_fkey";
-            columns: ["project_id"];
-            referencedRelation: "projects";
-            referencedColumns: ["id"];
-          },
-        ];
-      };
-      project_category_relations: {
-        Row: {
-          id: string;
-          project_id: string;
-          category_id: string;
-          created_at: string;
-        };
-        Insert: {
-          id?: string;
-          project_id: string;
-          category_id: string;
-          created_at?: string;
-        };
-        Update: {
-          id?: string;
-          project_id?: string;
-          category_id?: string;
-          created_at?: string;
-        };
-        Relationships: [
-          {
-            foreignKeyName: "project_category_relations_project_id_fkey";
-            columns: ["project_id"];
-            referencedRelation: "projects";
-            referencedColumns: ["id"];
-          },
-          {
-            foreignKeyName: "project_category_relations_category_id_fkey";
-            columns: ["category_id"];
-            referencedRelation: "project_categories";
-            referencedColumns: ["id"];
-          },
-        ];
-      };
       cover: {
         Row: {
           created_at: string | null;
@@ -233,6 +92,154 @@ export type Database = {
           updated_at?: string | null;
         };
         Relationships: [];
+      };
+      project_categories: {
+        Row: {
+          created_at: string | null;
+          deleted_at: string | null;
+          id: string;
+          name: string;
+          order: number;
+          slug: string;
+          updated_at: string | null;
+        };
+        Insert: {
+          created_at?: string | null;
+          deleted_at?: string | null;
+          id?: string;
+          name: string;
+          order?: number;
+          slug: string;
+          updated_at?: string | null;
+        };
+        Update: {
+          created_at?: string | null;
+          deleted_at?: string | null;
+          id?: string;
+          name?: string;
+          order?: number;
+          slug?: string;
+          updated_at?: string | null;
+        };
+        Relationships: [];
+      };
+      project_category_relations: {
+        Row: {
+          category_id: string;
+          created_at: string | null;
+          id: string;
+          project_id: string;
+        };
+        Insert: {
+          category_id: string;
+          created_at?: string | null;
+          id?: string;
+          project_id: string;
+        };
+        Update: {
+          category_id?: string;
+          created_at?: string | null;
+          id?: string;
+          project_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "project_category_relations_category_id_fkey";
+            columns: ["category_id"];
+            isOneToOne: false;
+            referencedRelation: "project_categories";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "project_category_relations_project_id_fkey";
+            columns: ["project_id"];
+            isOneToOne: false;
+            referencedRelation: "projects";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      project_images: {
+        Row: {
+          created_at: string | null;
+          id: string;
+          image_url: string;
+          is_highlight: boolean | null;
+          order: number;
+          project_id: string;
+          updated_at: string | null;
+        };
+        Insert: {
+          created_at?: string | null;
+          id?: string;
+          image_url: string;
+          is_highlight?: boolean | null;
+          order?: number;
+          project_id: string;
+          updated_at?: string | null;
+        };
+        Update: {
+          created_at?: string | null;
+          id?: string;
+          image_url?: string;
+          is_highlight?: boolean | null;
+          order?: number;
+          project_id?: string;
+          updated_at?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "project_images_project_id_fkey";
+            columns: ["project_id"];
+            isOneToOne: false;
+            referencedRelation: "projects";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      projects: {
+        Row: {
+          category_id: string;
+          created_at: string | null;
+          id: string;
+          location_link: string;
+          location_text: string;
+          name: string;
+          order: number;
+          roof_type: string;
+          updated_at: string | null;
+        };
+        Insert: {
+          category_id: string;
+          created_at?: string | null;
+          id?: string;
+          location_link: string;
+          location_text: string;
+          name: string;
+          order?: number;
+          roof_type: string;
+          updated_at?: string | null;
+        };
+        Update: {
+          category_id?: string;
+          created_at?: string | null;
+          id?: string;
+          location_link?: string;
+          location_text?: string;
+          name?: string;
+          order?: number;
+          roof_type?: string;
+          updated_at?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "projects_category_id_fkey";
+            columns: ["category_id"];
+            isOneToOne: false;
+            referencedRelation: "project_categories";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       slider: {
         Row: {

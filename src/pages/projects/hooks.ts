@@ -50,6 +50,17 @@ export const useDeleteCategory = () => {
   });
 };
 
+export const useUpdateCategoryOrder = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: categoriesApi.updateOrder,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.categories });
+    },
+  });
+};
+
 // Project Hooks
 export const useProjects = () => {
   return useQuery({

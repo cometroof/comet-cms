@@ -11,7 +11,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, Edit, Trash2 } from "lucide-react";
+import { Plus, Search, Edit, Trash2, GripVertical } from "lucide-react";
+import {
+  DragDropContext,
+  Droppable,
+  Draggable,
+  DropResult,
+} from "@hello-pangea/dnd";
 import CategoryFormDialog from "@/components/CategoryFormDialog";
 import { useToast } from "@/hooks/use-toast";
 import { Category } from "./types";
@@ -20,6 +26,7 @@ import {
   useCreateCategory,
   useUpdateCategory,
   useDeleteCategory,
+  useUpdateCategoryOrder,
 } from "./hooks";
 
 const CategoriesTab = () => {
@@ -39,6 +46,7 @@ const CategoriesTab = () => {
   const createCategory = useCreateCategory();
   const updateCategory = useUpdateCategory();
   const deleteCategory = useDeleteCategory();
+  const updateCategoryOrder = useUpdateCategoryOrder();
 
   // Filtered data
   const filteredCategories = categories.filter(
@@ -86,6 +94,7 @@ const CategoriesTab = () => {
         await createCategory.mutateAsync({
           name: category.name,
           slug: category.slug,
+          order: categories.length,
           deleted_at: null,
         });
         toast({ title: "Category created successfully" });
@@ -95,6 +104,33 @@ const CategoriesTab = () => {
       toast({
         title: "Error",
         description: "Failed to save category. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleCategoryDragEnd = async (result: DropResult) => {
+    if (!result.destination) return;
+
+    const items = Array.from(filteredCategories);
+    const [reorderedItem] = items.splice(result.source.index, 1);
+    items.splice(result.destination.index, 0, reorderedItem);
+
+    const updatedCategories = items.map((item, index) => ({
+      id: item.id,
+      order: index,
+    }));
+
+    try {
+      await updateCategoryOrder.mutateAsync(updatedCategories);
+      toast({
+        title: "Order updated",
+        description: "Categories have been reordered successfully.",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update category order. Please try again.",
         variant: "destructive",
       });
     }
@@ -123,56 +159,86 @@ const CategoriesTab = () => {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-12"></TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Slug</TableHead>
                 <TableHead>Created</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
-            <TableBody>
-              {filteredCategories.length === 0 ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={4}
-                    className="text-center py-8 text-muted-foreground"
+            <DragDropContext onDragEnd={handleCategoryDragEnd}>
+              <Droppable droppableId="categories">
+                {(provided) => (
+                  <TableBody
+                    {...provided.droppableProps}
+                    ref={provided.innerRef}
                   >
-                    No categories found
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filteredCategories.map((category) => (
-                  <TableRow key={category.id}>
-                    <TableCell className="font-medium">
-                      {category.name}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{category.slug}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      {new Date(category.created_at).toLocaleDateString()}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleCategoryEdit(category)}
+                    {filteredCategories.length === 0 ? (
+                      <TableRow>
+                        <TableCell
+                          colSpan={5}
+                          className="text-center py-8 text-muted-foreground"
                         >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleCategoryDelete(category.id)}
+                          No categories found
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      filteredCategories.map((category, index) => (
+                        <Draggable
+                          key={category.id}
+                          draggableId={category.id}
+                          index={index}
                         >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
+                          {(provided, snapshot) => (
+                            <TableRow
+                              ref={provided.innerRef}
+                              {...provided.draggableProps}
+                              className={snapshot.isDragging ? "bg-muted" : ""}
+                            >
+                              <TableCell {...provided.dragHandleProps}>
+                                <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab" />
+                              </TableCell>
+                              <TableCell className="font-medium">
+                                {category.name}
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant="outline">{category.slug}</Badge>
+                              </TableCell>
+                              <TableCell>
+                                {new Date(
+                                  category.created_at,
+                                ).toLocaleDateString()}
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex justify-end gap-2">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleCategoryEdit(category)}
+                                  >
+                                    <Edit className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() =>
+                                      handleCategoryDelete(category.id)
+                                    }
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          )}
+                        </Draggable>
+                      ))
+                    )}
+                    {provided.placeholder}
+                  </TableBody>
+                )}
+              </Droppable>
+            </DragDropContext>
           </Table>
         </div>
       </Card>

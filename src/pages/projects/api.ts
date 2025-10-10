@@ -7,7 +7,7 @@ export const categoriesApi = {
     const { data, error } = await supabase
       .from("project_categories")
       .select("*")
-      .order("created_at", { ascending: true });
+      .order("order", { ascending: true });
 
     if (error) throw error;
     return data as Category[];
@@ -46,6 +46,17 @@ export const categoriesApi = {
 
     if (error) throw error;
     return data as Category;
+  },
+
+  async updateOrder(categories: { id: string; order: number }[]) {
+    const updates = categories.map((category) =>
+      supabase
+        .from("project_categories")
+        .update({ order: category.order })
+        .eq("id", category.id),
+    );
+
+    await Promise.all(updates);
   },
 };
 
