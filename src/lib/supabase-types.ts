@@ -99,7 +99,7 @@ export type Database = {
           deleted_at: string | null;
           id: string;
           name: string;
-          order: number;
+          order: number | null;
           slug: string;
           updated_at: string | null;
         };
@@ -108,7 +108,7 @@ export type Database = {
           deleted_at?: string | null;
           id?: string;
           name: string;
-          order?: number;
+          order?: number | null;
           slug: string;
           updated_at?: string | null;
         };
@@ -117,7 +117,7 @@ export type Database = {
           deleted_at?: string | null;
           id?: string;
           name?: string;
-          order?: number;
+          order?: number | null;
           slug?: string;
           updated_at?: string | null;
         };
@@ -207,6 +207,7 @@ export type Database = {
           name: string;
           order: number;
           roof_type: string;
+          slug: string | null;
           updated_at: string | null;
         };
         Insert: {
@@ -218,6 +219,7 @@ export type Database = {
           name: string;
           order?: number;
           roof_type: string;
+          slug?: string | null;
           updated_at?: string | null;
         };
         Update: {
@@ -229,6 +231,7 @@ export type Database = {
           name?: string;
           order?: number;
           roof_type?: string;
+          slug?: string | null;
           updated_at?: string | null;
         };
         Relationships: [
@@ -283,6 +286,36 @@ export type Database = {
           title_id?: string;
           type?: string;
           updated_at?: string | null;
+        };
+        Relationships: [];
+      };
+      user: {
+        Row: {
+          created_at: string;
+          email: string | null;
+          id: number;
+          name: string | null;
+          password: string | null;
+          role: number;
+          token: string | null;
+        };
+        Insert: {
+          created_at?: string;
+          email?: string | null;
+          id?: number;
+          name?: string | null;
+          password?: string | null;
+          role?: number;
+          token?: string | null;
+        };
+        Update: {
+          created_at?: string;
+          email?: string | null;
+          id?: number;
+          name?: string | null;
+          password?: string | null;
+          role?: number;
+          token?: string | null;
         };
         Relationships: [];
       };

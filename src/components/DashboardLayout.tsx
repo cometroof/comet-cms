@@ -10,9 +10,13 @@ import {
   Newspaper,
   Files,
   MapPinPlus,
+  Users,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
+import { ROLES } from "@/pages/users/types";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -21,6 +25,8 @@ interface DashboardLayoutProps {
 const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, logout } = useAuth();
 
   const navigation = [
     { name: "Dashboard", href: "/dashboard", icon: Home },
@@ -33,6 +39,10 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       href: "/dashboard/contacts-location",
       icon: MapPinPlus,
     },
+    // Only show Users menu for Super Admin
+    ...(user?.role === ROLES.SUPER_ADMIN
+      ? [{ name: "Users", href: "/dashboard/users", icon: Users }]
+      : []),
     { name: "Settings", href: "/dashboard/settings", icon: Settings },
   ];
 
@@ -100,10 +110,10 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-sidebar-foreground truncate">
-                  Admin User
+                  {user?.name || "Admin User"}
                 </p>
                 <p className="text-xs text-sidebar-foreground/70 truncate">
-                  admin@demo.com
+                  {user?.email || "admin@demo.com"}
                 </p>
               </div>
             </div>
@@ -111,7 +121,9 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
               variant="ghost"
               size="sm"
               className="w-full justify-start gap-2 text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-white/5"
-              onClick={() => (window.location.href = "/login")}
+              onClick={async () => {
+                await logout();
+              }}
             >
               <LogOut className="w-4 h-4" />
               Sign Out
