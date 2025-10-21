@@ -1,12 +1,12 @@
 export interface Article {
-  id: number;
+  id: string;
   title: string;
   slug: string;
   content: string;
   excerpt?: string;
   metaTitle?: string;
   metaDescription?: string;
-  status: 'published' | 'draft';
+  status: "published" | "draft";
   publishedDate?: string;
   views: number;
   author: string;

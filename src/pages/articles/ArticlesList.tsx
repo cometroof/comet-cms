@@ -3,91 +3,207 @@ import { Link } from "react-router-dom";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { FileText, Plus, Search, Edit, Trash2, Eye, GripVertical, Calendar } from "lucide-react";
+import {
+  FileText,
+  Plus,
+  Search,
+  Edit,
+  Trash2,
+  Eye,
+  GripVertical,
+  Calendar,
+  Loader2,
+} from "lucide-react";
 import { toast } from "sonner";
-import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
+import {
+  DragDropContext,
+  Droppable,
+  Draggable,
+  DropResult,
+} from "@hello-pangea/dnd";
 import { Article } from "./types";
-
-const mockArticles: Article[] = [
-  {
-    id: 1,
-    title: "Best Roofing Materials for 2024",
-    slug: "best-roofing-materials-2024",
-    content: "",
-    status: "published",
-    publishedDate: "2024-03-15",
-    views: 1234,
-    author: "John Smith",
-    createdAt: "2024-03-15",
-    updatedAt: "2024-03-15"
-  },
-  {
-    id: 2,
-    title: "How to Choose the Right Contractor",
-    slug: "choose-right-contractor",
-    content: "",
-    status: "draft",
-    views: 0,
-    author: "Jane Doe",
-    createdAt: "2024-03-14",
-    updatedAt: "2024-03-14"
-  },
-  {
-    id: 3,
-    title: "Seasonal Roof Maintenance Tips",
-    slug: "seasonal-roof-maintenance",
-    content: "",
-    status: "published",
-    publishedDate: "2024-03-12",
-    views: 856,
-    author: "Mike Johnson",
-    createdAt: "2024-03-12",
-    updatedAt: "2024-03-12"
-  },
-  {
-    id: 4,
-    title: "Commercial vs Residential Roofing",
-    slug: "commercial-vs-residential",
-    content: "",
-    status: "published",
-    publishedDate: "2024-03-10",
-    views: 678,
-    author: "Sarah Wilson",
-    createdAt: "2024-03-10",
-    updatedAt: "2024-03-10"
-  },
-  {
-    id: 5,
-    title: "Emergency Roof Repair Guide",
-    slug: "emergency-roof-repair-guide",
-    content: "",
-    status: "draft",
-    views: 0,
-    author: "John Smith",
-    createdAt: "2024-03-09",
-    updatedAt: "2024-03-09"
-  },
-];
+import * as articleService from "@/services/article.service";
+import {
+  useQuery,
+  useMutation,
+  useQueryClient,
+  MutationFunction,
+} from "@tanstack/react-query";
+import { useEffect } from "react";
 
 const ArticlesList = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [articles, setArticles] = useState<Article[]>(mockArticles);
+  const queryClient = useQueryClient();
 
-  const filteredArticles = articles.filter(article => {
-    const matchesSearch = article.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         article.slug.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === "all" || article.status === statusFilter;
+  // Create listener for updates from other components (create/edit)
+  useEffect(() => {
+    // Listen for data invalidation from article create/edit components
+    // This is a placeholder for actual inter-component communication
+    // In a real app, you might use a pub/sub system or context
+
+    return () => {
+      // Cleanup
+    };
+  }, []);
+
+  const { data: articles = [], isLoading: isLoadingArticles } = useQuery({
+    queryKey: ["articles"],
+    queryFn: articleService.getAllArticles,
+    staleTime: 5000, // 5 seconds of fresh data
+  });
+
+  const { data: stats = { total: 0, published: 0, drafts: 0 } } = useQuery({
+    queryKey: ["articlesStats"],
+    queryFn: articleService.getArticleStats,
+    staleTime: 5000, // 5 seconds of fresh data
+  });
+
+  const isLoading = isLoadingArticles;
+
+  const filteredArticles = (articles as Article[]).filter((article) => {
+    const matchesSearch =
+      article.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      article.slug.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus =
+      statusFilter === "all" || article.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
-  const handleDelete = (id: number) => {
-    toast.success("Article deleted successfully");
+  const deleteMutation = useMutation({
+    mutationFn: articleService.deleteArticle,
+    onMutate: async (articleId) => {
+      // Cancel outgoing refetches to avoid overwriting optimistic update
+      await queryClient.cancelQueries({ queryKey: ["articles"] });
+      await queryClient.cancelQueries({ queryKey: ["articlesStats"] });
+
+      // Save current state
+      const previousArticles = queryClient.getQueryData<Article[]>([
+        "articles",
+      ]);
+      const previousStats = queryClient.getQueryData(["articlesStats"]);
+
+      // Find the article to be deleted
+      const articleToDelete = (previousArticles as Article[])?.find(
+        (article) => article.id === articleId,
+      );
+
+      if (previousArticles && articleToDelete) {
+        // Optimistically update articles list
+        queryClient.setQueryData<Article[]>(
+          ["articles"],
+          (previousArticles as Article[]).filter(
+            (article) => article.id !== articleId,
+          ),
+        );
+
+        // Optimistically update stats
+        const currentStats = previousStats as {
+          total: number;
+          published: number;
+          drafts: number;
+        };
+        queryClient.setQueryData(["articlesStats"], {
+          total: currentStats.total - 1,
+          published:
+            articleToDelete.status === "published"
+              ? currentStats.published - 1
+              : currentStats.published,
+          drafts:
+            articleToDelete.status === "draft"
+              ? currentStats.drafts - 1
+              : currentStats.drafts,
+        });
+      }
+
+      return { previousArticles, previousStats };
+    },
+    onSuccess: () => {
+      toast.success("Article deleted successfully");
+    },
+    onError: (error, _, context) => {
+      // Revert optimistic updates on error
+      if (context?.previousArticles) {
+        queryClient.setQueryData(["articles"], context.previousArticles);
+      }
+      if (context?.previousStats) {
+        queryClient.setQueryData(["articlesStats"], context.previousStats);
+      }
+      console.error("Error deleting article:", error);
+      toast.error("An error occurred while deleting the article");
+    },
+    onSettled: () => {
+      // Always refetch after error or success
+      queryClient.invalidateQueries({ queryKey: ["articles"] });
+      queryClient.invalidateQueries({ queryKey: ["articlesStats"] });
+    },
+  });
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this article?")) {
+      return;
+    }
+
+    deleteMutation.mutate(id);
   };
 
+  // Define a reorder mutation
+  const reorderMutation = useMutation({
+    mutationFn: async (orderedItems: Article[]) => {
+      // This is a placeholder for the actual API call
+      // In a real app, you would call an API to update article order
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      return orderedItems;
+    },
+    onMutate: async (orderedItems) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ["articles"] });
+
+      // Save current state
+      const previousArticles = queryClient.getQueryData<Article[]>([
+        "articles",
+      ]);
+
+      // Optimistically update to new order
+      queryClient.setQueryData<Article[]>(["articles"], () => [
+        ...orderedItems,
+      ]);
+
+      return { previousArticles };
+    },
+    onError: (_, __, context) => {
+      // Revert on error
+      if (context?.previousArticles) {
+        queryClient.setQueryData(["articles"], context.previousArticles);
+      }
+      toast.error("Failed to update article order");
+    },
+    onSuccess: () => {
+      toast.success("Article order updated");
+    },
+    onSettled: () => {
+      // Always refetch after error or success
+      queryClient.invalidateQueries({ queryKey: ["articles"] });
+    },
+  });
+
+  // Handle drag end
   const onDragEnd = (result: DropResult) => {
     if (!result.destination) return;
 
@@ -95,13 +211,13 @@ const ArticlesList = () => {
     const [reorderedItem] = items.splice(result.source.index, 1);
     items.splice(result.destination.index, 0, reorderedItem);
 
-    setArticles(items);
-    toast.success("Article order updated");
+    // Call the mutation to update the order
+    reorderMutation.mutate(items);
   };
 
   const getStatusColor = (status: string) => {
-    return status === "published" 
-      ? "bg-success/10 text-success hover:bg-success/20" 
+    return status === "published"
+      ? "bg-success/10 text-success hover:bg-success/20"
       : "bg-warning/10 text-warning hover:bg-warning/20";
   };
 
@@ -129,7 +245,15 @@ const ArticlesList = () => {
           <Card>
             <CardContent className="p-4">
               <div className="text-2xl font-bold text-foreground">
-                {mockArticles.length}
+                {
+                  (
+                    stats as {
+                      total: number;
+                      published: number;
+                      drafts: number;
+                    }
+                  ).total
+                }
               </div>
               <p className="text-sm text-muted-foreground">Total Articles</p>
             </CardContent>
@@ -137,7 +261,15 @@ const ArticlesList = () => {
           <Card>
             <CardContent className="p-4">
               <div className="text-2xl font-bold text-foreground">
-                {mockArticles.filter(a => a.status === 'published').length}
+                {
+                  (
+                    stats as {
+                      total: number;
+                      published: number;
+                      drafts: number;
+                    }
+                  ).published
+                }
               </div>
               <p className="text-sm text-muted-foreground">Published</p>
             </CardContent>
@@ -145,7 +277,15 @@ const ArticlesList = () => {
           <Card>
             <CardContent className="p-4">
               <div className="text-2xl font-bold text-foreground">
-                {mockArticles.filter(a => a.status === 'draft').length}
+                {
+                  (
+                    stats as {
+                      total: number;
+                      published: number;
+                      drafts: number;
+                    }
+                  ).drafts
+                }
               </div>
               <p className="text-sm text-muted-foreground">Drafts</p>
             </CardContent>
@@ -153,7 +293,9 @@ const ArticlesList = () => {
           <Card>
             <CardContent className="p-4">
               <div className="text-2xl font-bold text-foreground">
-                {mockArticles.reduce((sum, a) => sum + a.views, 0).toLocaleString()}
+                {((articles as Article[]) || [])
+                  .reduce((sum, a) => sum + a.views, 0)
+                  .toLocaleString()}
               </div>
               <p className="text-sm text-muted-foreground">Total Views</p>
             </CardContent>
@@ -203,80 +345,120 @@ const ArticlesList = () => {
 
             {/* Articles Table */}
             <div className="rounded-lg border">
-              <DragDropContext onDragEnd={onDragEnd}>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-12"></TableHead>
-                      <TableHead>Title</TableHead>
-                      <TableHead>Slug</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Published</TableHead>
-                      <TableHead>Views</TableHead>
-                      <TableHead>Author</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <Droppable droppableId="articles">
-                    {(provided) => (
-                      <TableBody ref={provided.innerRef} {...provided.droppableProps}>
-                        {filteredArticles.map((article, index) => (
-                          <Draggable key={article.id} draggableId={article.id.toString()} index={index}>
-                            {(provided, snapshot) => (
-                              <TableRow
-                                ref={provided.innerRef}
-                                {...provided.draggableProps}
-                                className={snapshot.isDragging ? "bg-muted" : ""}
-                              >
-                                <TableCell {...provided.dragHandleProps}>
-                                  <GripVertical className="h-5 w-5 text-muted-foreground cursor-grab active:cursor-grabbing" />
-                                </TableCell>
-                                <TableCell className="font-medium">{article.title}</TableCell>
-                                <TableCell className="text-muted-foreground font-mono text-sm">{article.slug}</TableCell>
-                                <TableCell>
-                                  <Badge className={getStatusColor(article.status)}>
-                                    {article.status}
-                                  </Badge>
-                                </TableCell>
-                                <TableCell>
-                                  {article.publishedDate ? (
+              {isLoading ? (
+                <div className="flex justify-center items-center p-8">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary mr-2" />
+                  <p>Loading articles...</p>
+                </div>
+              ) : filteredArticles.length === 0 ? (
+                <div className="text-center p-8 text-muted-foreground">
+                  {searchTerm || statusFilter !== "all"
+                    ? "No articles match your search criteria"
+                    : "No articles have been created yet"}
+                </div>
+              ) : (
+                <DragDropContext onDragEnd={onDragEnd}>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-12"></TableHead>
+                        <TableHead>Title</TableHead>
+                        <TableHead>Slug</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Published</TableHead>
+                        <TableHead>Views</TableHead>
+                        <TableHead>Author</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <Droppable droppableId="articles">
+                      {(provided) => (
+                        <TableBody
+                          ref={provided.innerRef}
+                          {...provided.droppableProps}
+                        >
+                          {filteredArticles.map((article, index) => (
+                            <Draggable
+                              key={article.id}
+                              draggableId={article.id.toString()}
+                              index={index}
+                            >
+                              {(provided, snapshot) => (
+                                <TableRow
+                                  ref={provided.innerRef}
+                                  {...provided.draggableProps}
+                                  className={
+                                    snapshot.isDragging ? "bg-muted" : ""
+                                  }
+                                >
+                                  <TableCell {...provided.dragHandleProps}>
+                                    <GripVertical className="h-5 w-5 text-muted-foreground cursor-grab active:cursor-grabbing" />
+                                  </TableCell>
+                                  <TableCell className="font-medium">
+                                    {article.title}
+                                  </TableCell>
+                                  <TableCell className="text-muted-foreground font-mono text-sm">
+                                    {article.slug}
+                                  </TableCell>
+                                  <TableCell>
+                                    <Badge
+                                      className={getStatusColor(article.status)}
+                                    >
+                                      {article.status}
+                                    </Badge>
+                                  </TableCell>
+                                  <TableCell>
+                                    {article.publishedDate ? (
+                                      <div className="flex items-center gap-2">
+                                        <Calendar className="w-4 h-4 text-muted-foreground" />
+                                        {new Date(
+                                          article.publishedDate,
+                                        ).toLocaleDateString()}
+                                      </div>
+                                    ) : (
+                                      <span className="text-muted-foreground">
+                                        -
+                                      </span>
+                                    )}
+                                  </TableCell>
+                                  <TableCell>
                                     <div className="flex items-center gap-2">
-                                      <Calendar className="w-4 h-4 text-muted-foreground" />
-                                      {new Date(article.publishedDate).toLocaleDateString()}
+                                      <Eye className="w-4 h-4 text-muted-foreground" />
+                                      {article.views.toLocaleString()}
                                     </div>
-                                  ) : (
-                                    <span className="text-muted-foreground">-</span>
-                                  )}
-                                </TableCell>
-                                <TableCell>
-                                  <div className="flex items-center gap-2">
-                                    <Eye className="w-4 h-4 text-muted-foreground" />
-                                    {article.views.toLocaleString()}
-                                  </div>
-                                </TableCell>
-                                <TableCell className="text-muted-foreground">{article.author}</TableCell>
-                                <TableCell className="text-right">
-                                  <div className="flex justify-end gap-2">
-                                    <Button variant="ghost" size="sm" asChild>
-                                      <Link to={`/dashboard/articles/edit/${article.id}`}>
-                                        <Edit className="w-4 h-4" />
-                                      </Link>
-                                    </Button>
-                                    <Button variant="ghost" size="sm" onClick={() => handleDelete(article.id)}>
-                                      <Trash2 className="w-4 h-4" />
-                                    </Button>
-                                  </div>
-                                </TableCell>
-                              </TableRow>
-                            )}
-                          </Draggable>
-                        ))}
-                        {provided.placeholder}
-                      </TableBody>
-                    )}
-                  </Droppable>
-                </Table>
-              </DragDropContext>
+                                  </TableCell>
+                                  <TableCell className="text-muted-foreground">
+                                    {article.author}
+                                  </TableCell>
+                                  <TableCell className="text-right">
+                                    <div className="flex justify-end gap-2">
+                                      <Button variant="ghost" size="sm" asChild>
+                                        <Link
+                                          to={`/dashboard/articles/edit/${article.id}`}
+                                        >
+                                          <Edit className="w-4 h-4" />
+                                        </Link>
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => handleDelete(article.id)}
+                                      >
+                                        <Trash2 className="w-4 h-4" />
+                                      </Button>
+                                    </div>
+                                  </TableCell>
+                                </TableRow>
+                              )}
+                            </Draggable>
+                          ))}
+                          {provided.placeholder}
+                        </TableBody>
+                      )}
+                    </Droppable>
+                  </Table>
+                </DragDropContext>
+              )}
             </div>
           </CardContent>
         </Card>
