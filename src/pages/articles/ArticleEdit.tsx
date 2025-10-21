@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RichTextEditor } from "@/components/RichTextEditor";
 import { Switch } from "@/components/ui/switch";
 import { ArrowLeft, Save, Eye, Trash2, Loader2 } from "lucide-react";
+import ImageSelectorDialog from "@/components/ImageSelectorDialog";
 import { useToast } from "@/hooks/use-toast";
 import { ArticleFormData, Article } from "./types";
 import * as articleService from "@/services/article.service";
@@ -28,12 +29,14 @@ const emptyArticle: Article = {
   author: "",
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),
+  cover_image: null,
 };
 
 const ArticleEdit = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const { toast } = useToast();
+  const [imageSelectorOpen, setImageSelectorOpen] = useState(false);
 
   const [formData, setFormData] = useState<ArticleFormData>({
     title: "",
@@ -43,6 +46,7 @@ const ArticleEdit = () => {
     metaTitle: "",
     metaDescription: "",
     published: false,
+    cover_image: null,
   });
 
   const queryClient = useQueryClient();
@@ -66,6 +70,7 @@ const ArticleEdit = () => {
         metaTitle: article.metaTitle || "",
         metaDescription: article.metaDescription || "",
         published: article.status === "published",
+        cover_image: article.cover_image,
       });
     } else if (article === null && !isLoadingArticle) {
       // Article not found
@@ -406,6 +411,35 @@ const ArticleEdit = () => {
                 </div>
 
                 <div className="space-y-2">
+                  <Label htmlFor="cover_image">Cover Image</Label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      id="cover_image"
+                      value={formData.cover_image || ""}
+                      readOnly
+                      placeholder="Select a cover image..."
+                      className="flex-1"
+                    />
+                    <Button
+                      type="button"
+                      onClick={() => setImageSelectorOpen(true)}
+                      variant="outline"
+                    >
+                      Select Image
+                    </Button>
+                  </div>
+                  {formData.cover_image && (
+                    <div className="mt-2">
+                      <img
+                        src={formData.cover_image}
+                        alt="Cover preview"
+                        className="max-h-40 rounded-md object-cover"
+                      />
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-2">
                   <Label htmlFor="excerpt">Excerpt</Label>
                   <Textarea
                     id="excerpt"
@@ -564,6 +598,13 @@ const ArticleEdit = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
+                  {formData.cover_image && (
+                    <img
+                      src={formData.cover_image}
+                      alt={formData.title}
+                      className="w-full h-32 object-cover rounded-md"
+                    />
+                  )}
                   <div>
                     <h3 className="font-semibold text-foreground line-clamp-2">
                       {formData.title || "Article Title"}
@@ -626,6 +667,16 @@ const ArticleEdit = () => {
           </div>
         </form>
       </div>
+
+      <ImageSelectorDialog
+        open={imageSelectorOpen}
+        onOpenChange={setImageSelectorOpen}
+        onSelect={(imageUrl) => {
+          setFormData((prev) => ({ ...prev, cover_image: imageUrl }));
+          setImageSelectorOpen(false);
+        }}
+        title="Select Cover Image"
+      />
     </DashboardLayout>
   );
 };

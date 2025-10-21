@@ -362,6 +362,7 @@ const ArticlesList = () => {
                     <TableHeader>
                       <TableRow>
                         <TableHead className="w-12"></TableHead>
+                        <TableHead>Image</TableHead>
                         <TableHead>Title</TableHead>
                         <TableHead>Slug</TableHead>
                         <TableHead>Status</TableHead>
@@ -393,6 +394,19 @@ const ArticlesList = () => {
                                 >
                                   <TableCell {...provided.dragHandleProps}>
                                     <GripVertical className="h-5 w-5 text-muted-foreground cursor-grab active:cursor-grabbing" />
+                                  </TableCell>
+                                  <TableCell>
+                                    {article.cover_image ? (
+                                      <img
+                                        src={article.cover_image}
+                                        alt={article.title}
+                                        className="w-12 h-12 object-cover rounded"
+                                      />
+                                    ) : (
+                                      <div className="w-12 h-12 bg-muted rounded flex items-center justify-center">
+                                        <FileText className="w-6 h-6 text-muted-foreground" />
+                                      </div>
+                                    )}
                                   </TableCell>
                                   <TableCell className="font-medium">
                                     {article.title}

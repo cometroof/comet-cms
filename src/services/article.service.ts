@@ -21,6 +21,7 @@ const mapDbArticleToArticle = (dbArticle: Tables<"articles">): Article => {
     author: "Admin", // Author info isn't currently in the database schema
     createdAt: dbArticle.created_at,
     updatedAt: dbArticle.updated_at,
+    cover_image: dbArticle.cover_image,
     publishedDate: dbArticle.publish ? dbArticle.updated_at : undefined,
   };
 };
@@ -39,6 +40,7 @@ const mapFormDataToDb = (
     seo_title: formData.metaTitle || null,
     seo_description: formData.metaDescription || null,
     publish: formData.published,
+    cover_image: formData.cover_image,
   };
 };
 

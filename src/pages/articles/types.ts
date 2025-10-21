@@ -12,6 +12,7 @@ export interface Article {
   author: string;
   createdAt: string;
   updatedAt: string;
+  cover_image?: string | null;
 }
 
 export interface ArticleFormData {
@@ -22,4 +23,5 @@ export interface ArticleFormData {
   metaTitle: string;
   metaDescription: string;
   published: boolean;
+  cover_image: string | null;
 }

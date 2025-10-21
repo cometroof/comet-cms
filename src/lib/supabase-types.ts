@@ -42,6 +42,7 @@ export type Database = {
       articles: {
         Row: {
           content: string | null;
+          cover_image: string | null;
           created_at: string;
           excerpt: string | null;
           id: string;
@@ -54,6 +55,7 @@ export type Database = {
         };
         Insert: {
           content?: string | null;
+          cover_image?: string | null;
           created_at?: string;
           excerpt?: string | null;
           id?: string;
@@ -66,6 +68,7 @@ export type Database = {
         };
         Update: {
           content?: string | null;
+          cover_image?: string | null;
           created_at?: string;
           excerpt?: string | null;
           id?: string;
