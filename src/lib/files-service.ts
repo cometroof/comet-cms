@@ -7,6 +7,10 @@ type Certificate = Tables<"certificates">;
 type CertificateInsert = TablesInsert<"certificates">;
 type CertificateUpdate = TablesUpdate<"certificates">;
 
+type ProductBadge = Tables<"product_badges">;
+type ProductBadgeInsert = TablesInsert<"product_badges">;
+type ProductBadgeUpdate = TablesUpdate<"product_badges">;
+
 type CompanyProfile = Tables<"company_profile">;
 type CompanyProfileInsert = TablesInsert<"company_profile">;
 type CompanyProfileUpdate = TablesUpdate<"company_profile">;
@@ -233,4 +237,90 @@ export async function uploadCertificateFile(
     console.error("Error uploading certificate file:", error);
     return null;
   }
+}
+
+// Product Badge Functions
+export async function getProductBadges(): Promise<ProductBadge[]> {
+  const { data, error } = await supabase
+    .from("product_badges")
+    .select("*")
+    .order("name", { ascending: true });
+
+  if (error) {
+    console.error("Error fetching product badges:", error);
+    return [];
+  }
+
+  return data || [];
+}
+
+export async function getProductBadgeById(
+  id: string,
+): Promise<ProductBadge | null> {
+  const { data, error } = await supabase
+    .from("product_badges")
+    .select("*")
+    .eq("id", id)
+    .single();
+
+  if (error) {
+    console.error(`Error fetching product badge with id ${id}:`, error);
+    return null;
+  }
+
+  return data;
+}
+
+export async function createProductBadge(
+  badgeData: ProductBadgeInsert,
+): Promise<ProductBadge | null> {
+  const { data, error } = await supabase
+    .from("product_badges")
+    .insert({
+      ...badgeData,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Error creating product badge:", error);
+    return null;
+  }
+
+  return data;
+}
+
+export async function updateProductBadge(
+  id: string,
+  badgeData: ProductBadgeUpdate,
+): Promise<ProductBadge | null> {
+  const { data, error } = await supabase
+    .from("product_badges")
+    .update({
+      ...badgeData,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (error) {
+    console.error(`Error updating product badge with id ${id}:`, error);
+    return null;
+  }
+
+  return data;
+}
+
+export async function deleteProductBadge(id: string): Promise<boolean> {
+  const { error } = await supabase.from("product_badges").delete().eq("id", id);
+
+  if (error) {
+    console.error(`Error deleting product badge with id ${id}:`, error);
+    return false;
+  }
+
+  return true;
 }

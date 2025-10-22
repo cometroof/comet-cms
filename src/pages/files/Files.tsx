@@ -36,9 +36,11 @@ import {
   Star,
   Loader2,
   GripVertical,
+  Image,
 } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import CertificateFormDialog from "@/components/CertificateFormDialog";
+import ProductBadgeFormDialog from "@/components/ProductBadgeFormDialog";
 import FileSelectorDialog from "@/components/FileSelectorDialog/FileSelectorDialog";
 import { useToast } from "@/hooks/use-toast";
 import { Progress } from "@/components/ui/progress";
@@ -56,6 +58,8 @@ import type {
   Certificate,
   CertificateFormData,
   CompanyProfileFormData,
+  ProductBadge,
+  ProductBadgeFormData,
 } from "./types";
 import {
   getCompanyProfile,
@@ -65,6 +69,10 @@ import {
   updateCertificate,
   deleteCertificate,
   updateCertificateOrder,
+  getProductBadges,
+  createProductBadge,
+  updateProductBadge,
+  deleteProductBadge,
 } from "@/lib/files-service";
 
 const Files = () => {
@@ -81,6 +89,9 @@ const Files = () => {
   const [certificateToDelete, setCertificateToDelete] = useState<string | null>(
     null,
   );
+  const [badgeDialogOpen, setBadgeDialogOpen] = useState(false);
+  const [editingBadge, setEditingBadge] = useState<ProductBadge | null>(null);
+  const [badgeToDelete, setBadgeToDelete] = useState<string | null>(null);
 
   // Query for company profile
   const {
@@ -102,6 +113,16 @@ const Files = () => {
     queryFn: getCertificates,
   });
 
+  // Query for product badges
+  const {
+    data: productBadges = [],
+    isLoading: badgesLoading,
+    error: badgesError,
+  } = useQuery({
+    queryKey: ["productBadges"],
+    queryFn: getProductBadges,
+  });
+
   // Show toast for query errors
   React.useEffect(() => {
     if (profileError) {
@@ -121,7 +142,16 @@ const Files = () => {
         description: "Failed to load certificates",
       });
     }
-  }, [profileError, certificatesError, toast]);
+
+    if (badgesError) {
+      console.error("Error loading product badges:", badgesError);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to load product badges",
+      });
+    }
+  }, [profileError, certificatesError, badgesError, toast]);
 
   const filteredCertificates = certificates.filter((cert) => {
     const matchesSearch =
@@ -311,6 +341,8 @@ const Files = () => {
       deleteCertificateMutation.mutate(certificateToDelete);
       setDeleteDialogOpen(false);
       setCertificateToDelete(null);
+    } else if (badgeToDelete) {
+      handleDeleteBadge();
     }
   };
 
@@ -372,6 +404,117 @@ const Files = () => {
     });
   };
 
+  // Product Badge handling functions
+  const handleAddBadge = () => {
+    setEditingBadge(null);
+    setBadgeDialogOpen(true);
+  };
+
+  const handleEditBadge = (badge: ProductBadge) => {
+    setEditingBadge(badge);
+    setBadgeDialogOpen(true);
+  };
+
+  const handleConfirmDeleteBadge = (id: string) => {
+    setBadgeToDelete(id);
+    setDeleteDialogOpen(true);
+  };
+
+  // Mutation for deleting product badges
+  const deleteProductBadgeMutation = useMutation<boolean, Error, string>({
+    mutationFn: (id: string) => deleteProductBadge(id),
+    onSuccess: (success, id) => {
+      if (success) {
+        // Update react-query cache
+        queryClient.setQueryData(
+          ["productBadges"],
+          (oldData: ProductBadge[] = []) => oldData.filter((b) => b.id !== id),
+        );
+
+        toast({
+          title: "Success",
+          description: "Product badge deleted successfully",
+        });
+      } else {
+        throw new Error("Failed to delete product badge");
+      }
+    },
+    onError: (error, id) => {
+      console.error(`Error deleting product badge with id ${id}:`, error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to delete product badge",
+      });
+    },
+  });
+
+  const handleDeleteBadge = () => {
+    if (badgeToDelete) {
+      deleteProductBadgeMutation.mutate(badgeToDelete);
+      setDeleteDialogOpen(false);
+      setBadgeToDelete(null);
+    }
+  };
+
+  // Mutation for saving product badges (create or update)
+  const saveProductBadgeMutation = useMutation<
+    ProductBadge | null,
+    Error,
+    { id?: string; data: ProductBadgeFormData }
+  >({
+    mutationFn: ({ id, data }: { id?: string; data: ProductBadgeFormData }) =>
+      id ? updateProductBadge(id, data) : createProductBadge(data),
+    onSuccess: (result) => {
+      if (result) {
+        if (editingBadge) {
+          // Update existing badge in cache
+          queryClient.setQueryData(
+            ["productBadges"],
+            (oldData: ProductBadge[] = []) =>
+              oldData.map((b) => (b.id === editingBadge.id ? result : b)),
+          );
+
+          toast({
+            title: "Success",
+            description: "Product badge updated successfully",
+          });
+        } else {
+          // Add new badge to cache
+          queryClient.setQueryData(
+            ["productBadges"],
+            (oldData: ProductBadge[] = []) => [...oldData, result],
+          );
+
+          toast({
+            title: "Success",
+            description: "Product badge created successfully",
+          });
+        }
+      } else {
+        throw new Error("Failed to save product badge");
+      }
+    },
+    onError: (error) => {
+      console.error("Error saving product badge:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to save product badge",
+      });
+      throw error;
+    },
+  });
+
+  const handleSaveBadge = async (
+    badgeData: ProductBadgeFormData,
+  ): Promise<void> => {
+    await saveProductBadgeMutation.mutateAsync({
+      id: editingBadge?.id || undefined,
+      data: badgeData,
+    });
+  };
+
   return (
     <DashboardLayout>
       <div className="space-y-8">
@@ -388,6 +531,7 @@ const Files = () => {
           <TabsList>
             <TabsTrigger value="profile">Company Profile</TabsTrigger>
             <TabsTrigger value="certificates">Certificates</TabsTrigger>
+            <TabsTrigger value="product-badges">Product Badges</TabsTrigger>
           </TabsList>
 
           {/* Company Profile Tab */}
@@ -658,6 +802,108 @@ const Files = () => {
               </CardContent>
             </Card>
           </TabsContent>
+
+          {/* Product Badges Tab */}
+          <TabsContent value="product-badges" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center">
+                  <div>
+                    <CardTitle>Product Badges</CardTitle>
+                    <CardDescription>
+                      Manage badges displayed on products
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex justify-end">
+                  <Button size="sm" onClick={handleAddBadge} className="gap-2">
+                    <Plus className="w-4 h-4" />
+                    Add Badge
+                  </Button>
+                </div>
+
+                <div className="border rounded-lg">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-16">Image</TableHead>
+                        <TableHead>Name</TableHead>
+                        <TableHead className="w-32 text-right">
+                          Actions
+                        </TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {badgesLoading ? (
+                        <TableRow>
+                          <TableCell colSpan={3} className="text-center py-8">
+                            <div className="flex justify-center items-center">
+                              <Loader2 className="w-6 h-6 animate-spin text-primary mr-2" />
+                              <span>Loading badges...</span>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ) : productBadges.length === 0 ? (
+                        <TableRow>
+                          <TableCell
+                            colSpan={3}
+                            className="text-center text-muted-foreground py-8"
+                          >
+                            No product badges found
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        productBadges.map((badge) => (
+                          <TableRow key={badge.id}>
+                            <TableCell>
+                              {badge.image ? (
+                                <div className="flex justify-center items-center">
+                                  <img
+                                    src={badge.image}
+                                    alt={badge.name}
+                                    className="h-10 w-10 object-contain"
+                                  />
+                                </div>
+                              ) : (
+                                <div className="flex justify-center items-center h-10 w-10">
+                                  <Image className="h-6 w-6 text-muted-foreground" />
+                                </div>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              <span className="font-medium">{badge.name}</span>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex justify-end gap-2">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleEditBadge(badge)}
+                                >
+                                  <Edit className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() =>
+                                    handleConfirmDeleteBadge(badge.id as string)
+                                  }
+                                >
+                                  <Trash2 className="w-4 h-4 text-destructive" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
       </div>
 
@@ -678,6 +924,13 @@ const Files = () => {
         maxFileSize={10}
       />
 
+      <ProductBadgeFormDialog
+        open={badgeDialogOpen}
+        onOpenChange={setBadgeDialogOpen}
+        badge={editingBadge}
+        onSave={handleSaveBadge}
+      />
+
       {/* Alert Dialog for Delete Confirmation */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
@@ -685,7 +938,8 @@ const Files = () => {
             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
             <AlertDialogDescription>
               This action cannot be undone. This will permanently delete the
-              certificate and remove it from our servers.
+              {certificateToDelete ? " certificate " : " product badge "}
+              and remove it from our servers.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
