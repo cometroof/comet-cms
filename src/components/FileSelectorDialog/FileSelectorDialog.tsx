@@ -58,6 +58,7 @@ type FileSelectorDialogProps = {
   acceptedFileTypes?: string;
   maxFileSize?: number; // in MB
   multiple?: boolean;
+  multipleSelection?: boolean;
   initialSelection?: string | string[];
 };
 
@@ -68,7 +69,8 @@ const FileSelectorDialog = ({
   title = "Select File",
   acceptedFileTypes = "*/*",
   maxFileSize = 10, // Default max file size: 10MB
-  multiple = false,
+  multiple = true,
+  multipleSelection = false, // Changed default to false
   initialSelection = "",
 }: FileSelectorDialogProps) => {
   const queryClient = useQueryClient();
@@ -76,21 +78,23 @@ const FileSelectorDialog = ({
   const [fileUrl, setFileUrl] = useState("");
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
-  const [selectedUrls, setSelectedUrls] = useState<string[]>([]);
+  const [selectedUrl, setSelectedUrl] = useState<string>(""); // Changed to single string
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [fileToDelete, setFileToDelete] = useState<LibraryFile | null>(null);
+  const [uploadingFiles, setUploadingFiles] = useState<string[]>([]);
+  const [activeTab, setActiveTab] = useState("upload");
 
-  // Initialize selected files from props when dialog opens
+  // Initialize selected file from props when dialog opens
   useEffect(() => {
     if (open) {
       if (initialSelection) {
         if (typeof initialSelection === "string") {
-          setSelectedUrls([initialSelection]);
+          setSelectedUrl(initialSelection);
         } else {
-          setSelectedUrls([...initialSelection]);
+          setSelectedUrl(initialSelection[0] || "");
         }
       } else {
-        setSelectedUrls([]);
+        setSelectedUrl("");
       }
     }
   }, [open, initialSelection]);
@@ -110,35 +114,31 @@ const FileSelectorDialog = ({
   // Mutation for uploading a file
   const uploadMutation = useMutation({
     mutationFn: (formData: FormData) => uploadFileToR2(formData),
-    onSuccess: (uploadedFile) => {
+    onSuccess: (uploadedFile, formData) => {
       // Update the cache with the new file
       queryClient.setQueryData(["r2Files"], (oldData: LibraryFile[] = []) => [
         uploadedFile,
         ...oldData,
       ]);
 
-      // Select the uploaded file
-      if (multiple) {
-        const newSelection = [...selectedUrls, uploadedFile.url];
-        setSelectedUrls(newSelection);
-        onSelect(newSelection);
-        // Reset form but keep selection
-        resetForm(false);
-      } else {
-        onSelect(uploadedFile.url);
-        // Reset form and close dialog in single mode
-        resetForm();
-        onOpenChange(false);
+      // Get filename from FormData to remove from uploading list
+      const file = formData.get("file") as File;
+      if (file) {
+        setUploadingFiles((prev) => prev.filter((name) => name !== file.name));
       }
 
       toast({
         title: "File uploaded",
-        description: multiple
-          ? "File was successfully uploaded and added to selection"
-          : "File was successfully uploaded and selected",
+        description: "File was successfully uploaded to library",
       });
     },
-    onError: (error) => {
+    onError: (error, formData) => {
+      // Remove from uploading files list on error
+      const file = formData.get("file") as File;
+      if (file) {
+        setUploadingFiles((prev) => prev.filter((name) => name !== file.name));
+      }
+
       toast({
         title: "Upload failed",
         description: (error as Error).message,
@@ -157,16 +157,10 @@ const FileSelectorDialog = ({
           oldData.filter((file) => file.Key !== key),
         );
 
-        // Remove from selected URLs if it was selected
+        // Remove from selected URL if it was selected
         const deletedFile = libraryFiles.find((file) => file.Key === key);
-        if (deletedFile && selectedUrls.includes(deletedFile.url)) {
-          const newSelection = selectedUrls.filter(
-            (url) => url !== deletedFile.url,
-          );
-          setSelectedUrls(newSelection);
-          if (multiple) {
-            onSelect(newSelection);
-          }
+        if (deletedFile && selectedUrl === deletedFile.url) {
+          setSelectedUrl("");
         }
 
         toast({
@@ -206,7 +200,7 @@ const FileSelectorDialog = ({
       if (validFiles.length === 0) return;
 
       if (!multiple) {
-        // Single file mode - always select the first file
+        // Single file mode - replace existing file
         const file = validFiles[0];
         setSelectedFiles([file]);
 
@@ -218,20 +212,14 @@ const FileSelectorDialog = ({
           setPreviewUrls([]);
         }
 
-        // Auto-upload the first file for immediate selection
         if (validFiles.length > 1) {
           toast({
             title: "Single file mode",
-            description: `Only the first file (${file.name}) will be selected`,
+            description: `Only the first file (${file.name}) will be uploaded`,
           });
-
-          // Auto upload and select the first file
-          const formData = new FormData();
-          formData.append("file", file);
-          uploadMutation.mutate(formData);
         }
       } else {
-        // Multiple files mode
+        // Multiple files mode - add to existing files
         setSelectedFiles((prevFiles) => [...prevFiles, ...validFiles]);
 
         // Create previews for image files
@@ -242,16 +230,9 @@ const FileSelectorDialog = ({
         if (urls.length > 0) {
           setPreviewUrls((prevUrls) => [...prevUrls, ...urls]);
         }
-
-        // If no files were previously selected, auto-select the first one
-        if (selectedUrls.length === 0 && validFiles.length > 0) {
-          const formData = new FormData();
-          formData.append("file", validFiles[0]);
-          uploadMutation.mutate(formData);
-        }
       }
     },
-    [toast, maxFileSize, multiple, uploadMutation, selectedUrls.length],
+    [toast, maxFileSize, multiple],
   );
 
   const getAcceptObject = () => {
@@ -296,65 +277,41 @@ const FileSelectorDialog = ({
   const handleUpload = async () => {
     if (selectedFiles.length === 0) return;
 
-    if (multiple && selectedFiles.length > 1) {
-      // Upload multiple files in sequence
-      let isFirstFile = true;
-      for (const file of selectedFiles) {
-        const formData = new FormData();
-        formData.append("file", file);
+    // Add all files to uploading list
+    const fileNames = selectedFiles.map((f) => f.name);
+    setUploadingFiles((prev) => [...prev, ...fileNames]);
 
-        // For the first file, we might want to wait for it to complete
-        // This ensures at least one file is selected immediately
-        if (isFirstFile && selectedUrls.length === 0) {
-          await uploadMutation.mutateAsync(formData);
-          isFirstFile = false;
-        } else {
-          await uploadMutation.mutateAsync(formData);
-        }
-      }
-      resetForm(false);
-    } else {
-      // Single file upload
+    // Switch to Library tab to show upload progress
+    setActiveTab("library");
+
+    // Upload files sequentially
+    for (const file of selectedFiles) {
       const formData = new FormData();
-      formData.append("file", selectedFiles[0]);
-      uploadMutation.mutate(formData);
+      formData.append("file", file);
+
+      try {
+        await uploadMutation.mutateAsync(formData);
+      } catch (error) {
+        // Error already handled in onError callback
+        console.error("Upload error:", error);
+      }
     }
+
+    // Reset form after all uploads complete
+    resetForm(false);
   };
 
   const handleUrlSubmit = () => {
     if (fileUrl) {
-      if (multiple) {
-        const newSelection = [...selectedUrls, fileUrl];
-        setSelectedUrls(newSelection);
-        onSelect(newSelection);
-        resetForm(false); // Clear just the form, not selection
-      } else {
-        onSelect(fileUrl);
-        resetForm();
-        onOpenChange(false);
-      }
+      onSelect(fileUrl);
+      onOpenChange(false);
     }
   };
 
   const handleLibrarySelect = (url: string) => {
-    if (multiple) {
-      // Toggle selection in multiple mode
-      let newSelection: string[];
-
-      if (selectedUrls.includes(url)) {
-        newSelection = selectedUrls.filter((item) => item !== url);
-      } else {
-        newSelection = [...selectedUrls, url];
-      }
-
-      setSelectedUrls(newSelection);
-      onSelect(newSelection);
-    } else {
-      // Single selection mode
-      onSelect(url);
-      resetForm();
-      onOpenChange(false);
-    }
+    // Single selection mode - directly select and close
+    onSelect(url);
+    onOpenChange(false);
   };
 
   const handleDelete = (file: LibraryFile) => {
@@ -377,19 +334,12 @@ const FileSelectorDialog = ({
     setSelectedFiles([]);
     setPreviewUrls([]);
     if (clearSelection) {
-      setSelectedUrls([]);
+      setSelectedUrl("");
     }
   };
 
-  const isUploading = uploadMutation.isPending;
+  const isUploading = uploadMutation.isPending || uploadingFiles.length > 0;
   const isDeleting = deleteMutation.isPending;
-
-  const handleComplete = () => {
-    if (multiple) {
-      onSelect(selectedUrls);
-    }
-    onOpenChange(false);
-  };
 
   const getFileIcon = (fileType: string = "other") => {
     switch (fileType) {
@@ -452,77 +402,27 @@ const FileSelectorDialog = ({
           <DialogHeader>
             <DialogTitle>{title}</DialogTitle>
             <DialogDescription>
-              {multiple
-                ? "Select multiple files by clicking on them. You can upload new files, use URLs, or choose from the library."
-                : "Upload a new file, paste a URL, or select from the library"}
+              Upload a new file, paste a URL, or select from the library. Only
+              one file can be selected.
             </DialogDescription>
           </DialogHeader>
 
-          {multiple && selectedUrls.length > 0 && (
-            <div className="bg-muted/30 p-2 rounded-md mb-4">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-sm font-medium">
-                  Selected Files ({selectedUrls.length})
-                </h3>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setSelectedUrls([])}
-                >
-                  Clear All
-                </Button>
-              </div>
-              <div className="flex flex-wrap gap-2 max-h-24 overflow-y-auto p-1">
-                {selectedUrls.map((url, index) => (
-                  <div
-                    key={`selected-${index}`}
-                    className="relative group flex items-center gap-2 p-1 rounded bg-muted/50"
-                  >
-                    <div className="flex-shrink-0">
-                      {url.match(/\.(jpg|jpeg|png|gif|webp|svg)$/i) ? (
-                        <div className="h-8 w-8 rounded-sm border overflow-hidden">
-                          <img
-                            src={url}
-                            alt={`Selected ${index + 1}`}
-                            className="h-full w-full object-cover"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).src =
-                                "/placeholder.svg";
-                            }}
-                          />
-                        </div>
-                      ) : (
-                        <FileText className="h-8 w-8 text-primary" />
-                      )}
-                    </div>
-                    <span className="text-xs truncate max-w-[150px]">
-                      {url.split("/").pop()}
-                    </span>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="h-6 w-6 ml-1 opacity-80 hover:opacity-100"
-                      onClick={() => {
-                        const newSelection = selectedUrls.filter(
-                          (_, i) => i !== index,
-                        );
-                        setSelectedUrls(newSelection);
-                        onSelect(newSelection);
-                      }}
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <Tabs defaultValue="upload" className="w-full">
+          <Tabs
+            value={activeTab}
+            onValueChange={setActiveTab}
+            className="w-full"
+          >
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="upload">Upload</TabsTrigger>
               <TabsTrigger value="url">URL</TabsTrigger>
-              <TabsTrigger value="library">Library</TabsTrigger>
+              <TabsTrigger value="library">
+                Library
+                {uploadingFiles.length > 0 && (
+                  <span className="ml-2 flex items-center">
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                  </span>
+                )}
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="upload" className="space-y-4">
@@ -623,14 +523,14 @@ const FileSelectorDialog = ({
               )}
 
               <DialogFooter>
-                <Button
-                  variant="outline"
-                  onClick={() => onOpenChange(false)}
-                  disabled={isUploading}
-                >
-                  Cancel
-                </Button>
-                <div className="flex gap-2">
+                <div className="flex gap-2 w-full justify-end">
+                  <Button
+                    variant="outline"
+                    onClick={() => onOpenChange(false)}
+                    disabled={isUploading}
+                  >
+                    Cancel
+                  </Button>
                   <Button
                     onClick={handleUpload}
                     disabled={selectedFiles.length === 0 || isUploading}
@@ -643,16 +543,10 @@ const FileSelectorDialog = ({
                     ) : (
                       <>
                         <Upload className="w-4 h-4 mr-2" />
-                        Upload {multiple ? "& Add to Selection" : "& Select"}
+                        Upload to Library
                       </>
                     )}
                   </Button>
-                  {multiple && selectedUrls.length > 0 && (
-                    <Button onClick={handleComplete}>
-                      <CheckCircle2 className="w-4 h-4 mr-2" />
-                      Done ({selectedUrls.length})
-                    </Button>
-                  )}
                 </div>
               </DialogFooter>
             </TabsContent>
@@ -670,20 +564,14 @@ const FileSelectorDialog = ({
               </div>
 
               <DialogFooter>
-                <Button variant="outline" onClick={() => onOpenChange(false)}>
-                  Cancel
-                </Button>
-                <div className="flex gap-2">
+                <div className="flex gap-2 w-full justify-end">
+                  <Button variant="outline" onClick={() => onOpenChange(false)}>
+                    Cancel
+                  </Button>
                   <Button onClick={handleUrlSubmit} disabled={!fileUrl}>
                     <LinkIcon className="w-4 h-4 mr-2" />
-                    {multiple ? "Add to Selection" : "Use This URL"}
+                    Use This URL
                   </Button>
-                  {multiple && selectedUrls.length > 0 && (
-                    <Button onClick={handleComplete}>
-                      <CheckCircle2 className="w-4 h-4 mr-2" />
-                      Done ({selectedUrls.length})
-                    </Button>
-                  )}
                 </div>
               </DialogFooter>
             </TabsContent>
@@ -696,57 +584,74 @@ const FileSelectorDialog = ({
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {libraryFiles.length > 0 ? (
+                  {libraryFiles.length > 0 || uploadingFiles.length > 0 ? (
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 max-h-[400px] overflow-y-auto p-1">
+                      {/* Show uploading files as loading placeholders */}
+                      {uploadingFiles.map((fileName, index) => (
+                        <div
+                          key={`uploading-${index}`}
+                          className="relative border rounded-lg p-2"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 bg-muted rounded-md border-2 border-dashed border-muted-foreground/25 flex items-center justify-center flex-shrink-0">
+                              <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+                            </div>
+                            <div className="overflow-hidden flex-1">
+                              <p className="font-medium truncate text-sm text-muted-foreground">
+                                {fileName}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                Uploading...
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+
+                      {/* Show existing library files */}
                       {libraryFiles
                         .filter((item) => item.size > 0)
                         .map((file) => {
-                          const isSelected = selectedUrls.includes(file.url);
+                          const isSelected = selectedUrl === file.url;
                           const fileType = getFileType(file);
                           return (
                             <div
                               key={file.id}
-                              className="relative group border rounded-lg p-2 hover:border-primary transition-colors"
+                              className={cn(
+                                "relative group border rounded-lg p-2 hover:border-primary transition-colors cursor-pointer",
+                                isSelected && "border-primary bg-primary/5",
+                              )}
+                              onClick={() => handleLibrarySelect(file.url)}
                             >
-                              <div
-                                className="cursor-pointer"
-                                onClick={() => handleLibrarySelect(file.url)}
-                              >
-                                <div
-                                  className={cn(
-                                    "flex items-center gap-3",
-                                    isSelected && "bg-primary/10 rounded-md",
-                                  )}
-                                >
-                                  <div className="text-primary flex-shrink-0">
-                                    {fileType === "image" ? (
-                                      <div className="h-12 w-12 rounded-md border overflow-hidden">
-                                        <img
-                                          src={file.url}
-                                          alt={file.name}
-                                          className="h-full w-full object-cover"
-                                          onError={(e) => {
-                                            (e.target as HTMLImageElement).src =
-                                              "/placeholder.svg";
-                                          }}
-                                        />
-                                      </div>
-                                    ) : (
-                                      getFileIcon(fileType)
-                                    )}
-                                  </div>
-                                  <div className="overflow-hidden flex-1">
-                                    <p className="font-medium truncate text-sm">
-                                      {file.name}
-                                    </p>
-                                    <p className="text-xs text-muted-foreground truncate">
-                                      {formatFileSize(file.size || 0)}
-                                    </p>
-                                  </div>
-                                  {isSelected && (
-                                    <CheckCircle2 className="h-4 w-4 text-primary flex-shrink-0" />
+                              <div className="flex items-center gap-3">
+                                <div className="text-primary flex-shrink-0">
+                                  {fileType === "image" ? (
+                                    <div className="h-12 w-12 rounded-md border overflow-hidden">
+                                      <img
+                                        src={file.url}
+                                        alt={file.name}
+                                        className="h-full w-full object-cover"
+                                        onError={(e) => {
+                                          (e.target as HTMLImageElement).src =
+                                            "/placeholder.svg";
+                                        }}
+                                      />
+                                    </div>
+                                  ) : (
+                                    getFileIcon(fileType)
                                   )}
                                 </div>
+                                <div className="overflow-hidden flex-1">
+                                  <p className="font-medium truncate text-sm">
+                                    {file.name}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground truncate">
+                                    {formatFileSize(file.size || 0)}
+                                  </p>
+                                </div>
+                                {isSelected && (
+                                  <CheckCircle2 className="h-4 w-4 text-primary flex-shrink-0" />
+                                )}
                               </div>
                               <Button
                                 size="icon"
@@ -792,20 +697,12 @@ const FileSelectorDialog = ({
                           "Refresh Library"
                         )}
                       </Button>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          onClick={() => onOpenChange(false)}
-                        >
-                          Cancel
-                        </Button>
-                        {multiple && selectedUrls.length > 0 && (
-                          <Button onClick={handleComplete}>
-                            <CheckCircle2 className="w-4 h-4 mr-2" />
-                            Done ({selectedUrls.length})
-                          </Button>
-                        )}
-                      </div>
+                      <Button
+                        variant="outline"
+                        onClick={() => onOpenChange(false)}
+                      >
+                        Cancel
+                      </Button>
                     </div>
                   </DialogFooter>
                 </div>
