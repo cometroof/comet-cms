@@ -13,24 +13,15 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import FileSelectorDialog from "@/components/FileSelectorDialog/FileSelectorDialog";
-import { FileText, Upload } from "lucide-react";
+import { FileText, Upload, Loader2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-
-type CertificateFormData = {
-  name: string;
-  info: string;
-  is_important: boolean;
-  description_en: string;
-  description_id: string;
-  file_url: string;
-  filename: string;
-};
+import { CertificateFormData } from "@/pages/files/types";
 
 type CertificateFormDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   certificate: CertificateFormData | null;
-  onSave: (data: CertificateFormData) => void;
+  onSave: (data: CertificateFormData) => Promise<void>;
 };
 
 const CertificateFormDialog = ({
@@ -41,6 +32,7 @@ const CertificateFormDialog = ({
 }: CertificateFormDialogProps) => {
   const [fileSelectorOpen, setFileSelectorOpen] = useState(false);
   const [activeDescriptionTab, setActiveDescriptionTab] = useState("en");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState<CertificateFormData>({
     name: "",
     info: "",
@@ -101,10 +93,17 @@ const CertificateFormDialog = ({
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (validateForm()) {
-      onSave(formData);
-      onOpenChange(false);
+      setIsSubmitting(true);
+      try {
+        await onSave(formData);
+        onOpenChange(false);
+      } catch (error) {
+        console.error("Error saving certificate:", error);
+      } finally {
+        setIsSubmitting(false);
+      }
     }
   };
 
@@ -119,7 +118,12 @@ const CertificateFormDialog = ({
 
   return (
     <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
+      <Dialog
+        open={open}
+        onOpenChange={(isOpen) => {
+          if (!isSubmitting) onOpenChange(isOpen);
+        }}
+      >
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
@@ -132,7 +136,7 @@ const CertificateFormDialog = ({
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4 py-4">
+          <div className="space-y-4 py-4" aria-disabled={isSubmitting}>
             {/* Name */}
             <div className="space-y-2">
               <Label htmlFor="name">Name *</Label>
@@ -144,6 +148,7 @@ const CertificateFormDialog = ({
                 }
                 placeholder="e.g., ISO 9001:2015"
                 maxLength={200}
+                disabled={isSubmitting}
               />
               <p className="text-xs text-muted-foreground">
                 {formData.name.length}/200
@@ -164,6 +169,7 @@ const CertificateFormDialog = ({
                 }
                 placeholder="e.g., Quality Management System"
                 maxLength={200}
+                disabled={isSubmitting}
               />
               <p className="text-xs text-muted-foreground">
                 {formData.info.length}/200
@@ -181,6 +187,7 @@ const CertificateFormDialog = ({
                 onCheckedChange={(checked) =>
                   setFormData({ ...formData, is_important: checked as boolean })
                 }
+                disabled={isSubmitting}
               />
               <Label
                 htmlFor="is_important"
@@ -199,8 +206,12 @@ const CertificateFormDialog = ({
                 className="w-full"
               >
                 <TabsList className="grid grid-cols-2 w-full">
-                  <TabsTrigger value="en">English</TabsTrigger>
-                  <TabsTrigger value="id">Indonesian</TabsTrigger>
+                  <TabsTrigger value="en" disabled={isSubmitting}>
+                    English
+                  </TabsTrigger>
+                  <TabsTrigger value="id" disabled={isSubmitting}>
+                    Indonesian
+                  </TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="en" className="space-y-2 pt-2">
@@ -216,6 +227,7 @@ const CertificateFormDialog = ({
                     placeholder="Enter English description"
                     rows={3}
                     maxLength={1000}
+                    disabled={isSubmitting}
                   />
                   <p className="text-xs text-muted-foreground">
                     {formData.description_en.length}/1000
@@ -240,6 +252,7 @@ const CertificateFormDialog = ({
                     placeholder="Enter Indonesian description"
                     rows={3}
                     maxLength={1000}
+                    disabled={isSubmitting}
                   />
                   <p className="text-xs text-muted-foreground">
                     {formData.description_id.length}/1000
@@ -270,6 +283,7 @@ const CertificateFormDialog = ({
                   variant="outline"
                   onClick={() => setFileSelectorOpen(true)}
                   className="gap-2"
+                  disabled={isSubmitting}
                 >
                   <Upload className="w-4 h-4" />
                   {formData.file_url ? "Change File" : "Select File"}
@@ -282,11 +296,22 @@ const CertificateFormDialog = ({
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
+            <Button
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              disabled={isSubmitting}
+            >
               Cancel
             </Button>
-            <Button onClick={handleSubmit}>
-              {certificate ? "Update" : "Create"} Certificate
+            <Button onClick={handleSubmit} disabled={isSubmitting}>
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  {certificate ? "Updating..." : "Creating..."}
+                </>
+              ) : (
+                <>{certificate ? "Update" : "Create"} Certificate</>
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -294,7 +319,9 @@ const CertificateFormDialog = ({
 
       <FileSelectorDialog
         open={fileSelectorOpen}
-        onOpenChange={setFileSelectorOpen}
+        onOpenChange={(isOpen) => {
+          if (!isSubmitting) setFileSelectorOpen(isOpen);
+        }}
         onSelect={handleFileSelect}
         acceptedFileTypes=".pdf,.jpg,.jpeg,.png"
         maxFileSize={10}

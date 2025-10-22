@@ -1,24 +1,15 @@
-export interface CompanyProfile {
-  id: string;
-  file_url: string;
-  filename: string;
-  file_size: number;
-  uploaded_at: string;
-  updated_at: string;
-}
+import type { Tables } from "@/lib/supabase-types";
 
-export interface Certificate {
-  id: string;
-  name: string;
-  info: string;
-  is_important: boolean;
-  description_en: string;
-  description_id: string;
-  file_url: string;
-  filename: string;
-  created_at: string;
-  updated_at: string;
-}
+// Re-export types from Supabase schema
+export type Certificate = Tables<"certificates">;
+export type CompanyProfile = Tables<"company_profile">;
 
-export type CertificateFormData = Omit<Certificate, "id" | "created_at" | "updated_at">;
-export type CompanyProfileFormData = Omit<CompanyProfile, "id" | "uploaded_at" | "updated_at">;
+// Form data types - omitting fields that are managed by the server
+export type CertificateFormData = Omit<
+  Certificate,
+  "id" | "created_at" | "updated_at"
+>;
+export type CompanyProfileFormData = Omit<
+  CompanyProfile,
+  "id" | "uploaded_at" | "updated_at"
+>;

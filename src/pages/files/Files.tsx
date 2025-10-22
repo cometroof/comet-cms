@@ -1,4 +1,5 @@
-import { useState } from "react";
+import React, { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,6 +28,7 @@ import {
   Upload,
   FileText,
   Star,
+  Loader2,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
@@ -34,10 +36,34 @@ import CertificateFormDialog from "@/components/CertificateFormDialog";
 import FileSelectorDialog from "@/components/FileSelectorDialog/FileSelectorDialog";
 import { useToast } from "@/hooks/use-toast";
 import { Progress } from "@/components/ui/progress";
-import { CompanyProfile, Certificate } from "./types";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import type {
+  Certificate,
+  CompanyProfile,
+  CertificateFormData,
+  CompanyProfileFormData,
+} from "./types";
+import {
+  getCompanyProfile,
+  updateCompanyProfile,
+  getCertificates,
+  createCertificate,
+  updateCertificate,
+  deleteCertificate,
+} from "@/lib/files-service";
 
 const Files = () => {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
   const [filterImportant, setFilterImportant] = useState<boolean | null>(null);
   const [certificateDialogOpen, setCertificateDialogOpen] = useState(false);
@@ -45,56 +71,51 @@ const Files = () => {
     useState<Certificate | null>(null);
   const [fileSelectorOpen, setFileSelectorOpen] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [certificateToDelete, setCertificateToDelete] = useState<string | null>(
+    null,
+  );
 
-  // Mock company profile data
-  const [companyProfile, setCompanyProfile] = useState<CompanyProfile | null>({
-    id: "1",
-    file_url: "/placeholder.pdf",
-    filename: "Company_Profile_2024.pdf",
-    file_size: 2457600, // 2.4 MB
-    uploaded_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
+  // Query for company profile
+  const {
+    data: companyProfile,
+    isLoading: profileLoading,
+    error: profileError,
+  } = useQuery({
+    queryKey: ["companyProfile"],
+    queryFn: getCompanyProfile,
   });
 
-  // Mock certificates data
-  const [certificates, setCertificates] = useState<Certificate[]>([
-    {
-      id: "1",
-      name: "ISO 9001:2015",
-      info: "Quality Management System",
-      is_important: true,
-      description_en: "International standard for quality management systems",
-      description_id: "Standar internasional untuk sistem manajemen mutu",
-      file_url: "/placeholder.pdf",
-      filename: "ISO_9001_Certificate.pdf",
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    },
-    {
-      id: "2",
-      name: "ISO 14001:2015",
-      info: "Environmental Management",
-      is_important: true,
-      description_en: "Environmental management system certification",
-      description_id: "Sertifikasi sistem manajemen lingkungan",
-      file_url: "/placeholder.pdf",
-      filename: "ISO_14001_Certificate.pdf",
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    },
-    {
-      id: "3",
-      name: "Product Safety Certificate",
-      info: "Fire Resistance Rating",
-      is_important: false,
-      description_en: "Certificate for fire resistance and safety standards",
-      description_id: "Sertifikat untuk standar ketahanan api dan keamanan",
-      file_url: "/placeholder.pdf",
-      filename: "Product_Safety.pdf",
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    },
-  ]);
+  // Query for certificates
+  const {
+    data: certificates = [],
+    isLoading: certificatesLoading,
+    error: certificatesError,
+  } = useQuery({
+    queryKey: ["certificates"],
+    queryFn: getCertificates,
+  });
+
+  // Show toast for query errors
+  React.useEffect(() => {
+    if (profileError) {
+      console.error("Error loading company profile:", profileError);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to load company profile",
+      });
+    }
+
+    if (certificatesError) {
+      console.error("Error loading certificates:", certificatesError);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to load certificates",
+      });
+    }
+  }, [profileError, certificatesError, toast]);
 
   const filteredCertificates = certificates.filter((cert) => {
     const matchesSearch =
@@ -111,31 +132,69 @@ const Files = () => {
     return (bytes / (1024 * 1024)).toFixed(2) + " MB";
   };
 
-  const handleSelectCompanyProfile = (fileUrl: string) => {
-    // For demonstration, we'll create a mock file with the provided URL
-    // In a real implementation, you would likely have more file metadata available
-    setUploadProgress(0);
-    const interval = setInterval(() => {
-      setUploadProgress((prev) => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          setCompanyProfile({
-            id: "1",
-            file_url: fileUrl,
-            filename: fileUrl.split("/").pop() || "company_profile.pdf",
-            file_size: 2457600, // Placeholder size
-            uploaded_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          });
-          toast({
-            title: "Success",
-            description: "Company profile updated successfully",
-          });
-          return 100;
-        }
-        return prev + 10;
+  // Mutation for updating company profile
+  const updateProfileMutation = useMutation({
+    mutationFn: ({
+      profileData,
+      id,
+    }: {
+      profileData: CompanyProfileFormData;
+      id?: string;
+    }) => updateCompanyProfile(profileData, id),
+    onSuccess: (result) => {
+      // Update react-query cache
+      queryClient.setQueryData(["companyProfile"], result);
+
+      toast({
+        title: "Success",
+        description: "Company profile updated successfully",
       });
+
+      // Reset progress after a delay
+      setTimeout(() => {
+        setUploadProgress(0);
+      }, 1000);
+    },
+    onError: (error) => {
+      console.error("Error updating company profile:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to update company profile",
+      });
+
+      setTimeout(() => {
+        setUploadProgress(0);
+      }, 1000);
+    },
+  });
+
+  const handleSelectCompanyProfile = (fileUrl: string) => {
+    setUploadProgress(0);
+    const filename = fileUrl.split("/").pop() || "company_profile.pdf";
+
+    // Simulate progress for user feedback
+    const interval = setInterval(() => {
+      setUploadProgress((prev) => Math.min(prev + 10, 90));
     }, 100);
+
+    // Create or update company profile in Supabase
+    const profileData: CompanyProfileFormData = {
+      file_url: fileUrl,
+      filename: filename,
+      file_size: 1000000, // Estimate file size since we don't have actual size
+    };
+
+    updateProfileMutation.mutate(
+      { profileData, id: companyProfile?.id },
+      {
+        onSettled: () => {
+          // Clear interval and set progress to 100%
+          clearInterval(interval);
+          setUploadProgress(100);
+        },
+      },
+    );
   };
 
   const handleAddCertificate = () => {
@@ -148,41 +207,104 @@ const Files = () => {
     setCertificateDialogOpen(true);
   };
 
-  const handleDeleteCertificate = (id: string) => {
-    setCertificates(certificates.filter((c) => c.id !== id));
-    toast({
-      title: "Success",
-      description: "Certificate deleted successfully",
-    });
+  const handleConfirmDeleteCertificate = (id: string) => {
+    setCertificateToDelete(id);
+    setDeleteDialogOpen(true);
   };
 
-  const handleSaveCertificate = (certData: Partial<Certificate>) => {
-    if (editingCertificate) {
-      setCertificates(
-        certificates.map((c) =>
-          c.id === editingCertificate.id
-            ? { ...c, ...certData, updated_at: new Date().toISOString() }
-            : c,
-        ),
-      );
+  // Mutation for deleting certificates
+  const deleteCertificateMutation = useMutation({
+    mutationFn: (id: string) => deleteCertificate(id),
+    onSuccess: (success, id) => {
+      if (success) {
+        // Update react-query cache
+        queryClient.setQueryData(
+          ["certificates"],
+          (oldData: Certificate[] = []) => oldData.filter((c) => c.id !== id),
+        );
+
+        toast({
+          title: "Success",
+          description: "Certificate deleted successfully",
+        });
+      } else {
+        throw new Error("Failed to delete certificate");
+      }
+    },
+    onError: (error, id) => {
+      console.error(`Error deleting certificate with id ${id}:`, error);
       toast({
-        title: "Success",
-        description: "Certificate updated successfully",
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to delete certificate",
       });
-    } else {
-      const newCert: Certificate = {
-        id: Date.now().toString(),
-        ...(certData as Omit<Certificate, "id" | "created_at" | "updated_at">),
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      };
-      setCertificates([...certificates, newCert]);
-      toast({
-        title: "Success",
-        description: "Certificate created successfully",
-      });
+    },
+  });
+
+  const handleDeleteCertificate = () => {
+    if (certificateToDelete) {
+      deleteCertificateMutation.mutate(certificateToDelete);
+      setDeleteDialogOpen(false);
+      setCertificateToDelete(null);
     }
-    setCertificateDialogOpen(false);
+  };
+
+  // Mutation for saving certificates (create or update)
+  const saveCertificateMutation = useMutation<
+    Certificate | null,
+    Error,
+    { id?: string; data: CertificateFormData }
+  >({
+    mutationFn: ({ id, data }: { id?: string; data: CertificateFormData }) =>
+      id ? updateCertificate(id, data) : createCertificate(data),
+    onSuccess: (result) => {
+      if (result) {
+        if (editingCertificate) {
+          // Update existing certificate in cache
+          queryClient.setQueryData(
+            ["certificates"],
+            (oldData: Certificate[] = []) =>
+              oldData.map((c) => (c.id === editingCertificate.id ? result : c)),
+          );
+
+          toast({
+            title: "Success",
+            description: "Certificate updated successfully",
+          });
+        } else {
+          // Add new certificate to cache
+          queryClient.setQueryData(
+            ["certificates"],
+            (oldData: Certificate[] = []) => [...oldData, result],
+          );
+
+          toast({
+            title: "Success",
+            description: "Certificate created successfully",
+          });
+        }
+      } else {
+        throw new Error("Failed to save certificate");
+      }
+    },
+    onError: (error) => {
+      console.error("Error saving certificate:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to save certificate",
+      });
+      throw error; // Re-throw to let the dialog component know the operation failed
+    },
+  });
+
+  const handleSaveCertificate = async (
+    certData: CertificateFormData,
+  ): Promise<void> => {
+    await saveCertificateMutation.mutateAsync({
+      id: editingCertificate?.id,
+      data: certData,
+    });
   };
 
   return (
@@ -213,7 +335,12 @@ const Files = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                {companyProfile ? (
+                {profileLoading ? (
+                  <div className="flex justify-center items-center p-12">
+                    <Loader2 className="w-8 h-8 animate-spin text-primary mr-2" />
+                    <p>Loading company profile...</p>
+                  </div>
+                ) : companyProfile ? (
                   <div className="space-y-4">
                     <div className="flex items-start gap-4 p-4 border rounded-lg">
                       <div className="w-16 h-16 bg-muted rounded flex items-center justify-center">
@@ -229,12 +356,19 @@ const Files = () => {
                         <p className="text-sm text-muted-foreground">
                           Uploaded:{" "}
                           {new Date(
-                            companyProfile.uploaded_at,
+                            companyProfile.uploaded_at || "",
                           ).toLocaleDateString()}
                         </p>
                       </div>
                       <div className="flex gap-2">
-                        <Button variant="outline" size="sm" className="gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="gap-2"
+                          onClick={() =>
+                            window.open(companyProfile.file_url, "_blank")
+                          }
+                        >
                           <Download className="w-4 h-4" />
                           Download
                         </Button>
@@ -250,7 +384,7 @@ const Files = () => {
                       </div>
                     </div>
 
-                    {uploadProgress > 0 && uploadProgress < 100 && (
+                    {uploadProgress > 0 && (
                       <div className="space-y-2">
                         <Label>Uploading...</Label>
                         <Progress value={uploadProgress} />
@@ -354,7 +488,16 @@ const Files = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filteredCertificates.length === 0 ? (
+                      {certificatesLoading ? (
+                        <TableRow>
+                          <TableCell colSpan={4} className="text-center py-8">
+                            <div className="flex justify-center items-center">
+                              <Loader2 className="w-6 h-6 animate-spin text-primary mr-2" />
+                              <span>Loading certificates...</span>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ) : filteredCertificates.length === 0 ? (
                         <TableRow>
                           <TableCell
                             colSpan={4}
@@ -401,7 +544,7 @@ const Files = () => {
                                   variant="ghost"
                                   size="sm"
                                   onClick={() =>
-                                    handleDeleteCertificate(cert.id)
+                                    handleConfirmDeleteCertificate(cert.id)
                                   }
                                 >
                                   <Trash2 className="w-4 h-4 text-destructive" />
@@ -436,6 +579,28 @@ const Files = () => {
         acceptedFileTypes=".pdf"
         maxFileSize={10}
       />
+
+      {/* Alert Dialog for Delete Confirmation */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the
+              certificate and remove it from our servers.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteCertificate}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </DashboardLayout>
   );
 };

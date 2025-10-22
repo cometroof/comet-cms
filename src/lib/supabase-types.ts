@@ -81,6 +81,72 @@ export type Database = {
         };
         Relationships: [];
       };
+      certificates: {
+        Row: {
+          created_at: string | null;
+          description_en: string;
+          description_id: string;
+          file_url: string;
+          filename: string;
+          id: string;
+          info: string;
+          is_important: boolean | null;
+          name: string;
+          updated_at: string | null;
+        };
+        Insert: {
+          created_at?: string | null;
+          description_en: string;
+          description_id: string;
+          file_url: string;
+          filename: string;
+          id?: string;
+          info: string;
+          is_important?: boolean | null;
+          name: string;
+          updated_at?: string | null;
+        };
+        Update: {
+          created_at?: string | null;
+          description_en?: string;
+          description_id?: string;
+          file_url?: string;
+          filename?: string;
+          id?: string;
+          info?: string;
+          is_important?: boolean | null;
+          name?: string;
+          updated_at?: string | null;
+        };
+        Relationships: [];
+      };
+      company_profile: {
+        Row: {
+          file_size: number;
+          file_url: string;
+          filename: string;
+          id: string;
+          updated_at: string | null;
+          uploaded_at: string | null;
+        };
+        Insert: {
+          file_size: number;
+          file_url: string;
+          filename: string;
+          id?: string;
+          updated_at?: string | null;
+          uploaded_at?: string | null;
+        };
+        Update: {
+          file_size?: number;
+          file_url?: string;
+          filename?: string;
+          id?: string;
+          updated_at?: string | null;
+          uploaded_at?: string | null;
+        };
+        Relationships: [];
+      };
       "contacts-location": {
         Row: {
           created_at: string | null;
