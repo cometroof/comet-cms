@@ -19,20 +19,27 @@ const BASE_URL = import.meta.env.VITE_R2_BUCKET_URL!;
 const WORKER_URL = import.meta.env.VITE_WORKER_URL!; // Worker URL untuk upload
 
 // Types
-export type LibraryImage = {
+export type R2ObjectFolder = "images" | "files" | "assets";
+
+export type R2Object = {
   id: string;
   url: string;
   name: string;
   size: number;
   uploadedAt: Date;
-  Key?: string;
+  Key: string;
+  folder: R2ObjectFolder;
 };
 
-// List images from R2 (TETAP PAKAI AWS SDK)
-export async function getR2Images(): Promise<LibraryImage[]> {
+// Legacy type alias untuk backward compatibility
+export type LibraryImage = R2Object;
+
+// Internal helper function untuk get objects by prefix
+async function getR2ObjectsByPrefix(prefix: string): Promise<R2Object[]> {
   try {
     const command = new ListObjectsV2Command({
       Bucket: BUCKET_NAME,
+      Prefix: prefix,
     });
 
     const response = await s3Client.send(command);
@@ -43,23 +50,56 @@ export async function getR2Images(): Promise<LibraryImage[]> {
 
     return response.Contents.map((object) => {
       const url = `${BASE_URL}/${object.Key}`;
+
+      // Determine folder from key
+      let folder: R2ObjectFolder = "assets";
+      if (object.Key!.startsWith("images/")) {
+        folder = "images";
+      } else if (object.Key!.startsWith("files/")) {
+        folder = "files";
+      }
+
+      // Extract filename without folder prefix
+      const filename = object.Key!.split("/").pop() || object.Key!;
+
       return {
         Key: object.Key!,
         id: object.ETag!,
         url,
-        name: object.Key!,
+        name: filename,
         size: object.Size!,
         uploadedAt: object.LastModified!,
+        folder,
       };
     });
   } catch (error) {
-    console.error("Error listing files:", error);
-    throw new Error(`Failed to list images: ${(error as Error).message}`);
+    console.error(`Error listing files from ${prefix}:`, error);
+    throw new Error(`Failed to list objects: ${(error as Error).message}`);
   }
 }
 
+// List images from R2 (hanya dari folder images/)
+export async function getR2Images(): Promise<R2Object[]> {
+  return getR2ObjectsByPrefix("images/");
+}
+
+// List files from R2 (hanya dari folder files/)
+export async function getR2Files(): Promise<R2Object[]> {
+  return getR2ObjectsByPrefix("files/");
+}
+
+// List assets from R2 (hanya dari folder assets/)
+export async function getR2Assets(): Promise<R2Object[]> {
+  return getR2ObjectsByPrefix("assets/");
+}
+
+// List all objects from R2 (semua folder)
+export async function getR2AllObjects(): Promise<R2Object[]> {
+  return getR2ObjectsByPrefix("");
+}
+
 // Upload a file to R2 via Worker (PAKAI WORKER)
-export async function uploadToR2(formData: FormData): Promise<LibraryImage> {
+export async function uploadToR2(formData: FormData): Promise<R2Object> {
   try {
     const file = formData.get("file") as File;
 
@@ -84,14 +124,25 @@ export async function uploadToR2(formData: FormData): Promise<LibraryImage> {
 
     const data = await response.json();
 
-    // Return the LibraryImage object
+    // Determine folder from response
+    let folder: R2ObjectFolder = "assets";
+    if (data.folder) {
+      if (data.folder.includes("images")) folder = "images";
+      else if (data.folder.includes("files")) folder = "files";
+    }
+
+    // Extract filename without folder prefix
+    const filename = data.filename.split("/").pop() || file.name;
+
+    // Return the R2Object
     return {
       id: data.filename,
       Key: data.filename,
       url: `${BASE_URL}/${data.filename}`,
-      name: file.name,
+      name: filename,
       uploadedAt: new Date(),
       size: data.size,
+      folder,
     };
   } catch (error) {
     console.error("Error uploading file:", error);
@@ -131,7 +182,7 @@ export async function deleteFromR2(
 // Upload multiple files via Worker - Sequential (PAKAI WORKER)
 export async function uploadMultipleToR2(
   formData: FormData,
-): Promise<LibraryImage[]> {
+): Promise<R2Object[]> {
   try {
     const files = formData.getAll("files") as File[];
 
@@ -139,7 +190,7 @@ export async function uploadMultipleToR2(
       throw new Error("No files provided");
     }
 
-    const uploadedImages: LibraryImage[] = [];
+    const uploadedObjects: R2Object[] = [];
 
     // Upload each file sequentially via worker
     for (const file of files) {
@@ -158,17 +209,28 @@ export async function uploadMultipleToR2(
 
       const data = await response.json();
 
-      uploadedImages.push({
+      // Determine folder from response
+      let folder: R2ObjectFolder = "assets";
+      if (data.folder) {
+        if (data.folder.includes("images")) folder = "images";
+        else if (data.folder.includes("files")) folder = "files";
+      }
+
+      // Extract filename without folder prefix
+      const filename = data.filename.split("/").pop() || file.name;
+
+      uploadedObjects.push({
         id: data.filename,
         Key: data.filename,
         url: `${BASE_URL}/${data.filename}`,
-        name: file.name,
+        name: filename,
         uploadedAt: new Date(),
         size: data.size,
+        folder,
       });
     }
 
-    return uploadedImages;
+    return uploadedObjects;
   } catch (error) {
     console.error("Error uploading multiple files:", error);
     throw new Error(`Failed to upload files: ${(error as Error).message}`);
@@ -178,7 +240,7 @@ export async function uploadMultipleToR2(
 // Upload multiple files in parallel via Worker (PAKAI WORKER)
 export async function uploadMultipleParallelToR2(
   formData: FormData,
-): Promise<LibraryImage[]> {
+): Promise<R2Object[]> {
   try {
     const files = formData.getAll("files") as File[];
 
@@ -202,19 +264,30 @@ export async function uploadMultipleParallelToR2(
 
       const data = await response.json();
 
+      // Determine folder from response
+      let folder: R2ObjectFolder = "assets";
+      if (data.folder) {
+        if (data.folder.includes("images")) folder = "images";
+        else if (data.folder.includes("files")) folder = "files";
+      }
+
+      // Extract filename without folder prefix
+      const filename = data.filename.split("/").pop() || file.name;
+
       return {
         id: data.filename,
         Key: data.filename,
         url: `${BASE_URL}/${data.filename}`,
-        name: file.name,
+        name: filename,
         uploadedAt: new Date(),
         size: data.size,
+        folder,
       };
     });
 
-    const uploadedImages = await Promise.all(uploadPromises);
+    const uploadedObjects = await Promise.all(uploadPromises);
 
-    return uploadedImages;
+    return uploadedObjects;
   } catch (error) {
     console.error("Error uploading multiple files in parallel:", error);
     throw new Error(`Failed to upload files: ${(error as Error).message}`);

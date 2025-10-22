@@ -1,12 +1,20 @@
 import { useEffect, useState } from "react";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import FileUploadDialog from "./FileUploadDialog";
+import FileSelectorDialog from "@/components/FileSelectorDialog/FileSelectorDialog";
 import { FileText, Upload } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 type CertificateFormData = {
   name: string;
@@ -21,12 +29,18 @@ type CertificateFormData = {
 type CertificateFormDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  certificate: any | null;
+  certificate: CertificateFormData | null;
   onSave: (data: CertificateFormData) => void;
 };
 
-const CertificateFormDialog = ({ open, onOpenChange, certificate, onSave }: CertificateFormDialogProps) => {
-  const [fileUploadOpen, setFileUploadOpen] = useState(false);
+const CertificateFormDialog = ({
+  open,
+  onOpenChange,
+  certificate,
+  onSave,
+}: CertificateFormDialogProps) => {
+  const [fileSelectorOpen, setFileSelectorOpen] = useState(false);
+  const [activeDescriptionTab, setActiveDescriptionTab] = useState("en");
   const [formData, setFormData] = useState<CertificateFormData>({
     name: "",
     info: "",
@@ -62,20 +76,26 @@ const CertificateFormDialog = ({ open, onOpenChange, certificate, onSave }: Cert
       });
     }
     setErrors({});
+    setActiveDescriptionTab("en");
   }, [certificate, open]);
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
+    // Only name is mandatory
     if (!formData.name) newErrors.name = "Name is required";
-    if (formData.name.length > 200) newErrors.name = "Name must be less than 200 characters";
-    if (!formData.info) newErrors.info = "Info is required";
-    if (formData.info.length > 200) newErrors.info = "Info must be less than 200 characters";
-    if (!formData.description_en) newErrors.description_en = "Description (EN) is required";
-    if (formData.description_en.length > 1000) newErrors.description_en = "Description must be less than 1000 characters";
-    if (!formData.description_id) newErrors.description_id = "Description (ID) is required";
-    if (formData.description_id.length > 1000) newErrors.description_id = "Description must be less than 1000 characters";
-    if (!formData.file_url) newErrors.file_url = "File is required";
+    if (formData.name.length > 200)
+      newErrors.name = "Name must be less than 200 characters";
+
+    // Other validations are only for length, not for required fields
+    if (formData.info.length > 200)
+      newErrors.info = "Info must be less than 200 characters";
+    if (formData.description_en.length > 1000)
+      newErrors.description_en =
+        "Description must be less than 1000 characters";
+    if (formData.description_id.length > 1000)
+      newErrors.description_id =
+        "Description must be less than 1000 characters";
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -88,13 +108,13 @@ const CertificateFormDialog = ({ open, onOpenChange, certificate, onSave }: Cert
     }
   };
 
-  const handleFileUpload = (file: File) => {
+  const handleFileSelect = (fileUrl: string) => {
     setFormData({
       ...formData,
-      file_url: URL.createObjectURL(file),
-      filename: file.name,
+      file_url: fileUrl,
+      filename: fileUrl.split("/").pop() || "certificate.pdf",
     });
-    setFileUploadOpen(false);
+    setFileSelectorOpen(false);
   };
 
   return (
@@ -102,9 +122,13 @@ const CertificateFormDialog = ({ open, onOpenChange, certificate, onSave }: Cert
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{certificate ? "Edit Certificate" : "Add New Certificate"}</DialogTitle>
+            <DialogTitle>
+              {certificate ? "Edit Certificate" : "Add New Certificate"}
+            </DialogTitle>
             <DialogDescription>
-              {certificate ? "Update certificate information" : "Create a new certificate entry"}
+              {certificate
+                ? "Update certificate information"
+                : "Create a new certificate entry"}
             </DialogDescription>
           </DialogHeader>
 
@@ -115,26 +139,38 @@ const CertificateFormDialog = ({ open, onOpenChange, certificate, onSave }: Cert
               <Input
                 id="name"
                 value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, name: e.target.value })
+                }
                 placeholder="e.g., ISO 9001:2015"
                 maxLength={200}
               />
-              <p className="text-xs text-muted-foreground">{formData.name.length}/200</p>
-              {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
+              <p className="text-xs text-muted-foreground">
+                {formData.name.length}/200
+              </p>
+              {errors.name && (
+                <p className="text-sm text-destructive">{errors.name}</p>
+              )}
             </div>
 
             {/* Info */}
             <div className="space-y-2">
-              <Label htmlFor="info">Info *</Label>
+              <Label htmlFor="info">Info</Label>
               <Input
                 id="info"
                 value={formData.info}
-                onChange={(e) => setFormData({ ...formData, info: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, info: e.target.value })
+                }
                 placeholder="e.g., Quality Management System"
                 maxLength={200}
               />
-              <p className="text-xs text-muted-foreground">{formData.info.length}/200</p>
-              {errors.info && <p className="text-sm text-destructive">{errors.info}</p>}
+              <p className="text-xs text-muted-foreground">
+                {formData.info.length}/200
+              </p>
+              {errors.info && (
+                <p className="text-sm text-destructive">{errors.info}</p>
+              )}
             </div>
 
             {/* Is Important */}
@@ -154,57 +190,94 @@ const CertificateFormDialog = ({ open, onOpenChange, certificate, onSave }: Cert
               </Label>
             </div>
 
-            {/* Description EN */}
+            {/* Description Tabs */}
             <div className="space-y-2">
-              <Label htmlFor="description_en">Description (English) *</Label>
-              <Textarea
-                id="description_en"
-                value={formData.description_en}
-                onChange={(e) => setFormData({ ...formData, description_en: e.target.value })}
-                placeholder="Enter English description"
-                rows={3}
-                maxLength={1000}
-              />
-              <p className="text-xs text-muted-foreground">{formData.description_en.length}/1000</p>
-              {errors.description_en && <p className="text-sm text-destructive">{errors.description_en}</p>}
-            </div>
+              <Label>Description</Label>
+              <Tabs
+                value={activeDescriptionTab}
+                onValueChange={setActiveDescriptionTab}
+                className="w-full"
+              >
+                <TabsList className="grid grid-cols-2 w-full">
+                  <TabsTrigger value="en">English</TabsTrigger>
+                  <TabsTrigger value="id">Indonesian</TabsTrigger>
+                </TabsList>
 
-            {/* Description ID */}
-            <div className="space-y-2">
-              <Label htmlFor="description_id">Description (Indonesian) *</Label>
-              <Textarea
-                id="description_id"
-                value={formData.description_id}
-                onChange={(e) => setFormData({ ...formData, description_id: e.target.value })}
-                placeholder="Enter Indonesian description"
-                rows={3}
-                maxLength={1000}
-              />
-              <p className="text-xs text-muted-foreground">{formData.description_id.length}/1000</p>
-              {errors.description_id && <p className="text-sm text-destructive">{errors.description_id}</p>}
+                <TabsContent value="en" className="space-y-2 pt-2">
+                  <Textarea
+                    id="description_en"
+                    value={formData.description_en}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        description_en: e.target.value,
+                      })
+                    }
+                    placeholder="Enter English description"
+                    rows={3}
+                    maxLength={1000}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    {formData.description_en.length}/1000
+                  </p>
+                  {errors.description_en && (
+                    <p className="text-sm text-destructive">
+                      {errors.description_en}
+                    </p>
+                  )}
+                </TabsContent>
+
+                <TabsContent value="id" className="space-y-2 pt-2">
+                  <Textarea
+                    id="description_id"
+                    value={formData.description_id}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        description_id: e.target.value,
+                      })
+                    }
+                    placeholder="Enter Indonesian description"
+                    rows={3}
+                    maxLength={1000}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    {formData.description_id.length}/1000
+                  </p>
+                  {errors.description_id && (
+                    <p className="text-sm text-destructive">
+                      {errors.description_id}
+                    </p>
+                  )}
+                </TabsContent>
+              </Tabs>
             </div>
 
             {/* File */}
             <div className="space-y-2">
-              <Label htmlFor="file">File (PDF or Image) *</Label>
+              <Label htmlFor="file">File (PDF or Image)</Label>
               <div className="flex gap-2 items-center">
                 {formData.file_url && (
                   <div className="flex items-center gap-2 p-2 border rounded">
                     <FileText className="w-5 h-5 text-primary" />
-                    <span className="text-sm truncate max-w-[200px]">{formData.filename}</span>
+                    <span className="text-sm truncate max-w-[200px]">
+                      {formData.filename}
+                    </span>
                   </div>
                 )}
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => setFileUploadOpen(true)}
+                  onClick={() => setFileSelectorOpen(true)}
                   className="gap-2"
                 >
                   <Upload className="w-4 h-4" />
-                  {formData.file_url ? "Change File" : "Upload File"}
+                  {formData.file_url ? "Change File" : "Select File"}
                 </Button>
               </div>
-              {errors.file_url && <p className="text-sm text-destructive">{errors.file_url}</p>}
+              {errors.file_url && (
+                <p className="text-sm text-destructive">{errors.file_url}</p>
+              )}
             </div>
           </div>
 
@@ -219,13 +292,13 @@ const CertificateFormDialog = ({ open, onOpenChange, certificate, onSave }: Cert
         </DialogContent>
       </Dialog>
 
-      <FileUploadDialog
-        open={fileUploadOpen}
-        onOpenChange={setFileUploadOpen}
-        onUpload={handleFileUpload}
-        acceptedTypes=".pdf,.jpg,.jpeg,.png"
-        maxSize={10}
-        title="Upload Certificate File"
+      <FileSelectorDialog
+        open={fileSelectorOpen}
+        onOpenChange={setFileSelectorOpen}
+        onSelect={handleFileSelect}
+        acceptedFileTypes=".pdf,.jpg,.jpeg,.png"
+        maxFileSize={10}
+        title="Select Certificate File"
       />
     </>
   );

@@ -2,14 +2,36 @@ import { useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Search, Edit, Trash2, Download, Upload, FileText, Star } from "lucide-react";
+import {
+  Plus,
+  Search,
+  Edit,
+  Trash2,
+  Download,
+  Upload,
+  FileText,
+  Star,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import CertificateFormDialog from "@/components/CertificateFormDialog";
-import FileUploadDialog from "@/components/FileUploadDialog";
+import FileSelectorDialog from "@/components/FileSelectorDialog/FileSelectorDialog";
 import { useToast } from "@/hooks/use-toast";
 import { Progress } from "@/components/ui/progress";
 import { CompanyProfile, Certificate } from "./types";
@@ -19,8 +41,9 @@ const Files = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterImportant, setFilterImportant] = useState<boolean | null>(null);
   const [certificateDialogOpen, setCertificateDialogOpen] = useState(false);
-  const [editingCertificate, setEditingCertificate] = useState<Certificate | null>(null);
-  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
+  const [editingCertificate, setEditingCertificate] =
+    useState<Certificate | null>(null);
+  const [fileSelectorOpen, setFileSelectorOpen] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
 
   // Mock company profile data
@@ -73,14 +96,14 @@ const Files = () => {
     },
   ]);
 
-  const filteredCertificates = certificates
-    .filter((cert) => {
-      const matchesSearch =
-        cert.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        cert.info.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesFilter = filterImportant === null || cert.is_important === filterImportant;
-      return matchesSearch && matchesFilter;
-    });
+  const filteredCertificates = certificates.filter((cert) => {
+    const matchesSearch =
+      cert.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      cert.info.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesFilter =
+      filterImportant === null || cert.is_important === filterImportant;
+    return matchesSearch && matchesFilter;
+  });
 
   const formatFileSize = (bytes: number): string => {
     if (bytes < 1024) return bytes + " B";
@@ -88,8 +111,9 @@ const Files = () => {
     return (bytes / (1024 * 1024)).toFixed(2) + " MB";
   };
 
-  const handleUploadCompanyProfile = (file: File) => {
-    // Simulate upload
+  const handleSelectCompanyProfile = (fileUrl: string) => {
+    // For demonstration, we'll create a mock file with the provided URL
+    // In a real implementation, you would likely have more file metadata available
     setUploadProgress(0);
     const interval = setInterval(() => {
       setUploadProgress((prev) => {
@@ -97,17 +121,16 @@ const Files = () => {
           clearInterval(interval);
           setCompanyProfile({
             id: "1",
-            file_url: URL.createObjectURL(file),
-            filename: file.name,
-            file_size: file.size,
+            file_url: fileUrl,
+            filename: fileUrl.split("/").pop() || "company_profile.pdf",
+            file_size: 2457600, // Placeholder size
             uploaded_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
           });
           toast({
             title: "Success",
-            description: "Company profile uploaded successfully",
+            description: "Company profile updated successfully",
           });
-          setUploadDialogOpen(false);
           return 100;
         }
         return prev + 10;
@@ -135,11 +158,13 @@ const Files = () => {
 
   const handleSaveCertificate = (certData: Partial<Certificate>) => {
     if (editingCertificate) {
-      setCertificates(certificates.map((c) =>
-        c.id === editingCertificate.id
-          ? { ...c, ...certData, updated_at: new Date().toISOString() }
-          : c
-      ));
+      setCertificates(
+        certificates.map((c) =>
+          c.id === editingCertificate.id
+            ? { ...c, ...certData, updated_at: new Date().toISOString() }
+            : c,
+        ),
+      );
       toast({
         title: "Success",
         description: "Certificate updated successfully",
@@ -147,7 +172,7 @@ const Files = () => {
     } else {
       const newCert: Certificate = {
         id: Date.now().toString(),
-        ...certData as Omit<Certificate, 'id' | 'created_at' | 'updated_at'>,
+        ...(certData as Omit<Certificate, "id" | "created_at" | "updated_at">),
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       };
@@ -164,8 +189,12 @@ const Files = () => {
     <DashboardLayout>
       <div className="space-y-8">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Files Management</h1>
-          <p className="text-muted-foreground mt-1">Manage company profile and certificates</p>
+          <h1 className="text-3xl font-bold text-foreground">
+            Files Management
+          </h1>
+          <p className="text-muted-foreground mt-1">
+            Manage company profile and certificates
+          </p>
         </div>
 
         <Tabs defaultValue="profile" className="w-full">
@@ -179,7 +208,9 @@ const Files = () => {
             <Card>
               <CardHeader>
                 <CardTitle>Company Profile Document</CardTitle>
-                <CardDescription>Upload and manage your company profile PDF</CardDescription>
+                <CardDescription>
+                  Upload and manage your company profile PDF
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 {companyProfile ? (
@@ -189,12 +220,17 @@ const Files = () => {
                         <FileText className="w-8 h-8 text-primary" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-foreground">{companyProfile.filename}</h3>
+                        <h3 className="font-semibold text-foreground">
+                          {companyProfile.filename}
+                        </h3>
                         <p className="text-sm text-muted-foreground">
                           Size: {formatFileSize(companyProfile.file_size)}
                         </p>
                         <p className="text-sm text-muted-foreground">
-                          Uploaded: {new Date(companyProfile.uploaded_at).toLocaleDateString()}
+                          Uploaded:{" "}
+                          {new Date(
+                            companyProfile.uploaded_at,
+                          ).toLocaleDateString()}
                         </p>
                       </div>
                       <div className="flex gap-2">
@@ -206,7 +242,7 @@ const Files = () => {
                           variant="outline"
                           size="sm"
                           className="gap-2"
-                          onClick={() => setUploadDialogOpen(true)}
+                          onClick={() => setFileSelectorOpen(true)}
                         >
                           <Upload className="w-4 h-4" />
                           Replace
@@ -218,16 +254,25 @@ const Files = () => {
                       <div className="space-y-2">
                         <Label>Uploading...</Label>
                         <Progress value={uploadProgress} />
-                        <p className="text-sm text-muted-foreground">{uploadProgress}%</p>
+                        <p className="text-sm text-muted-foreground">
+                          {uploadProgress}%
+                        </p>
                       </div>
                     )}
                   </div>
                 ) : (
                   <div className="text-center py-12">
                     <FileText className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
-                    <h3 className="text-lg font-semibold text-foreground mb-2">No company profile uploaded</h3>
-                    <p className="text-muted-foreground mb-4">Upload your company profile PDF</p>
-                    <Button onClick={() => setUploadDialogOpen(true)} className="gap-2">
+                    <h3 className="text-lg font-semibold text-foreground mb-2">
+                      No company profile uploaded
+                    </h3>
+                    <p className="text-muted-foreground mb-4">
+                      Upload your company profile PDF
+                    </p>
+                    <Button
+                      onClick={() => setFileSelectorOpen(true)}
+                      className="gap-2"
+                    >
                       <Upload className="w-4 h-4" />
                       Upload Profile
                     </Button>
@@ -244,9 +289,15 @@ const Files = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <CardTitle>Certificates</CardTitle>
-                    <CardDescription>Manage company and product certificates</CardDescription>
+                    <CardDescription>
+                      Manage company and product certificates
+                    </CardDescription>
                   </div>
-                  <Button onClick={handleAddCertificate} size="sm" className="gap-2">
+                  <Button
+                    onClick={handleAddCertificate}
+                    size="sm"
+                    className="gap-2"
+                  >
                     <Plus className="w-4 h-4" />
                     Add Certificate
                   </Button>
@@ -279,7 +330,9 @@ const Files = () => {
                       Important
                     </Button>
                     <Button
-                      variant={filterImportant === false ? "default" : "outline"}
+                      variant={
+                        filterImportant === false ? "default" : "outline"
+                      }
                       size="sm"
                       onClick={() => setFilterImportant(false)}
                     >
@@ -295,13 +348,18 @@ const Files = () => {
                         <TableHead>Name</TableHead>
                         <TableHead>Info</TableHead>
                         <TableHead>File</TableHead>
-                        <TableHead className="w-32 text-right">Actions</TableHead>
+                        <TableHead className="w-32 text-right">
+                          Actions
+                        </TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {filteredCertificates.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
+                          <TableCell
+                            colSpan={4}
+                            className="text-center text-muted-foreground py-8"
+                          >
                             No certificates found
                           </TableCell>
                         </TableRow>
@@ -319,11 +377,15 @@ const Files = () => {
                                 )}
                               </div>
                             </TableCell>
-                            <TableCell className="text-muted-foreground">{cert.info}</TableCell>
+                            <TableCell className="text-muted-foreground">
+                              {cert.info}
+                            </TableCell>
                             <TableCell>
                               <div className="flex items-center gap-2 text-sm">
                                 <FileText className="w-4 h-4 text-muted-foreground" />
-                                <span className="truncate max-w-[200px]">{cert.filename}</span>
+                                <span className="truncate max-w-[200px]">
+                                  {cert.filename}
+                                </span>
                               </div>
                             </TableCell>
                             <TableCell className="text-right">
@@ -338,7 +400,9 @@ const Files = () => {
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  onClick={() => handleDeleteCertificate(cert.id)}
+                                  onClick={() =>
+                                    handleDeleteCertificate(cert.id)
+                                  }
                                 >
                                   <Trash2 className="w-4 h-4 text-destructive" />
                                 </Button>
@@ -364,13 +428,13 @@ const Files = () => {
         onSave={handleSaveCertificate}
       />
 
-      <FileUploadDialog
-        open={uploadDialogOpen}
-        onOpenChange={setUploadDialogOpen}
-        onUpload={handleUploadCompanyProfile}
-        acceptedTypes=".pdf"
-        maxSize={10}
-        title="Upload Company Profile"
+      <FileSelectorDialog
+        open={fileSelectorOpen}
+        onOpenChange={setFileSelectorOpen}
+        onSelect={handleSelectCompanyProfile}
+        title="Select Company Profile"
+        acceptedFileTypes=".pdf"
+        maxFileSize={10}
       />
     </DashboardLayout>
   );
