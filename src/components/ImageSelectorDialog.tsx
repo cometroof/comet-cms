@@ -17,7 +17,6 @@ import {
   getR2Images,
   uploadToR2,
   deleteFromR2,
-  uploadMultipleParallelToR2,
 } from "@/lib/r2-actions";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -42,14 +41,14 @@ const ImageSelectorDialog = ({
   const [previewUrl, setPreviewUrl] = useState("");
 
   // Mock image library
-  const mockImages = [
-    "/placeholder.svg",
-    "/placeholder.svg",
-    "/placeholder.svg",
-    "/placeholder.svg",
-    "/placeholder.svg",
-    "/placeholder.svg",
-  ];
+  // const mockImages = [
+  //   "/placeholder.svg",
+  //   "/placeholder.svg",
+  //   "/placeholder.svg",
+  //   "/placeholder.svg",
+  //   "/placeholder.svg",
+  //   "/placeholder.svg",
+  // ];
 
   // Query for fetching R2 images
   const {
@@ -345,7 +344,7 @@ const ImageSelectorDialog = ({
                 )}
 
                 {/* Mock Images Section */}
-                <div className="space-y-2">
+                {/*<div className="space-y-2">
                   <h3 className="text-sm font-medium">Placeholder Images</h3>
                   <div className="grid grid-cols-3 gap-4 max-h-48 overflow-y-auto">
                     {mockImages.map((url, index) => (
@@ -367,7 +366,7 @@ const ImageSelectorDialog = ({
                       </button>
                     ))}
                   </div>
-                </div>
+                </div>*/}
               </div>
             )}
 

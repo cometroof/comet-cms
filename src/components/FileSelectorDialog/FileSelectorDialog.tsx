@@ -24,10 +24,9 @@ import {
 } from "lucide-react";
 import {
   LibraryImage,
-  getR2Images as getR2Files,
+  getR2Files,
   uploadToR2 as uploadFileToR2,
   deleteFromR2,
-  uploadMultipleParallelToR2 as uploadMultipleFilesParallelToR2,
 } from "@/lib/r2-actions";
 
 // Define the LibraryFile type with required properties

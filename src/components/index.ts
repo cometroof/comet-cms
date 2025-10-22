@@ -9,6 +9,5 @@ export { default as DashboardLayout } from "@/components/DashboardLayout";
 
 // Dialog Components
 export { default as CertificateFormDialog } from "@/components/CertificateFormDialog";
-export { default as FileUploadDialog } from "@/components/FileUploadDialog";
 export { default as FileSelectorDialog } from "@/components/FileSelectorDialog/FileSelectorDialog";
 export { default as ImageSelectorDialog } from "@/components/ImageSelectorDialog";
