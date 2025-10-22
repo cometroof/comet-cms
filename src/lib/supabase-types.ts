@@ -89,9 +89,12 @@ export type Database = {
           file_url: string;
           filename: string;
           id: string;
+          image: string | null;
           info: string;
-          is_important: boolean | null;
+          is_important_info: boolean | null;
+          label_name: string | null;
           name: string;
+          order: number | null;
           updated_at: string | null;
         };
         Insert: {
@@ -101,9 +104,12 @@ export type Database = {
           file_url: string;
           filename: string;
           id?: string;
+          image?: string | null;
           info: string;
-          is_important?: boolean | null;
+          is_important_info?: boolean | null;
+          label_name?: string | null;
           name: string;
+          order?: number | null;
           updated_at?: string | null;
         };
         Update: {
@@ -113,9 +119,12 @@ export type Database = {
           file_url?: string;
           filename?: string;
           id?: string;
+          image?: string | null;
           info?: string;
-          is_important?: boolean | null;
+          is_important_info?: boolean | null;
+          label_name?: string | null;
           name?: string;
+          order?: number | null;
           updated_at?: string | null;
         };
         Relationships: [];

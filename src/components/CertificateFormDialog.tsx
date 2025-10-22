@@ -11,9 +11,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import FileSelectorDialog from "@/components/FileSelectorDialog/FileSelectorDialog";
-import { FileText, Upload, Loader2 } from "lucide-react";
+import ImageSelectorDialog from "@/components/ImageSelectorDialog";
+import { FileText, Upload, Loader2, Image } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CertificateFormData } from "@/pages/files/types";
 
@@ -36,11 +37,14 @@ const CertificateFormDialog = ({
   const [formData, setFormData] = useState<CertificateFormData>({
     name: "",
     info: "",
-    is_important: false,
+    is_important_info: false,
+    label_name: "",
+    image: "",
     description_en: "",
     description_id: "",
     file_url: "",
     filename: "",
+    order: 0,
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -50,21 +54,27 @@ const CertificateFormDialog = ({
       setFormData({
         name: certificate.name || "",
         info: certificate.info || "",
-        is_important: certificate.is_important || false,
+        is_important_info: certificate.is_important_info || false,
+        label_name: certificate.label_name || "",
+        image: certificate.image || "",
         description_en: certificate.description_en || "",
         description_id: certificate.description_id || "",
         file_url: certificate.file_url || "",
         filename: certificate.filename || "",
+        order: certificate.order || 0,
       });
     } else {
       setFormData({
         name: "",
         info: "",
-        is_important: false,
+        is_important_info: false,
+        label_name: "",
+        image: "",
         description_en: "",
         description_id: "",
         file_url: "",
         filename: "",
+        order: 0,
       });
     }
     setErrors({});
@@ -107,6 +117,8 @@ const CertificateFormDialog = ({
     }
   };
 
+  const [imageSelectorOpen, setImageSelectorOpen] = useState(false);
+
   const handleFileSelect = (fileUrl: string) => {
     setFormData({
       ...formData,
@@ -114,6 +126,14 @@ const CertificateFormDialog = ({
       filename: fileUrl.split("/").pop() || "certificate.pdf",
     });
     setFileSelectorOpen(false);
+  };
+
+  const handleImageSelect = (imageUrl: string) => {
+    setFormData({
+      ...formData,
+      image: imageUrl,
+    });
+    setImageSelectorOpen(false);
   };
 
   return (
@@ -137,6 +157,35 @@ const CertificateFormDialog = ({
           </DialogHeader>
 
           <div className="space-y-4 py-4" aria-disabled={isSubmitting}>
+            {/* Icon Image */}
+            <div className="space-y-2">
+              <Label htmlFor="image">Icon Image</Label>
+              <div className="flex gap-2 items-center">
+                {formData.image && (
+                  <div className="flex items-center gap-2 p-2 border rounded">
+                    <img
+                      src={formData.image}
+                      alt="Icon"
+                      className="h-8 w-8 object-contain"
+                    />
+                    <span className="text-sm truncate max-w-[200px]">
+                      {formData?.image?.split?.("/")?.pop()}
+                    </span>
+                  </div>
+                )}
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setImageSelectorOpen(true)}
+                  className="gap-2"
+                  disabled={isSubmitting}
+                >
+                  <Image className="w-4 h-4" />
+                  {formData.image ? "Change Icon" : "Select Icon"}
+                </Button>
+              </div>
+            </div>
+
             {/* Name */}
             <div className="space-y-2">
               <Label htmlFor="name">Name *</Label>
@@ -158,43 +207,72 @@ const CertificateFormDialog = ({
               )}
             </div>
 
-            {/* Info */}
+            {/* Label Name */}
             <div className="space-y-2">
-              <Label htmlFor="info">Info</Label>
+              <Label htmlFor="label_name">Label Name</Label>
               <Input
-                id="info"
-                value={formData.info}
+                id="label_name"
+                value={formData.label_name}
                 onChange={(e) =>
-                  setFormData({ ...formData, info: e.target.value })
+                  setFormData({ ...formData, label_name: e.target.value })
                 }
-                placeholder="e.g., Quality Management System"
+                placeholder="e.g., Certificate"
                 maxLength={200}
                 disabled={isSubmitting}
               />
               <p className="text-xs text-muted-foreground">
-                {formData.info.length}/200
+                {formData.label_name ? formData.label_name.length : 0}/200
               </p>
-              {errors.info && (
-                <p className="text-sm text-destructive">{errors.info}</p>
-              )}
+              <p className="text-xs text-muted-foreground">
+                The label will be shown in the product page
+              </p>
             </div>
 
-            {/* Is Important */}
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="is_important"
-                checked={formData.is_important}
-                onCheckedChange={(checked) =>
-                  setFormData({ ...formData, is_important: checked as boolean })
-                }
-                disabled={isSubmitting}
-              />
-              <Label
-                htmlFor="is_important"
-                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-              >
-                Mark as Important
-              </Label>
+            {/* Info and Is Important Info (side by side) */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="space-y-2 md:col-span-3">
+                <Label htmlFor="info">Info</Label>
+                <Input
+                  id="info"
+                  value={formData.info}
+                  onChange={(e) =>
+                    setFormData({ ...formData, info: e.target.value })
+                  }
+                  placeholder="e.g., Quality Management System"
+                  maxLength={200}
+                  disabled={isSubmitting}
+                />
+                <p className="text-xs text-muted-foreground">
+                  {formData.info.length}/200
+                </p>
+                {errors.info && (
+                  <p className="text-sm text-destructive">{errors.info}</p>
+                )}
+              </div>
+
+              <div className="flex items-center space-x-2 md:col-span-1">
+                <div className="flex flex-col items-center space-y-2 w-full">
+                  <Label htmlFor="is_important_info" className="w-full">
+                    Important Info
+                  </Label>
+                  <div className="flex items-center space-x-2 w-full">
+                    <Switch
+                      id="is_important_info"
+                      checked={formData.is_important_info}
+                      onCheckedChange={(checked) =>
+                        setFormData({ ...formData, is_important_info: checked })
+                      }
+                      disabled={isSubmitting}
+                    />
+                    <Label
+                      htmlFor="is_important_info"
+                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                    >
+                      {formData.is_important_info ? "Yes" : "No"}
+                    </Label>
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* Description Tabs */}
@@ -266,9 +344,9 @@ const CertificateFormDialog = ({
               </Tabs>
             </div>
 
-            {/* File */}
+            {/* Certificate File */}
             <div className="space-y-2">
-              <Label htmlFor="file">File (PDF or Image)</Label>
+              <Label htmlFor="file">Certificate File (PDF)</Label>
               <div className="flex gap-2 items-center">
                 {formData.file_url && (
                   <div className="flex items-center gap-2 p-2 border rounded">
@@ -323,9 +401,18 @@ const CertificateFormDialog = ({
           if (!isSubmitting) setFileSelectorOpen(isOpen);
         }}
         onSelect={handleFileSelect}
-        acceptedFileTypes=".pdf,.jpg,.jpeg,.png"
+        acceptedFileTypes=".pdf"
         maxFileSize={10}
         title="Select Certificate File"
+      />
+
+      <ImageSelectorDialog
+        open={imageSelectorOpen}
+        onOpenChange={(isOpen) => {
+          if (!isSubmitting) setImageSelectorOpen(isOpen);
+        }}
+        onSelect={handleImageSelect}
+        title="Select Certificate Icon"
       />
     </>
   );

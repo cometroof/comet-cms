@@ -1,5 +1,11 @@
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  DragDropContext,
+  Droppable,
+  Draggable,
+  DropResult,
+} from "@hello-pangea/dnd";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,8 +35,8 @@ import {
   FileText,
   Star,
   Loader2,
+  GripVertical,
 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import CertificateFormDialog from "@/components/CertificateFormDialog";
 import FileSelectorDialog from "@/components/FileSelectorDialog/FileSelectorDialog";
@@ -48,7 +54,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import type {
   Certificate,
-  CompanyProfile,
   CertificateFormData,
   CompanyProfileFormData,
 } from "./types";
@@ -59,13 +64,14 @@ import {
   createCertificate,
   updateCertificate,
   deleteCertificate,
+  updateCertificateOrder,
 } from "@/lib/files-service";
 
 const Files = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
-  const [filterImportant, setFilterImportant] = useState<boolean | null>(null);
+  // No longer needed filter
   const [certificateDialogOpen, setCertificateDialogOpen] = useState(false);
   const [editingCertificate, setEditingCertificate] =
     useState<Certificate | null>(null);
@@ -121,10 +127,69 @@ const Files = () => {
     const matchesSearch =
       cert.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       cert.info.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesFilter =
-      filterImportant === null || cert.is_important === filterImportant;
-    return matchesSearch && matchesFilter;
+    return matchesSearch;
   });
+
+  // Mutation for updating certificate order
+  const updateOrderMutation = useMutation({
+    mutationFn: (certificates: { id: string; order: number }[]) =>
+      updateCertificateOrder(certificates),
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Certificate order updated successfully",
+      });
+    },
+    onError: (error) => {
+      console.error("Error updating certificate order:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to update certificate order",
+      });
+      // Refetch to restore original order
+      queryClient.invalidateQueries({ queryKey: ["certificates"] });
+    },
+  });
+
+  // Handle drag and drop reordering
+  const handleDragEnd = (result: DropResult) => {
+    // dropped outside the list
+    if (!result.destination) {
+      return;
+    }
+
+    const sourceIndex = result.source.index;
+    const destinationIndex = result.destination.index;
+
+    if (sourceIndex === destinationIndex) {
+      return;
+    }
+
+    // Create a copy of the current certificates array
+    const updatedCertificates = [...certificates];
+
+    // Remove the dragged item and insert at the destination
+    const [removed] = updatedCertificates.splice(sourceIndex, 1);
+    updatedCertificates.splice(destinationIndex, 0, removed);
+
+    // Update order property for all certificates based on their new positions
+    const reorderedCertificates = updatedCertificates.map((cert, index) => ({
+      ...cert,
+      order: index,
+    }));
+
+    // Update the cache immediately for a responsive UI
+    queryClient.setQueryData(["certificates"], reorderedCertificates);
+
+    // Save the new order to the database
+    updateOrderMutation.mutate(
+      reorderedCertificates.map((cert) => ({
+        id: cert.id,
+        order: cert.order as number,
+      })),
+    );
+  };
 
   const formatFileSize = (bytes: number): string => {
     if (bytes < 1024) return bytes + " B";
@@ -420,21 +485,13 @@ const Files = () => {
           <TabsContent value="certificates" className="space-y-4">
             <Card>
               <CardHeader>
-                <div className="flex items-center justify-between">
+                <div className="flex items-center">
                   <div>
                     <CardTitle>Certificates</CardTitle>
                     <CardDescription>
                       Manage company and product certificates
                     </CardDescription>
                   </div>
-                  <Button
-                    onClick={handleAddCertificate}
-                    size="sm"
-                    className="gap-2"
-                  >
-                    <Plus className="w-4 h-4" />
-                    Add Certificate
-                  </Button>
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -448,29 +505,14 @@ const Files = () => {
                       className="pl-10"
                     />
                   </div>
-                  <div className="flex gap-2">
+                  <div>
                     <Button
-                      variant={filterImportant === null ? "default" : "outline"}
                       size="sm"
-                      onClick={() => setFilterImportant(null)}
+                      onClick={() => handleAddCertificate()}
+                      className="gap-2"
                     >
-                      All
-                    </Button>
-                    <Button
-                      variant={filterImportant === true ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setFilterImportant(true)}
-                    >
-                      Important
-                    </Button>
-                    <Button
-                      variant={
-                        filterImportant === false ? "default" : "outline"
-                      }
-                      size="sm"
-                      onClick={() => setFilterImportant(false)}
-                    >
-                      Regular
+                      <Plus className="w-4 h-4" />
+                      Add Certificate
                     </Button>
                   </div>
                 </div>
@@ -479,6 +521,8 @@ const Files = () => {
                   <Table>
                     <TableHeader>
                       <TableRow>
+                        <TableHead className="w-8"></TableHead>
+                        <TableHead className="w-16"></TableHead>
                         <TableHead>Name</TableHead>
                         <TableHead>Info</TableHead>
                         <TableHead>File</TableHead>
@@ -487,74 +531,128 @@ const Files = () => {
                         </TableHead>
                       </TableRow>
                     </TableHeader>
-                    <TableBody>
-                      {certificatesLoading ? (
-                        <TableRow>
-                          <TableCell colSpan={4} className="text-center py-8">
-                            <div className="flex justify-center items-center">
-                              <Loader2 className="w-6 h-6 animate-spin text-primary mr-2" />
-                              <span>Loading certificates...</span>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ) : filteredCertificates.length === 0 ? (
-                        <TableRow>
-                          <TableCell
-                            colSpan={4}
-                            className="text-center text-muted-foreground py-8"
+                    <DragDropContext onDragEnd={handleDragEnd}>
+                      <Droppable droppableId="certificates">
+                        {(provided) => (
+                          <TableBody
+                            {...provided.droppableProps}
+                            ref={provided.innerRef}
                           >
-                            No certificates found
-                          </TableCell>
-                        </TableRow>
-                      ) : (
-                        filteredCertificates.map((cert) => (
-                          <TableRow key={cert.id}>
-                            <TableCell>
-                              <div className="flex items-center gap-2">
-                                <span className="font-medium">{cert.name}</span>
-                                {cert.is_important && (
-                                  <Badge variant="default" className="gap-1">
-                                    <Star className="w-3 h-3" />
-                                    Important
-                                  </Badge>
-                                )}
-                              </div>
-                            </TableCell>
-                            <TableCell className="text-muted-foreground">
-                              {cert.info}
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-2 text-sm">
-                                <FileText className="w-4 h-4 text-muted-foreground" />
-                                <span className="truncate max-w-[200px]">
-                                  {cert.filename}
-                                </span>
-                              </div>
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex justify-end gap-2">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleEditCertificate(cert)}
+                            {certificatesLoading ? (
+                              <TableRow>
+                                <TableCell
+                                  colSpan={6}
+                                  className="text-center py-8"
                                 >
-                                  <Edit className="w-4 h-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() =>
-                                    handleConfirmDeleteCertificate(cert.id)
-                                  }
+                                  <div className="flex justify-center items-center">
+                                    <Loader2 className="w-6 h-6 animate-spin text-primary mr-2" />
+                                    <span>Loading certificates...</span>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            ) : filteredCertificates.length === 0 ? (
+                              <TableRow>
+                                <TableCell
+                                  colSpan={6}
+                                  className="text-center text-muted-foreground py-8"
                                 >
-                                  <Trash2 className="w-4 h-4 text-destructive" />
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ))
-                      )}
-                    </TableBody>
+                                  No certificates found
+                                </TableCell>
+                              </TableRow>
+                            ) : (
+                              filteredCertificates.map((cert, index) => (
+                                <Draggable
+                                  key={cert.id}
+                                  draggableId={cert.id}
+                                  index={index}
+                                >
+                                  {(provided, snapshot) => (
+                                    <TableRow
+                                      key={cert.id}
+                                      ref={provided.innerRef}
+                                      {...provided.draggableProps}
+                                      className={
+                                        snapshot.isDragging ? "opacity-50" : ""
+                                      }
+                                    >
+                                      <TableCell
+                                        {...provided.dragHandleProps}
+                                        className="w-8 cursor-grab"
+                                      >
+                                        <GripVertical className="h-5 w-5 text-muted-foreground" />
+                                      </TableCell>
+                                      <TableCell>
+                                        {cert.image ? (
+                                          <div className="flex justify-center items-center">
+                                            <img
+                                              src={cert.image}
+                                              alt={cert.name}
+                                              className="h-10 w-10 object-contain"
+                                            />
+                                          </div>
+                                        ) : (
+                                          <div className="flex justify-center items-center h-10 w-10">
+                                            <FileText className="h-6 w-6 text-muted-foreground" />
+                                          </div>
+                                        )}
+                                      </TableCell>
+                                      <TableCell>
+                                        <div className="flex flex-col">
+                                          <span className="font-medium">
+                                            {cert.name}
+                                          </span>
+                                          {cert.label_name && (
+                                            <span className="text-sm text-muted-foreground">
+                                              {cert.label_name}
+                                            </span>
+                                          )}
+                                        </div>
+                                      </TableCell>
+                                      <TableCell className="text-muted-foreground">
+                                        {cert.info}
+                                      </TableCell>
+                                      <TableCell>
+                                        <div className="flex items-center gap-2 text-sm">
+                                          <FileText className="w-4 h-4 text-muted-foreground" />
+                                          <span className="truncate max-w-[200px]">
+                                            {cert.filename}
+                                          </span>
+                                        </div>
+                                      </TableCell>
+                                      <TableCell className="text-right">
+                                        <div className="flex justify-end gap-2">
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() =>
+                                              handleEditCertificate(cert)
+                                            }
+                                          >
+                                            <Edit className="w-4 h-4" />
+                                          </Button>
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() =>
+                                              handleConfirmDeleteCertificate(
+                                                cert.id,
+                                              )
+                                            }
+                                          >
+                                            <Trash2 className="w-4 h-4 text-destructive" />
+                                          </Button>
+                                        </div>
+                                      </TableCell>
+                                    </TableRow>
+                                  )}
+                                </Draggable>
+                              ))
+                            )}
+                            {provided.placeholder}
+                          </TableBody>
+                        )}
+                      </Droppable>
+                    </DragDropContext>
                   </Table>
                 </div>
               </CardContent>

@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useCallback, useEffect } from "react";
+import { useDropzone } from "react-dropzone";
 import {
   Dialog,
   DialogContent,
@@ -11,7 +12,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Upload, Link as LinkIcon, Trash2, Loader2 } from "lucide-react";
+import {
+  Upload,
+  Link as LinkIcon,
+  Trash2,
+  Loader2,
+  CheckCircle2,
+} from "lucide-react";
 import {
   LibraryImage,
   getR2Images,
@@ -20,12 +27,24 @@ import {
 } from "@/lib/r2-actions";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { cn } from "@/lib/utils";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogFooter,
+  AlertDialogTrigger,
+} from "./ui/alert-dialog";
 
 type ImageSelectorDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSelect: (imageUrl: string) => void;
+  onSelect: (imageUrl: string | string[]) => void;
   title?: string;
+  multiple?: boolean;
+  multipleSelection?: boolean;
+  initialSelection?: string | string[];
 };
 
 const ImageSelectorDialog = ({
@@ -33,22 +52,33 @@ const ImageSelectorDialog = ({
   onOpenChange,
   onSelect,
   title = "Select Image",
+  multiple = true,
+  multipleSelection = true,
+  initialSelection = "",
 }: ImageSelectorDialogProps) => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [imageUrl, setImageUrl] = useState("");
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState("");
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [previewUrls, setPreviewUrls] = useState<string[]>([]);
+  const [selectedUrls, setSelectedUrls] = useState<string[]>([]);
+  const [uploadingFiles, setUploadingFiles] = useState<string[]>([]);
+  const [activeTab, setActiveTab] = useState("upload");
 
-  // Mock image library
-  // const mockImages = [
-  //   "/placeholder.svg",
-  //   "/placeholder.svg",
-  //   "/placeholder.svg",
-  //   "/placeholder.svg",
-  //   "/placeholder.svg",
-  //   "/placeholder.svg",
-  // ];
+  // Set initial selection when dialog opens
+  useEffect(() => {
+    if (open) {
+      if (initialSelection) {
+        if (typeof initialSelection === "string") {
+          setSelectedUrls([initialSelection]);
+        } else {
+          setSelectedUrls([...initialSelection]);
+        }
+      } else {
+        setSelectedUrls([]);
+      }
+    }
+  }, [open, initialSelection]);
 
   // Query for fetching R2 images
   const {
@@ -58,32 +88,38 @@ const ImageSelectorDialog = ({
   } = useQuery({
     queryKey: ["r2Images"],
     queryFn: getR2Images,
-    enabled: open, // Only fetch when dialog is open
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    enabled: open,
+    staleTime: 1000 * 60 * 5,
   });
 
   // Mutation for uploading an image
   const uploadMutation = useMutation({
     mutationFn: (formData: FormData) => uploadToR2(formData),
-    onSuccess: (uploadedImage) => {
+    onSuccess: (uploadedImage, formData) => {
       // Update the cache with the new image
       queryClient.setQueryData(["r2Images"], (oldData: LibraryImage[] = []) => [
         uploadedImage,
         ...oldData,
       ]);
 
-      // Select the uploaded image
-      onSelect(uploadedImage.url);
-
-      // Reset form
-      resetForm();
+      // Get filename from FormData to remove from uploading list
+      const file = formData.get("file") as File;
+      if (file) {
+        setUploadingFiles((prev) => prev.filter((name) => name !== file.name));
+      }
 
       toast({
         title: "Image uploaded",
-        description: "Image was successfully uploaded and selected",
+        description: "Image was successfully uploaded to library",
       });
     },
-    onError: (error) => {
+    onError: (error, formData) => {
+      // Remove from uploading files list on error
+      const file = formData.get("file") as File;
+      if (file) {
+        setUploadingFiles((prev) => prev.filter((name) => name !== file.name));
+      }
+
       toast({
         title: "Upload failed",
         description: (error as Error).message,
@@ -97,10 +133,20 @@ const ImageSelectorDialog = ({
     mutationFn: (key: string) => deleteFromR2(key),
     onSuccess: (result, key) => {
       if (result.success) {
-        // Update the cache by removing the deleted image
         queryClient.setQueryData(["r2Images"], (oldData: LibraryImage[] = []) =>
           oldData.filter((image) => image.Key !== key),
         );
+
+        const deletedImage = libraryImages.find((img) => img.Key === key);
+        if (deletedImage && selectedUrls.includes(deletedImage.url)) {
+          const newSelection = selectedUrls.filter(
+            (url) => url !== deletedImage.url,
+          );
+          setSelectedUrls(newSelection);
+          if (multiple) {
+            onSelect(newSelection);
+          }
+        }
 
         toast({
           title: "Image deleted",
@@ -119,43 +165,111 @@ const ImageSelectorDialog = ({
     },
   });
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        toast({
-          title: "File too large",
-          description: "File size must be less than 5MB",
-          variant: "destructive",
-        });
-        return;
+  const onDrop = useCallback(
+    (acceptedFiles: File[]) => {
+      const validFiles = acceptedFiles.filter((file) => {
+        if (file.size > 5 * 1024 * 1024) {
+          toast({
+            title: "File too large",
+            description: `${file.name}: File size must be less than 5MB`,
+            variant: "destructive",
+          });
+          return false;
+        }
+        return true;
+      });
+
+      if (validFiles.length === 0) return;
+
+      if (!multiple) {
+        // Single file mode - replace existing file
+        const file = validFiles[0];
+        setSelectedFiles([file]);
+        const url = URL.createObjectURL(file);
+        setPreviewUrls([url]);
+
+        if (validFiles.length > 1) {
+          toast({
+            title: "Single file mode",
+            description: `Only the first image (${file.name}) will be uploaded`,
+          });
+        }
+      } else {
+        // Multiple files mode - add to existing files
+        setSelectedFiles((prevFiles) => [...prevFiles, ...validFiles]);
+        const urls = validFiles.map((file) => URL.createObjectURL(file));
+        setPreviewUrls((prevUrls) => [...prevUrls, ...urls]);
       }
-      setSelectedFile(file);
-      const url = URL.createObjectURL(file);
-      setPreviewUrl(url);
-    }
-  };
+    },
+    [toast, multiple],
+  );
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: {
+      "image/*": [".jpeg", ".jpg", ".png", ".gif", ".webp", ".svg"],
+    },
+    maxSize: 5 * 1024 * 1024,
+    multiple: multiple,
+  });
 
   const handleUpload = async () => {
-    if (!selectedFile) return;
+    if (selectedFiles.length === 0) return;
 
-    const formData = new FormData();
-    formData.append("file", selectedFile);
+    // Add all files to uploading list
+    const fileNames = selectedFiles.map((f) => f.name);
+    setUploadingFiles((prev) => [...prev, ...fileNames]);
 
-    uploadMutation.mutate(formData);
+    // Switch to Library tab to show upload progress
+    setActiveTab("library");
+
+    // Upload files sequentially
+    for (const file of selectedFiles) {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      try {
+        await uploadMutation.mutateAsync(formData);
+      } catch (error) {
+        // Error already handled in onError callback
+        console.error("Upload error:", error);
+      }
+    }
+
+    // Reset form after all uploads complete
+    resetForm(false);
   };
 
   const handleUrlSubmit = () => {
     if (imageUrl) {
-      onSelect(imageUrl);
-      resetForm();
+      if (multipleSelection) {
+        const newSelection = [...selectedUrls, imageUrl];
+        setSelectedUrls(newSelection);
+        onSelect(newSelection);
+        setImageUrl("");
+      } else {
+        onSelect(imageUrl);
+        onOpenChange(false);
+      }
     }
   };
 
   const handleLibrarySelect = (url: string) => {
-    onSelect(url);
-    resetForm();
-    onOpenChange(false);
+    if (multiple) {
+      let newSelection: string[];
+
+      if (selectedUrls.includes(url)) {
+        newSelection = selectedUrls.filter((item) => item !== url);
+      } else {
+        newSelection = [...selectedUrls, url];
+      }
+
+      setSelectedUrls(newSelection);
+      onSelect(url);
+    } else {
+      onSelect(url);
+      onOpenChange(false);
+    }
   };
 
   const handleDelete = (image: LibraryImage) => {
@@ -163,14 +277,29 @@ const ImageSelectorDialog = ({
     deleteMutation.mutate(image.Key);
   };
 
-  const resetForm = () => {
-    setImageUrl("");
-    setSelectedFile(null);
-    setPreviewUrl("");
+  const removeUploadPreview = (index: number) => {
+    setPreviewUrls((prev) => prev.filter((_, i) => i !== index));
+    setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const isUploading = uploadMutation.isPending;
+  const resetForm = (clearSelection = true) => {
+    setImageUrl("");
+    setSelectedFiles([]);
+    setPreviewUrls([]);
+    if (clearSelection) {
+      setSelectedUrls([]);
+    }
+  };
+
+  const isUploading = uploadMutation.isPending || uploadingFiles.length > 0;
   const isDeleting = deleteMutation.isPending;
+
+  const handleComplete = () => {
+    if (multipleSelection) {
+      onSelect(selectedUrls);
+    }
+    onOpenChange(false);
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -178,67 +307,177 @@ const ImageSelectorDialog = ({
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>
-            Upload a new image, paste a URL, or select from the library
+            {multipleSelection
+              ? "Select multiple images by clicking on them. You can upload new images, use URLs, or choose from the library."
+              : "Upload a new image, paste a URL, or select from the library"}
           </DialogDescription>
         </DialogHeader>
 
-        <Tabs defaultValue="upload" className="w-full">
+        {multipleSelection && selectedUrls.length > 0 && (
+          <div className="bg-muted/30 p-2 rounded-md">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-sm font-medium">
+                Selected Images ({selectedUrls.length})
+              </h3>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSelectedUrls([])}
+              >
+                Clear All
+              </Button>
+            </div>
+            <div className="flex flex-wrap gap-2 max-h-24 overflow-y-auto p-1">
+              {selectedUrls.map((url, index) => (
+                <div
+                  key={`selected-${index}`}
+                  className="relative group h-16 w-16"
+                >
+                  <img
+                    src={url}
+                    alt={`Selected ${index + 1}`}
+                    className="h-full w-full object-cover rounded-sm border border-border"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = "/placeholder.svg";
+                    }}
+                  />
+                  <Button
+                    size="icon"
+                    variant="destructive"
+                    className="absolute top-0 right-0 h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={() => {
+                      const newSelection = selectedUrls.filter(
+                        (_, i) => i !== index,
+                      );
+                      setSelectedUrls(newSelection);
+                      onSelect(newSelection);
+                    }}
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="upload">Upload</TabsTrigger>
             <TabsTrigger value="url">URL</TabsTrigger>
-            <TabsTrigger value="library">Library</TabsTrigger>
+            <TabsTrigger value="library">
+              Library
+              {uploadingFiles.length > 0 && (
+                <span className="ml-2 flex items-center">
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                </span>
+              )}
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="upload" className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="file">Choose Image</Label>
-              <Input
-                id="file"
-                type="file"
-                accept="image/*"
-                onChange={handleFileSelect}
-                disabled={isUploading}
-              />
-              <p className="text-xs text-muted-foreground">
-                Max file size: 5MB
-              </p>
+              <Label>Choose Image{multiple ? "s" : ""}</Label>
+              <div
+                {...getRootProps()}
+                className={cn(
+                  "border-2 border-dashed rounded-md p-6 cursor-pointer text-center transition-colors",
+                  isDragActive
+                    ? "border-primary bg-primary/5"
+                    : "border-muted-foreground/25 hover:border-primary/50",
+                  isUploading && "opacity-50 cursor-not-allowed",
+                )}
+              >
+                <input {...getInputProps()} disabled={isUploading} />
+                <div className="flex flex-col items-center gap-2">
+                  <Upload className="h-8 w-8 text-muted-foreground" />
+                  {isDragActive ? (
+                    <p>Drop the image{multiple ? "s" : ""} here...</p>
+                  ) : (
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium">
+                        Drag & drop or click to upload
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {multiple ? "Multiple images allowed. " : ""}Max file
+                        size: 5MB
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
 
-            {previewUrl && (
+            {previewUrls.length > 0 && (
               <div className="space-y-2">
-                <Label>Preview</Label>
-                <img
-                  src={previewUrl}
-                  alt="Preview"
-                  className="w-full h-64 object-cover rounded border"
-                />
+                <div className="flex items-center justify-between">
+                  <Label>
+                    Preview
+                    {previewUrls.length > 1 ? `s (${previewUrls.length})` : ""}
+                  </Label>
+                  {previewUrls.length > 1 && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setPreviewUrls([]);
+                        setSelectedFiles([]);
+                      }}
+                    >
+                      Clear All
+                    </Button>
+                  )}
+                </div>
+                <div
+                  className={`grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-[300px] overflow-y-auto`}
+                >
+                  {previewUrls.map((url, index) => (
+                    <div key={index} className="relative group">
+                      <img
+                        src={url}
+                        alt={`Preview ${index + 1}`}
+                        className="w-full h-40 object-cover rounded border"
+                      />
+                      <Button
+                        size="icon"
+                        variant="destructive"
+                        className="absolute top-2 right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={() => removeUploadPreview(index)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
 
             <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-                disabled={isUploading}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleUpload}
-                disabled={!selectedFile || isUploading}
-              >
-                {isUploading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Uploading...
-                  </>
-                ) : (
-                  <>
-                    <Upload className="w-4 h-4 mr-2" />
-                    Upload & Select
-                  </>
-                )}
-              </Button>
+              <div className="flex gap-2 w-full justify-end">
+                <Button
+                  variant="outline"
+                  onClick={() => onOpenChange(false)}
+                  disabled={isUploading}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleUpload}
+                  disabled={selectedFiles.length === 0 || isUploading}
+                >
+                  {isUploading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Uploading...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-4 h-4 mr-2" />
+                      Upload to Library
+                    </>
+                  )}
+                </Button>
+              </div>
             </DialogFooter>
           </TabsContent>
 
@@ -260,7 +499,7 @@ const ImageSelectorDialog = ({
                 <img
                   src={imageUrl}
                   alt="Preview"
-                  className="w-full h-64 object-cover rounded border"
+                  className="w-full h-40 object-cover rounded border"
                   onError={(e) => {
                     (e.target as HTMLImageElement).src = "/placeholder.svg";
                   }}
@@ -269,13 +508,21 @@ const ImageSelectorDialog = ({
             )}
 
             <DialogFooter>
-              <Button variant="outline" onClick={() => onOpenChange(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleUrlSubmit} disabled={!imageUrl}>
-                <LinkIcon className="w-4 h-4 mr-2" />
-                Use This URL
-              </Button>
+              <div className="flex gap-2 w-full justify-end">
+                <Button variant="outline" onClick={() => onOpenChange(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={handleUrlSubmit} disabled={!imageUrl}>
+                  <LinkIcon className="w-4 h-4 mr-2" />
+                  {multipleSelection ? "Add to Selection" : "Use This URL"}
+                </Button>
+                {multipleSelection && selectedUrls.length > 0 && (
+                  <Button onClick={handleComplete}>
+                    <CheckCircle2 className="w-4 h-4 mr-2" />
+                    Done ({selectedUrls.length})
+                  </Button>
+                )}
+              </div>
             </DialogFooter>
           </TabsContent>
 
@@ -287,19 +534,43 @@ const ImageSelectorDialog = ({
               </div>
             ) : (
               <div className="space-y-6">
-                {/* R2 Images Section */}
-                {libraryImages.length > 0 && (
+                {libraryImages.length > 0 || uploadingFiles.length > 0 ? (
                   <div className="space-y-2">
                     <h3 className="text-sm font-medium">Cloud Images</h3>
-                    <div className="grid grid-cols-3 gap-4 max-h-48 overflow-y-auto">
+                    <div className="grid grid-cols-4 gap-4 overflow-y-auto max-h-[400px] p-1">
+                      {/* Show uploading files as loading placeholders */}
+                      {uploadingFiles.map((fileName, index) => (
+                        <div key={`uploading-${index}`} className="relative">
+                          <div className="w-full h-32 bg-muted rounded-lg border-2 border-dashed border-muted-foreground/25 flex items-center justify-center">
+                            <div className="flex flex-col items-center gap-2">
+                              <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                              <span className="text-xs text-muted-foreground">
+                                Uploading...
+                              </span>
+                            </div>
+                          </div>
+                          <p className="text-xs mt-1 truncate text-muted-foreground">
+                            {fileName}
+                          </p>
+                        </div>
+                      ))}
+
+                      {/* Show existing library images */}
                       {libraryImages
                         .filter((item) => item.size > 0)
                         .map((image) => {
+                          const isSelected = selectedUrls.includes(image.url);
                           return (
                             <div key={image.id} className="group relative">
                               <button
+                                type="button"
                                 onClick={() => handleLibrarySelect(image.url)}
-                                className="w-full relative group overflow-hidden rounded-lg border-2 border-transparent hover:border-primary transition-all"
+                                className={cn(
+                                  "w-full relative group overflow-hidden rounded-lg border-2 transition-all",
+                                  isSelected
+                                    ? "border-primary"
+                                    : "border-transparent hover:border-primary/50",
+                                )}
                               >
                                 <img
                                   src={image.url}
@@ -310,29 +581,69 @@ const ImageSelectorDialog = ({
                                       "/placeholder.svg";
                                   }}
                                 />
-                                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                  <span className="text-white text-sm font-medium">
-                                    Select
+                                <div
+                                  className={cn(
+                                    "absolute inset-0 bg-black/50 flex items-center justify-center",
+                                    isSelected
+                                      ? "opacity-100"
+                                      : "opacity-0 group-hover:opacity-100",
+                                    "transition-opacity",
+                                  )}
+                                >
+                                  <span className="text-white text-sm font-medium flex items-center">
+                                    {isSelected && (
+                                      <CheckCircle2 className="w-4 h-4 mr-1 text-primary" />
+                                    )}
+                                    {isSelected ? "Selected" : "Select"}
                                   </span>
                                 </div>
                               </button>
-                              <Button
-                                size="icon"
-                                variant="destructive"
-                                className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleDelete(image);
-                                }}
-                                disabled={isDeleting}
-                              >
-                                {deleteMutation.isPending &&
-                                deleteMutation.variables === image.Key ? (
-                                  <Loader2 className="h-4 w-4 animate-spin" />
-                                ) : (
-                                  <Trash2 className="h-4 w-4" />
-                                )}
-                              </Button>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button
+                                    size="icon"
+                                    variant="destructive"
+                                    className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                                    disabled={isDeleting}
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    {deleteMutation.isPending &&
+                                    deleteMutation.variables === image.Key ? (
+                                      <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                      <Trash2 className="h-4 w-4" />
+                                    )}
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <p className="text-sm">
+                                    Are you sure you want to delete this image?
+                                  </p>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>
+                                      Cancel
+                                    </AlertDialogCancel>
+                                    <AlertDialogAction asChild>
+                                      <Button
+                                        variant="destructive"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleDelete(image);
+                                        }}
+                                        disabled={isDeleting}
+                                      >
+                                        {deleteMutation.isPending &&
+                                        deleteMutation.variables ===
+                                          image.Key ? (
+                                          <Loader2 className="h-4 w-4 animate-spin" />
+                                        ) : (
+                                          "Delete"
+                                        )}
+                                      </Button>
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
                               <p className="text-xs mt-1 truncate">
                                 {image.name}
                               </p>
@@ -341,50 +652,44 @@ const ImageSelectorDialog = ({
                         })}
                     </div>
                   </div>
-                )}
-
-                {/* Mock Images Section */}
-                {/*<div className="space-y-2">
-                  <h3 className="text-sm font-medium">Placeholder Images</h3>
-                  <div className="grid grid-cols-3 gap-4 max-h-48 overflow-y-auto">
-                    {mockImages.map((url, index) => (
-                      <button
-                        key={`mock-${index}`}
-                        onClick={() => handleLibrarySelect(url)}
-                        className="relative group overflow-hidden rounded-lg border-2 border-transparent hover:border-primary transition-all"
-                      >
-                        <img
-                          src={url}
-                          alt={`Placeholder ${index + 1}`}
-                          className="w-full h-32 object-cover"
-                        />
-                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                          <span className="text-white text-sm font-medium">
-                            Select
-                          </span>
-                        </div>
-                      </button>
-                    ))}
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground">
+                    No images found in the library.
                   </div>
-                </div>*/}
+                )}
               </div>
             )}
 
-            <Button
-              variant="outline"
-              className="w-full"
-              onClick={() => refetch()}
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Refreshing...
-                </>
-              ) : (
-                "Refresh Library"
-              )}
-            </Button>
+            <DialogFooter>
+              <div className="flex gap-2 w-full justify-between">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => refetch()}
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Refreshing...
+                    </>
+                  ) : (
+                    "Refresh Library"
+                  )}
+                </Button>
+                <div className="flex gap-2">
+                  <Button variant="outline" onClick={() => onOpenChange(false)}>
+                    Cancel
+                  </Button>
+                  {multipleSelection && selectedUrls.length > 0 && (
+                    <Button onClick={handleComplete}>
+                      <CheckCircle2 className="w-4 h-4 mr-2" />
+                      Done ({selectedUrls.length})
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </DialogFooter>
           </TabsContent>
         </Tabs>
       </DialogContent>

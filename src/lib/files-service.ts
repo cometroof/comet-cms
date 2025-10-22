@@ -28,7 +28,7 @@ export async function getCompanyProfile(): Promise<CompanyProfile | null> {
 
 export async function updateCompanyProfile(
   profileData: CompanyProfileUpdate,
-  id?: string
+  id?: string,
 ): Promise<CompanyProfile | null> {
   // If we have an existing profile, update it
   if (id) {
@@ -54,7 +54,7 @@ export async function updateCompanyProfile(
     const { data, error } = await supabase
       .from("company_profile")
       .insert({
-        ...profileData as CompanyProfileInsert,
+        ...(profileData as CompanyProfileInsert),
         uploaded_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       })
@@ -71,7 +71,7 @@ export async function updateCompanyProfile(
 }
 
 export async function uploadCompanyProfileFile(
-  formData: FormData
+  formData: FormData,
 ): Promise<LibraryImage | null> {
   try {
     return await uploadToR2(formData);
@@ -86,7 +86,8 @@ export async function getCertificates(): Promise<Certificate[]> {
   const { data, error } = await supabase
     .from("certificates")
     .select("*")
-    .order("is_important", { ascending: false })
+    .order("is_important_info", { ascending: false })
+    .order("order", { ascending: true })
     .order("name", { ascending: true });
 
   if (error) {
@@ -97,7 +98,9 @@ export async function getCertificates(): Promise<Certificate[]> {
   return data || [];
 }
 
-export async function getCertificateById(id: string): Promise<Certificate | null> {
+export async function getCertificateById(
+  id: string,
+): Promise<Certificate | null> {
   const { data, error } = await supabase
     .from("certificates")
     .select("*")
@@ -113,12 +116,26 @@ export async function getCertificateById(id: string): Promise<Certificate | null
 }
 
 export async function createCertificate(
-  certData: CertificateInsert
+  certData: CertificateInsert,
 ): Promise<Certificate | null> {
+  // Get the highest order value from existing certificates
+  const { data: certificates } = await supabase
+    .from("certificates")
+    .select("order")
+    .order("order", { ascending: false })
+    .limit(1);
+
+  // Set the new certificate's order to highest + 1, or 0 if no certificates exist
+  const highestOrder =
+    certificates && certificates.length > 0 && certificates[0].order != null
+      ? certificates[0].order
+      : -1;
+
   const { data, error } = await supabase
     .from("certificates")
     .insert({
       ...certData,
+      order: highestOrder + 1, // Assign next available order
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     })
@@ -135,7 +152,7 @@ export async function createCertificate(
 
 export async function updateCertificate(
   id: string,
-  certData: CertificateUpdate
+  certData: CertificateUpdate,
 ): Promise<Certificate | null> {
   const { data, error } = await supabase
     .from("certificates")
@@ -155,15 +172,33 @@ export async function updateCertificate(
   return data;
 }
 
+export async function updateCertificateOrder(
+  certificates: { id: string; order: number }[],
+): Promise<boolean> {
+  try {
+    // Use Promise.all to perform multiple updates concurrently
+    await Promise.all(
+      certificates.map(({ id, order }) =>
+        supabase
+          .from("certificates")
+          .update({ order, updated_at: new Date().toISOString() })
+          .eq("id", id),
+      ),
+    );
+
+    return true;
+  } catch (error) {
+    console.error("Error updating certificate orders:", error);
+    return false;
+  }
+}
+
 export async function deleteCertificate(id: string): Promise<boolean> {
   // First get the certificate to check if we need to delete the file from R2
   const certificate = await getCertificateById(id);
 
   // Delete from Supabase
-  const { error } = await supabase
-    .from("certificates")
-    .delete()
-    .eq("id", id);
+  const { error } = await supabase.from("certificates").delete().eq("id", id);
 
   if (error) {
     console.error(`Error deleting certificate with id ${id}:`, error);
@@ -190,7 +225,7 @@ export async function deleteCertificate(id: string): Promise<boolean> {
 }
 
 export async function uploadCertificateFile(
-  formData: FormData
+  formData: FormData,
 ): Promise<LibraryImage | null> {
   try {
     return await uploadToR2(formData);
