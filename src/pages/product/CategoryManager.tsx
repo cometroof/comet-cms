@@ -139,6 +139,10 @@ const CategoryManager = ({
     return "Unknown";
   };
 
+  const getCategorySource = (category: ProductCategory) => {
+    return category.product_id ? "product" : "profile";
+  };
+
   const handleAddCategory = () => {
     form.reset({
       name: "",
@@ -285,7 +289,7 @@ const CategoryManager = ({
                   <TableRow>
                     <TableHead>Name</TableHead>
                     <TableHead>Subtitle</TableHead>
-                    <TableHead>Parent</TableHead>
+                    <TableHead>Parent Type</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -299,7 +303,9 @@ const CategoryManager = ({
                       <TableCell>
                         <Badge
                           variant={
-                            category.product_id ? "default" : "secondary"
+                            getCategorySource(category) === "product"
+                              ? "default"
+                              : "secondary"
                           }
                         >
                           {getParentName(category)}

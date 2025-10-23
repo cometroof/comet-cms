@@ -172,16 +172,16 @@ export const ProductQueryProvider: React.FC<ProductQueryProviderProps> = ({
     enabled: !!productId,
   });
 
-  // Fetch product categories
+  // Fetch all product categories (both direct and profile-associated)
   const {
     data: categories = [],
     isLoading: isCategoriesLoading,
     error: categoriesError,
     refetch: refetchCategories,
   } = useQuery<ProductCategory[]>({
-    queryKey: ["product-categories", productId],
+    queryKey: ["product-categories-all", productId],
     queryFn: () =>
-      productId ? productService.getProductCategories(productId) : [],
+      productId ? productService.getAllProductCategories(productId) : [],
     enabled: !!productId,
   });
 
