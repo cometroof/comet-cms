@@ -40,7 +40,7 @@ import {
 type ImageSelectorDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSelect: (imageUrl: string | string[]) => void;
+  onSelect: (imageUrl: string) => void; // Changed from string | string[]
   title?: string;
   multiple?: boolean;
   multipleSelection?: boolean;
@@ -143,9 +143,6 @@ const ImageSelectorDialog = ({
             (url) => url !== deletedImage.url,
           );
           setSelectedUrls(newSelection);
-          if (multiple) {
-            onSelect(newSelection);
-          }
         }
 
         toast({
@@ -245,7 +242,7 @@ const ImageSelectorDialog = ({
       if (multipleSelection) {
         const newSelection = [...selectedUrls, imageUrl];
         setSelectedUrls(newSelection);
-        onSelect(newSelection);
+        onSelect(imageUrl); // Call onSelect with single URL
         setImageUrl("");
       } else {
         onSelect(imageUrl);
@@ -265,7 +262,7 @@ const ImageSelectorDialog = ({
       }
 
       setSelectedUrls(newSelection);
-      onSelect(url);
+      onSelect(url); // Call onSelect with single URL
     } else {
       onSelect(url);
       onOpenChange(false);
@@ -295,8 +292,9 @@ const ImageSelectorDialog = ({
   const isDeleting = deleteMutation.isPending;
 
   const handleComplete = () => {
-    if (multipleSelection) {
-      onSelect(selectedUrls);
+    // Call onSelect for each selected URL when completing
+    if (multipleSelection && selectedUrls.length > 0) {
+      selectedUrls.forEach((url) => onSelect(url));
     }
     onOpenChange(false);
   };
@@ -350,7 +348,6 @@ const ImageSelectorDialog = ({
                         (_, i) => i !== index,
                       );
                       setSelectedUrls(newSelection);
-                      onSelect(newSelection);
                     }}
                   >
                     <Trash2 className="h-3 w-3" />
