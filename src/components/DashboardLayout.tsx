@@ -11,11 +11,11 @@ import {
   Files,
   MapPinPlus,
   Users,
+  PackageOpen,
 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { ROLES } from "@/pages/users/types";
-import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface DashboardLayoutProps {
@@ -25,13 +25,12 @@ interface DashboardLayoutProps {
 const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
-  const navigate = useNavigate();
   const { user, logout } = useAuth();
 
   const navigation = [
-    { name: "Dashboard", href: "/dashboard", icon: Home },
     { name: "Home", href: "/dashboard/home", icon: Home },
     { name: "Projects", href: "/dashboard/projects", icon: Hammer },
+    { name: "Products", href: "/dashboard/products", icon: PackageOpen },
     { name: "Files", href: "/dashboard/files", icon: Files },
     { name: "Articles", href: "/dashboard/articles", icon: Newspaper },
     {

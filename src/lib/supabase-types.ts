@@ -210,6 +210,51 @@ export type Database = {
         };
         Relationships: [];
       };
+      product: {
+        Row: {
+          brand_image: string | null;
+          catalogue: string | null;
+          created_at: string | null;
+          description_en: string | null;
+          description_id: string | null;
+          id: string;
+          is_highlight: boolean | null;
+          name: string;
+          slug: string | null;
+          suitables: Json | null;
+          title: string | null;
+          updated_at: string | null;
+        };
+        Insert: {
+          brand_image?: string | null;
+          catalogue?: string | null;
+          created_at?: string | null;
+          description_en?: string | null;
+          description_id?: string | null;
+          id?: string;
+          is_highlight?: boolean | null;
+          name: string;
+          slug?: string | null;
+          suitables?: Json | null;
+          title?: string | null;
+          updated_at?: string | null;
+        };
+        Update: {
+          brand_image?: string | null;
+          catalogue?: string | null;
+          created_at?: string | null;
+          description_en?: string | null;
+          description_id?: string | null;
+          id?: string;
+          is_highlight?: boolean | null;
+          name?: string;
+          slug?: string | null;
+          suitables?: Json | null;
+          title?: string | null;
+          updated_at?: string | null;
+        };
+        Relationships: [];
+      };
       product_badges: {
         Row: {
           created_at: string | null;
@@ -233,6 +278,320 @@ export type Database = {
           updated_at?: string | null;
         };
         Relationships: [];
+      };
+      product_category: {
+        Row: {
+          created_at: string | null;
+          id: string;
+          name: string;
+          product_id: string | null;
+          product_profile_id: string | null;
+          subtitle: string | null;
+          updated_at: string | null;
+        };
+        Insert: {
+          created_at?: string | null;
+          id?: string;
+          name: string;
+          product_id?: string | null;
+          product_profile_id?: string | null;
+          subtitle?: string | null;
+          updated_at?: string | null;
+        };
+        Update: {
+          created_at?: string | null;
+          id?: string;
+          name?: string;
+          product_id?: string | null;
+          product_profile_id?: string | null;
+          subtitle?: string | null;
+          updated_at?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "product_category_product_id_fkey";
+            columns: ["product_id"];
+            isOneToOne: false;
+            referencedRelation: "product";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "product_category_product_profile_id_fkey";
+            columns: ["product_profile_id"];
+            isOneToOne: false;
+            referencedRelation: "product_profile";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      product_certificates: {
+        Row: {
+          certificate_id: string;
+          created_at: string | null;
+          id: string;
+          product_id: string;
+        };
+        Insert: {
+          certificate_id: string;
+          created_at?: string | null;
+          id?: string;
+          product_id: string;
+        };
+        Update: {
+          certificate_id?: string;
+          created_at?: string | null;
+          id?: string;
+          product_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "product_certificates_certificate_id_fkey";
+            columns: ["certificate_id"];
+            isOneToOne: false;
+            referencedRelation: "certificates";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "product_certificates_product_id_fkey";
+            columns: ["product_id"];
+            isOneToOne: false;
+            referencedRelation: "product";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      product_item: {
+        Row: {
+          created_at: string | null;
+          id: string;
+          image: string | null;
+          length: string | null;
+          name: string;
+          product_category_id: string | null;
+          product_id: string;
+          product_profile_id: string | null;
+          updated_at: string | null;
+          weight: string | null;
+        };
+        Insert: {
+          created_at?: string | null;
+          id?: string;
+          image?: string | null;
+          length?: string | null;
+          name: string;
+          product_category_id?: string | null;
+          product_id: string;
+          product_profile_id?: string | null;
+          updated_at?: string | null;
+          weight?: string | null;
+        };
+        Update: {
+          created_at?: string | null;
+          id?: string;
+          image?: string | null;
+          length?: string | null;
+          name?: string;
+          product_category_id?: string | null;
+          product_id?: string;
+          product_profile_id?: string | null;
+          updated_at?: string | null;
+          weight?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "product_item_product_category_id_fkey";
+            columns: ["product_category_id"];
+            isOneToOne: false;
+            referencedRelation: "product_category";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "product_item_product_id_fkey";
+            columns: ["product_id"];
+            isOneToOne: false;
+            referencedRelation: "product";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "product_item_product_profile_id_fkey";
+            columns: ["product_profile_id"];
+            isOneToOne: false;
+            referencedRelation: "product_profile";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      product_premium: {
+        Row: {
+          created_at: string | null;
+          effective_size: string | null;
+          id: string;
+          material_fullname: string | null;
+          material_name: string | null;
+          product_id: string;
+          reng_distance: string | null;
+          size_per_panel: string | null;
+          updated_at: string | null;
+        };
+        Insert: {
+          created_at?: string | null;
+          effective_size?: string | null;
+          id?: string;
+          material_fullname?: string | null;
+          material_name?: string | null;
+          product_id: string;
+          reng_distance?: string | null;
+          size_per_panel?: string | null;
+          updated_at?: string | null;
+        };
+        Update: {
+          created_at?: string | null;
+          effective_size?: string | null;
+          id?: string;
+          material_fullname?: string | null;
+          material_name?: string | null;
+          product_id?: string;
+          reng_distance?: string | null;
+          size_per_panel?: string | null;
+          updated_at?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "product_premium_product_id_fkey";
+            columns: ["product_id"];
+            isOneToOne: true;
+            referencedRelation: "product";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      product_profile: {
+        Row: {
+          created_at: string | null;
+          effective_size: string | null;
+          id: string;
+          materials: string | null;
+          name: string;
+          panel_amount: number | null;
+          product_id: string;
+          size: Json | null;
+          size_per_panel: string | null;
+          thickness: string | null;
+          tkdn_value: string | null;
+          updated_at: string | null;
+          weight: string | null;
+        };
+        Insert: {
+          created_at?: string | null;
+          effective_size?: string | null;
+          id?: string;
+          materials?: string | null;
+          name: string;
+          panel_amount?: number | null;
+          product_id: string;
+          size?: Json | null;
+          size_per_panel?: string | null;
+          thickness?: string | null;
+          tkdn_value?: string | null;
+          updated_at?: string | null;
+          weight?: string | null;
+        };
+        Update: {
+          created_at?: string | null;
+          effective_size?: string | null;
+          id?: string;
+          materials?: string | null;
+          name?: string;
+          panel_amount?: number | null;
+          product_id?: string;
+          size?: Json | null;
+          size_per_panel?: string | null;
+          thickness?: string | null;
+          tkdn_value?: string | null;
+          updated_at?: string | null;
+          weight?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "product_profile_product_id_fkey";
+            columns: ["product_id"];
+            isOneToOne: false;
+            referencedRelation: "product";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      product_profile_badges: {
+        Row: {
+          badge_id: string;
+          created_at: string | null;
+          id: string;
+          product_profile_id: string;
+        };
+        Insert: {
+          badge_id: string;
+          created_at?: string | null;
+          id?: string;
+          product_profile_id: string;
+        };
+        Update: {
+          badge_id?: string;
+          created_at?: string | null;
+          id?: string;
+          product_profile_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "product_profile_badges_badge_id_fkey";
+            columns: ["badge_id"];
+            isOneToOne: false;
+            referencedRelation: "product_badges";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "product_profile_badges_product_profile_id_fkey";
+            columns: ["product_profile_id"];
+            isOneToOne: false;
+            referencedRelation: "product_profile";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      product_profile_certificates: {
+        Row: {
+          certificate_id: string;
+          created_at: string | null;
+          id: string;
+          product_profile_id: string;
+        };
+        Insert: {
+          certificate_id: string;
+          created_at?: string | null;
+          id?: string;
+          product_profile_id: string;
+        };
+        Update: {
+          certificate_id?: string;
+          created_at?: string | null;
+          id?: string;
+          product_profile_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "product_profile_certificates_certificate_id_fkey";
+            columns: ["certificate_id"];
+            isOneToOne: false;
+            referencedRelation: "certificates";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "product_profile_certificates_product_profile_id_fkey";
+            columns: ["product_profile_id"];
+            isOneToOne: false;
+            referencedRelation: "product_profile";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       project_categories: {
         Row: {

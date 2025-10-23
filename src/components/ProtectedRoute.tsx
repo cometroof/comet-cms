@@ -36,7 +36,7 @@ const ProtectedRoute = ({
 
   // If user doesn't have the required role, redirect to dashboard
   if (user && !allowedRoles.includes(user.role)) {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to="/dashboard/home" replace />;
   }
 
   // If all checks pass, render the protected content

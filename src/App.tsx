@@ -13,6 +13,7 @@ import { ContactsLocation } from "./pages/contacts-location";
 import { ArticlesList, ArticleCreate, ArticleEdit } from "./pages/articles";
 import { NotFound } from "./pages/errors";
 import Users from "./pages/users";
+import { Products } from "./pages/product";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { ROLES } from "./pages/users/types";
 
@@ -108,6 +109,23 @@ const App = () => {
                 element={
                   <ProtectedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
                     <Users />
+                  </ProtectedRoute>
+                }
+              />
+              {/* Product Management Routes */}
+              <Route
+                path="/dashboard/products"
+                element={
+                  <ProtectedRoute>
+                    <Products />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/dashboard/products/:id"
+                element={
+                  <ProtectedRoute>
+                    <Products />
                   </ProtectedRoute>
                 }
               />
