@@ -7,27 +7,14 @@ import {
 } from "@/contexts/ProductQueryContext";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  ChevronLeft,
-  Loader2,
-  Save,
-  FileText,
-  CheckCircle,
-} from "lucide-react";
+import { ChevronLeft, Loader2, FileText, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
 import DashboardLayout from "@/components/DashboardLayout";
 import ProfileManager from "./ProfileManager";
 import CategoryManager from "./CategoryManager";
 import ItemManager from "./ItemManager";
 import ProductForm from "./ProductForm";
-import PremiumManager from "./PremiumManager";
-import * as productService from "@/services/product.service";
-import {
-  Product,
-  ProductWithRelations,
-  ProductPremium,
-  ProductItem,
-} from "./types";
+import { Product, ProductWithRelations, ProductItem } from "./types";
 const ProductDetailContent = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -123,11 +110,6 @@ const ProductDetailContent = () => {
               </h1>
               <div className="text-muted-foreground flex items-center gap-2">
                 <span>Product Management</span>
-                {product && (product as ProductWithRelations).is_highlight && (
-                  <span className="bg-amber-500/10 text-amber-500 px-2 py-1 rounded-md text-xs font-medium">
-                    Highlighted
-                  </span>
-                )}
               </div>
             </div>
           </div>

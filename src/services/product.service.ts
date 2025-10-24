@@ -1,5 +1,4 @@
 import { supabase } from "@/lib/supabase";
-import { type Json } from "@/lib/supabase-types";
 import type {
   Product,
   ProductProfile,

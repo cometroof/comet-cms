@@ -149,7 +149,7 @@ const ProfileManager = ({
   const [showContentImageSelector, setShowContentImageSelector] =
     useState(false);
   // Create form
-  console.log({ product });
+
   const form = useForm<ProfileFormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -253,13 +253,20 @@ const ProfileManager = ({
       setLoadingCertsAndBadges(false);
     }
 
+    // PERBAIKAN: Isi SEMUA field profile
     form.reset({
       product_id: profile.product_id,
       name: profile.name,
-      // ... field profile lainnya
+      size_per_panel: profile.size_per_panel || "",
+      effective_size: profile.effective_size || "",
+      panel_amount: profile.panel_amount || undefined,
+      materials: profile.materials || "",
+      tkdn_value: profile.tkdn_value || "",
+      thickness: profile.thickness || "",
+      weight: profile.weight || "",
+      size: profile.size || [],
       certificates: certificateIds,
       badges: badgeIds,
-
       is_premium: !!premiumData,
       description_id: premiumData?.description_id || "",
       description_en: premiumData?.description_en || "",
