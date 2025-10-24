@@ -351,10 +351,13 @@ const ProfileManager = ({
   };
 
   const onSubmit = async (data: ProfileFormData) => {
+    // Extract certificates and badges from form data
+    const { certificates, badges, ...profileFields } = data;
+
     // Ensure size is an array (not undefined)
     const formattedData = {
-      ...data,
-      size: data.size || [],
+      ...profileFields,
+      size: profileFields.size || [],
     };
 
     const profileData = formattedData as Omit<
@@ -369,16 +372,16 @@ const ProfileManager = ({
         {
           onSuccess: async () => {
             // Save certificates and badges after profile is saved
-            if (editingProfile.id && (data.certificates || data.badges)) {
+            if (editingProfile.id && (certificates || badges)) {
               try {
                 await Promise.all([
                   productService.assignCertificatesToProfile(
                     editingProfile.id,
-                    data.certificates || [],
+                    certificates || [],
                   ),
                   productService.assignBadgesToProfile(
                     editingProfile.id,
-                    data.badges || [],
+                    badges || [],
                   ),
                 ]);
               } catch (error) {
@@ -396,16 +399,16 @@ const ProfileManager = ({
       createMutation.mutate(profileData, {
         onSuccess: async (newProfile) => {
           // Save certificates and badges after profile is created
-          if (newProfile?.id && (data.certificates || data.badges)) {
+          if (newProfile?.id && (certificates || badges)) {
             try {
               await Promise.all([
                 productService.assignCertificatesToProfile(
                   newProfile.id,
-                  data.certificates || [],
+                  certificates || [],
                 ),
                 productService.assignBadgesToProfile(
                   newProfile.id,
-                  data.badges || [],
+                  badges || [],
                 ),
               ]);
             } catch (error) {

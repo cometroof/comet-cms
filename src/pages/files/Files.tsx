@@ -37,6 +37,7 @@ import {
   Loader2,
   GripVertical,
   Image,
+  ArrowUpRight,
 } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import CertificateFormDialog from "@/components/CertificateFormDialog";
@@ -74,6 +75,7 @@ import {
   updateProductBadge,
   deleteProductBadge,
 } from "@/lib/files-service";
+import { Link } from "react-router-dom";
 
 const Files = () => {
   const { toast } = useToast();
@@ -668,7 +670,6 @@ const Files = () => {
                         <TableHead className="w-8"></TableHead>
                         <TableHead className="w-16"></TableHead>
                         <TableHead>Name</TableHead>
-                        <TableHead>Info</TableHead>
                         <TableHead>File</TableHead>
                         <TableHead className="w-32 text-right">
                           Actions
@@ -746,21 +747,25 @@ const Files = () => {
                                             {cert.name}
                                           </span>
                                           {cert.label_name && (
-                                            <span className="text-sm text-muted-foreground">
+                                            <div className="text-sm text-muted-foreground">
                                               {cert.label_name}
-                                            </span>
+                                            </div>
                                           )}
+                                          <div className="text-muted-foreground">
+                                            {cert.info}
+                                          </div>
                                         </div>
-                                      </TableCell>
-                                      <TableCell className="text-muted-foreground">
-                                        {cert.info}
                                       </TableCell>
                                       <TableCell>
                                         <div className="flex items-center gap-2 text-sm">
-                                          <FileText className="w-4 h-4 text-muted-foreground" />
-                                          <span className="truncate max-w-[200px]">
-                                            {cert.filename}
-                                          </span>
+                                          <Link
+                                            to={cert.file_url}
+                                            target="_blank"
+                                            className="flex gap-1 items-center"
+                                          >
+                                            <FileText className="size-4 text-muted-foreground" />
+                                            <ArrowUpRight className="size-4 text-primary" />
+                                          </Link>
                                         </div>
                                       </TableCell>
                                       <TableCell className="text-right">

@@ -168,6 +168,8 @@ export interface ProfileFormData {
     weight: string;
     thickness: string;
   }>;
+  certificates?: string[];
+  badges?: string[];
 }
 
 export interface CategoryFormData {
