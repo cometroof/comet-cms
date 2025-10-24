@@ -61,6 +61,7 @@ import {
   Award,
   FileText,
   Ruler,
+  Check,
 } from "lucide-react";
 import { toast } from "sonner";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -103,6 +104,8 @@ const formSchema = z.object({
     )
     .max(5, "Maximum 5 size specifications allowed")
     .optional(),
+  certificates: z.array(z.string()).optional(),
+  badges: z.array(z.string()).optional(),
 });
 
 interface ProfileManagerProps {
@@ -121,6 +124,8 @@ const ProfileManager = ({
     profiles,
     isProfilesLoading: isLoading,
     profilesError: error,
+    availableCertificates,
+    availableBadges,
   } = useProductQuery();
   const [showProfileForm, setShowProfileForm] = useState(false);
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
@@ -132,6 +137,7 @@ const ProfileManager = ({
   const [selectedProfile, setSelectedProfile] = useState<ProductProfile | null>(
     null,
   );
+  const [loadingCertsAndBadges, setLoadingCertsAndBadges] = useState(false);
 
   // Create form
   const form = useForm<ProfileFormData>({
@@ -147,6 +153,8 @@ const ProfileManager = ({
       tkdn_value: "",
       thickness: "",
       weight: "",
+      certificates: [],
+      badges: [],
     },
   });
 
@@ -175,6 +183,8 @@ const ProfileManager = ({
       thickness: "",
       weight: "",
       size: [],
+      certificates: [],
+      badges: [],
     });
     setEditingProfile(null);
     setShowProfileForm(true);
@@ -192,8 +202,29 @@ const ProfileManager = ({
   }, [showProfileForm, form]);
 
   // Edit profile handler
-  const handleEditProfile = (profile: ProductContextProfile) => {
+  const handleEditProfile = async (profile: ProductContextProfile) => {
     setEditingProfile(profile as unknown as ProductProfile);
+    setLoadingCertsAndBadges(true);
+
+    // Load certificates and badges for this profile
+    let certificateIds: string[] = [];
+    let badgeIds: string[] = [];
+
+    try {
+      const [assignedCerts, assignedBadges] = await Promise.all([
+        productService.getProfileCertificates(profile.id),
+        productService.getProfileBadges(profile.id),
+      ]);
+
+      certificateIds = assignedCerts.map((cert) => cert.id);
+      badgeIds = assignedBadges.map((badge) => badge.id);
+    } catch (error) {
+      console.error("Error loading certificates and badges:", error);
+      toast.error("Failed to load certificates and badges");
+    } finally {
+      setLoadingCertsAndBadges(false);
+    }
+
     form.reset({
       product_id: profile.product_id,
       name: profile.name,
@@ -205,6 +236,8 @@ const ProfileManager = ({
       thickness: profile.thickness || "",
       weight: profile.weight || "",
       size: profile.size || [],
+      certificates: certificateIds,
+      badges: badgeIds,
     });
     setShowProfileForm(true);
   };
@@ -317,7 +350,7 @@ const ProfileManager = ({
     );
   };
 
-  const onSubmit = (data: ProfileFormData) => {
+  const onSubmit = async (data: ProfileFormData) => {
     // Ensure size is an array (not undefined)
     const formattedData = {
       ...data,
@@ -331,10 +364,59 @@ const ProfileManager = ({
 
     if (editingProfile) {
       // Update existing profile
-      updateMutation.mutate({ id: editingProfile.id, data: profileData });
+      updateMutation.mutate(
+        { id: editingProfile.id, data: profileData },
+        {
+          onSuccess: async () => {
+            // Save certificates and badges after profile is saved
+            if (editingProfile.id && (data.certificates || data.badges)) {
+              try {
+                await Promise.all([
+                  productService.assignCertificatesToProfile(
+                    editingProfile.id,
+                    data.certificates || [],
+                  ),
+                  productService.assignBadgesToProfile(
+                    editingProfile.id,
+                    data.badges || [],
+                  ),
+                ]);
+              } catch (error) {
+                console.error("Error saving certificates/badges:", error);
+                toast.error(
+                  "Profile saved but failed to update certificates/badges",
+                );
+              }
+            }
+          },
+        },
+      );
     } else {
       // Create new profile
-      createMutation.mutate(profileData);
+      createMutation.mutate(profileData, {
+        onSuccess: async (newProfile) => {
+          // Save certificates and badges after profile is created
+          if (newProfile?.id && (data.certificates || data.badges)) {
+            try {
+              await Promise.all([
+                productService.assignCertificatesToProfile(
+                  newProfile.id,
+                  data.certificates || [],
+                ),
+                productService.assignBadgesToProfile(
+                  newProfile.id,
+                  data.badges || [],
+                ),
+              ]);
+            } catch (error) {
+              console.error("Error saving certificates/badges:", error);
+              toast.error(
+                "Profile created but failed to save certificates/badges",
+              );
+            }
+          }
+        },
+      });
     }
   };
 
@@ -530,9 +612,11 @@ const ProfileManager = ({
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <Tabs defaultValue="general">
-                <TabsList>
+                <TabsList className="grid w-full grid-cols-4">
                   <TabsTrigger value="general">General</TabsTrigger>
                   <TabsTrigger value="size">Size</TabsTrigger>
+                  <TabsTrigger value="certificates">Certificates</TabsTrigger>
+                  <TabsTrigger value="badges">Badges</TabsTrigger>
                 </TabsList>
 
                 <TabsContent
@@ -764,6 +848,185 @@ const ProfileManager = ({
                           <PlusCircle className="h-4 w-4" />
                           Add Size
                         </Button>
+                      </div>
+                    )}
+                  </div>
+                </TabsContent>
+
+                <TabsContent
+                  value="certificates"
+                  className="max-h-[520px] overflow-y-auto"
+                >
+                  <div className="space-y-4">
+                    <div>
+                      <Label className="text-base font-medium">
+                        Certificates
+                      </Label>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Select certificates to associate with this profile
+                      </p>
+                    </div>
+
+                    {loadingCertsAndBadges ? (
+                      <div className="flex justify-center py-8">
+                        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                      </div>
+                    ) : !availableCertificates ||
+                      availableCertificates.length === 0 ? (
+                      <div className="rounded-md border border-dashed p-6 text-center">
+                        <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
+                        <p className="text-sm text-muted-foreground">
+                          No certificates available
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 gap-3">
+                        {availableCertificates.map((certificate: any) => {
+                          const isSelected = (
+                            form.watch("certificates") || []
+                          ).includes(certificate.id);
+                          return (
+                            <div
+                              key={certificate.id}
+                              className={`border rounded-md p-3 flex items-center gap-3 cursor-pointer transition-colors ${
+                                isSelected
+                                  ? "border-primary bg-primary/5"
+                                  : "hover:bg-muted"
+                              }`}
+                              onClick={() => {
+                                const currentCerts =
+                                  form.watch("certificates") || [];
+                                if (isSelected) {
+                                  form.setValue(
+                                    "certificates",
+                                    currentCerts.filter(
+                                      (id) => id !== certificate.id,
+                                    ),
+                                  );
+                                } else {
+                                  form.setValue("certificates", [
+                                    ...currentCerts,
+                                    certificate.id,
+                                  ]);
+                                }
+                              }}
+                            >
+                              <div className="flex-shrink-0 w-10 h-10 bg-muted rounded-md flex items-center justify-center">
+                                {certificate.image ? (
+                                  <img
+                                    src={certificate.image}
+                                    alt={certificate.name}
+                                    className="w-8 h-8 object-contain"
+                                  />
+                                ) : (
+                                  <FileText className="w-5 h-5 text-muted-foreground" />
+                                )}
+                              </div>
+                              <div className="flex-grow">
+                                <h4 className="font-medium text-sm">
+                                  {certificate.name}
+                                </h4>
+                              </div>
+                              <div className="flex-shrink-0">
+                                {isSelected ? (
+                                  <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center">
+                                    <Check className="w-3 h-3 text-white" />
+                                  </div>
+                                ) : (
+                                  <div className="w-5 h-5 rounded-full border-2 border-muted-foreground" />
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </TabsContent>
+
+                <TabsContent
+                  value="badges"
+                  className="max-h-[520px] overflow-y-auto"
+                >
+                  <div className="space-y-4">
+                    <div>
+                      <Label className="text-base font-medium">Badges</Label>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Select badges to associate with this profile
+                      </p>
+                    </div>
+
+                    {loadingCertsAndBadges ? (
+                      <div className="flex justify-center py-8">
+                        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                      </div>
+                    ) : !availableBadges || availableBadges.length === 0 ? (
+                      <div className="rounded-md border border-dashed p-6 text-center">
+                        <Award className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
+                        <p className="text-sm text-muted-foreground">
+                          No badges available
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 gap-3">
+                        {availableBadges.map((badge: any) => {
+                          const isSelected = (
+                            form.watch("badges") || []
+                          ).includes(badge.id);
+                          return (
+                            <div
+                              key={badge.id}
+                              className={`border rounded-md p-3 flex items-center gap-3 cursor-pointer transition-colors ${
+                                isSelected
+                                  ? "border-primary bg-primary/5"
+                                  : "hover:bg-muted"
+                              }`}
+                              onClick={() => {
+                                const currentBadges =
+                                  form.watch("badges") || [];
+                                if (isSelected) {
+                                  form.setValue(
+                                    "badges",
+                                    currentBadges.filter(
+                                      (id) => id !== badge.id,
+                                    ),
+                                  );
+                                } else {
+                                  form.setValue("badges", [
+                                    ...currentBadges,
+                                    badge.id,
+                                  ]);
+                                }
+                              }}
+                            >
+                              <div className="flex-shrink-0 w-10 h-10 bg-muted rounded-md flex items-center justify-center">
+                                {badge.image ? (
+                                  <img
+                                    src={badge.image}
+                                    alt={badge.name}
+                                    className="w-8 h-8 object-contain"
+                                  />
+                                ) : (
+                                  <Award className="w-5 h-5 text-muted-foreground" />
+                                )}
+                              </div>
+                              <div className="flex-grow">
+                                <h4 className="font-medium text-sm">
+                                  {badge.name}
+                                </h4>
+                              </div>
+                              <div className="flex-shrink-0">
+                                {isSelected ? (
+                                  <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center">
+                                    <Check className="w-3 h-3 text-white" />
+                                  </div>
+                                ) : (
+                                  <div className="w-5 h-5 rounded-full border-2 border-muted-foreground" />
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
                     )}
                   </div>

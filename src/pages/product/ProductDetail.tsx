@@ -28,14 +28,11 @@ import {
   ProductPremium,
   ProductItem,
 } from "./types";
-import CertificatesBadgesManager from "./CertificatesBadgesManager";
-
 const ProductDetailContent = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("info");
-  const [showCertBadges, setShowCertBadges] = useState(false);
   const [showProductForm, setShowProductForm] = useState(false);
 
   // Use the ProductQuery context instead of direct queries
@@ -75,10 +72,6 @@ const ProductDetailContent = () => {
 
   const handleTabChange = (value: string) => {
     setActiveTab(value);
-  };
-
-  const handleManageCertificates = () => {
-    setShowCertBadges(true);
   };
 
   if (isLoading) {
@@ -147,14 +140,12 @@ const ProductDetailContent = () => {
           onValueChange={handleTabChange}
           className="space-y-4"
         >
-          <TabsList className="grid grid-cols-7">
+          <TabsList className="grid grid-cols-5">
             <TabsTrigger value="info">Basic Info</TabsTrigger>
             <TabsTrigger value="profiles">Profiles</TabsTrigger>
             <TabsTrigger value="categories">Categories</TabsTrigger>
             <TabsTrigger value="items">Items</TabsTrigger>
             <TabsTrigger value="premium">Premium</TabsTrigger>
-            <TabsTrigger value="certificates">Certificates</TabsTrigger>
-            <TabsTrigger value="badges">Badges</TabsTrigger>
           </TabsList>
 
           <TabsContent value="info" className="space-y-4">
@@ -400,84 +391,6 @@ const ProductDetailContent = () => {
               }
             />
           </TabsContent>
-
-          <TabsContent value="certificates" className="space-y-4">
-            <div className="bg-white rounded-lg border shadow-sm p-6">
-              <div className="flex justify-between items-center mb-6">
-                <div>
-                  <h2 className="text-xl font-semibold">Certificates</h2>
-                  <p className="text-muted-foreground">
-                    Manage certificates for this product.
-                  </p>
-                </div>
-                <Button onClick={handleManageCertificates}>
-                  Manage Certificates
-                </Button>
-              </div>
-
-              {/* Display certificates */}
-              {product &&
-              (product as ProductWithRelations).certificates &&
-              (product as ProductWithRelations).certificates.length > 0 ? (
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                  {(product as ProductWithRelations).certificates.map(
-                    (cert) => (
-                      <div
-                        key={cert.id}
-                        className="border rounded-md p-4 flex items-center gap-3"
-                      >
-                        {cert.image ? (
-                          <img
-                            src={cert.image}
-                            alt={cert.name}
-                            className="w-10 h-10 object-contain"
-                          />
-                        ) : (
-                          <div className="w-10 h-10 bg-muted rounded-md flex items-center justify-center">
-                            <span className="text-xs">No img</span>
-                          </div>
-                        )}
-                        <div className="flex-grow">
-                          <h3 className="text-sm font-medium">{cert.name}</h3>
-                        </div>
-                      </div>
-                    ),
-                  )}
-                </div>
-              ) : (
-                <div className="text-center py-12 border rounded-md bg-muted/10">
-                  <p className="text-muted-foreground mb-2">
-                    No certificates assigned
-                  </p>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleManageCertificates}
-                  >
-                    Add Certificates
-                  </Button>
-                </div>
-              )}
-            </div>
-          </TabsContent>
-
-          <TabsContent value="badges" className="space-y-4">
-            <div className="bg-white rounded-lg border shadow-sm p-6">
-              <h2 className="text-xl font-semibold mb-4">Badges</h2>
-              <p className="text-muted-foreground mb-6">
-                Badges can only be assigned to profiles, not directly to
-                products. Please go to the Profiles tab and select a profile to
-                manage its badges.
-              </p>
-
-              <Button
-                onClick={() => setActiveTab("profiles")}
-                variant="outline"
-              >
-                Go to Profiles
-              </Button>
-            </div>
-          </TabsContent>
         </Tabs>
       </div>
 
@@ -488,16 +401,6 @@ const ProductDetailContent = () => {
           isOpen={showProductForm}
           onClose={() => setShowProductForm(false)}
           onSave={handleProductUpdate}
-        />
-      )}
-
-      {/* Certificates Manager Dialog */}
-      {showCertBadges && (
-        <CertificatesBadgesManager
-          isOpen={showCertBadges}
-          onClose={() => setShowCertBadges(false)}
-          productId={(product as ProductWithRelations)?.id}
-          entityType="product"
         />
       )}
     </DashboardLayout>
