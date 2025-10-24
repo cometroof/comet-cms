@@ -1,6 +1,7 @@
 import React, { createContext, useContext, ReactNode } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import * as productService from "@/services/product.service";
+import { toast } from "sonner";
 
 // Define types for our context
 export interface ProductProfile {
@@ -97,6 +98,11 @@ interface ProductQueryContextState {
   isCategoriesLoading: boolean;
   categoriesError: Error | null;
 
+  // Profile Categories data
+  profileCategories: Record<string, ProductCategory[]>;
+  isProfileCategoriesLoading: boolean;
+  profileCategoriesError: Error | null;
+
   // Items data
   items: ProductItem[];
   isItemsLoading: boolean;
@@ -126,6 +132,72 @@ interface ProductQueryContextState {
   // Utility functions
   refetchProduct: () => Promise<void>;
   refetchAll: () => Promise<void>;
+
+  // Profile mutations
+  createProfileMutation: {
+    mutate: (profile: Omit<ProductProfile, "id">) => void;
+    isPending: boolean;
+  };
+  updateProfileMutation: {
+    mutate: (profile: ProductProfile) => void;
+    isPending: boolean;
+  };
+  deleteProfileMutation: {
+    mutate: (id: string) => void;
+    isPending: boolean;
+  };
+
+  // Category mutations
+  createCategoryMutation: {
+    mutate: (category: Omit<ProductCategory, "id">) => void;
+    isPending: boolean;
+  };
+  updateCategoryMutation: {
+    mutate: (category: ProductCategory) => void;
+    isPending: boolean;
+  };
+  deleteCategoryMutation: {
+    mutate: (id: string) => void;
+    isPending: boolean;
+  };
+
+  // Item mutations
+  createItemMutation: {
+    mutate: (item: Omit<ProductItem, "id">) => void;
+    isPending: boolean;
+  };
+  updateItemMutation: {
+    mutate: (item: ProductItem) => void;
+    isPending: boolean;
+  };
+  deleteItemMutation: {
+    mutate: (id: string) => void;
+    isPending: boolean;
+  };
+
+  // Premium mutations
+  upsertPremiumMutation: {
+    mutate: (premium: Omit<ProductPremium, "id">) => void;
+    isPending: boolean;
+  };
+
+  // Certificate mutations
+  assignCertificatesToProductMutation: {
+    mutate: (certificateIds: string[]) => void;
+    isPending: boolean;
+  };
+
+  // Profile certificate mutations
+  assignCertificatesToProfileMutation: {
+    mutate: (data: { profileId: string; certificateIds: string[] }) => void;
+    isPending: boolean;
+  };
+
+  // Profile badge mutations
+  assignBadgesToProfileMutation: {
+    mutate: (data: { profileId: string; badgeIds: string[] }) => void;
+    isPending: boolean;
+  };
 }
 
 // Create the context
@@ -183,6 +255,29 @@ export const ProductQueryProvider: React.FC<ProductQueryProviderProps> = ({
     queryFn: () =>
       productId ? productService.getAllProductCategories(productId) : [],
     enabled: !!productId,
+  });
+
+  // Fetch profile categories for all profiles
+  const {
+    data: profileCategories = {},
+    isLoading: isProfileCategoriesLoading,
+    error: profileCategoriesError,
+    refetch: refetchProfileCategories,
+  } = useQuery<Record<string, ProductCategory[]>>({
+    queryKey: ["profile-categories-map", productId],
+    queryFn: async () => {
+      if (!productId || profiles.length === 0) return {};
+
+      const profileCatsMap: Record<string, ProductCategory[]> = {};
+      for (const profile of profiles) {
+        const profileCats = await productService.getProfileCategories(
+          profile.id,
+        );
+        profileCatsMap[profile.id] = profileCats;
+      }
+      return profileCatsMap;
+    },
+    enabled: !!productId && profiles.length > 0,
   });
 
   // Fetch product items
@@ -253,8 +348,187 @@ export const ProductQueryProvider: React.FC<ProductQueryProviderProps> = ({
       refetchItems(),
       refetchPremium(),
       refetchCertificates(),
+      refetchProfileCategories(),
     ]);
   };
+
+  // Profile mutations
+  const createProfileMutation = useMutation({
+    mutationFn: (newProfile: Omit<ProductProfile, "id">) =>
+      productService.createProfile(newProfile),
+    onSuccess: () => {
+      toast.success("Profile created successfully");
+      refetchProfiles();
+    },
+    onError: (error) => {
+      console.error("Error creating profile:", error);
+      toast.error("Failed to create profile");
+    },
+  });
+
+  const updateProfileMutation = useMutation({
+    mutationFn: (profile: ProductProfile) =>
+      productService.updateProfile(profile),
+    onSuccess: () => {
+      toast.success("Profile updated successfully");
+      refetchProfiles();
+    },
+    onError: (error) => {
+      console.error("Error updating profile:", error);
+      toast.error("Failed to update profile");
+    },
+  });
+
+  const deleteProfileMutation = useMutation({
+    mutationFn: (id: string) => productService.deleteProfile(id),
+    onSuccess: () => {
+      toast.success("Profile deleted successfully");
+      refetchProfiles();
+      refetchCategories();
+      refetchItems();
+    },
+    onError: (error) => {
+      console.error("Error deleting profile:", error);
+      toast.error("Failed to delete profile");
+    },
+  });
+
+  // Category mutations
+  const createCategoryMutation = useMutation({
+    mutationFn: (newCategory: Omit<ProductCategory, "id">) =>
+      productService.createCategory(newCategory),
+    onSuccess: () => {
+      toast.success("Category created successfully");
+      refetchCategories();
+    },
+    onError: (error) => {
+      console.error("Error creating category:", error);
+      toast.error("Failed to create category");
+    },
+  });
+
+  const updateCategoryMutation = useMutation({
+    mutationFn: (category: ProductCategory) =>
+      productService.updateCategory(category),
+    onSuccess: () => {
+      toast.success("Category updated successfully");
+      refetchCategories();
+    },
+    onError: (error) => {
+      console.error("Error updating category:", error);
+      toast.error("Failed to update category");
+    },
+  });
+
+  const deleteCategoryMutation = useMutation({
+    mutationFn: (id: string) => productService.deleteCategory(id),
+    onSuccess: () => {
+      toast.success("Category deleted successfully");
+      refetchCategories();
+      refetchItems();
+    },
+    onError: (error) => {
+      console.error("Error deleting category:", error);
+      toast.error("Failed to delete category");
+    },
+  });
+
+  // Item mutations
+  const createItemMutation = useMutation({
+    mutationFn: (newItem: Omit<ProductItem, "id">) =>
+      productService.createItem(newItem),
+    onSuccess: () => {
+      toast.success("Item created successfully");
+      refetchItems();
+    },
+    onError: (error) => {
+      console.error("Error creating item:", error);
+      toast.error("Failed to create item");
+    },
+  });
+
+  const updateItemMutation = useMutation({
+    mutationFn: (item: ProductItem) => productService.updateItem(item),
+    onSuccess: () => {
+      toast.success("Item updated successfully");
+      refetchItems();
+    },
+    onError: (error) => {
+      console.error("Error updating item:", error);
+      toast.error("Failed to update item");
+    },
+  });
+
+  const deleteItemMutation = useMutation({
+    mutationFn: (id: string) => productService.deleteItem(id),
+    onSuccess: () => {
+      toast.success("Item deleted successfully");
+      refetchItems();
+    },
+    onError: (error) => {
+      console.error("Error deleting item:", error);
+      toast.error("Failed to delete item");
+    },
+  });
+
+  // Premium mutations
+  const upsertPremiumMutation = useMutation({
+    mutationFn: (premiumData: Omit<ProductPremium, "id">) =>
+      productService.upsertPremium(productId, premiumData),
+    onSuccess: () => {
+      toast.success("Premium data saved successfully");
+      refetchPremium();
+    },
+    onError: (error) => {
+      console.error("Error saving premium data:", error);
+      toast.error("Failed to save premium data");
+    },
+  });
+
+  // Certificate mutations
+  const assignCertificatesToProductMutation = useMutation({
+    mutationFn: (certificateIds: string[]) =>
+      productService.assignCertificatesToProduct(productId, certificateIds),
+    onSuccess: () => {
+      toast.success("Certificates updated successfully");
+      refetchCertificates();
+    },
+    onError: (error) => {
+      console.error("Error updating certificates:", error);
+      toast.error("Failed to update certificates");
+    },
+  });
+
+  // Profile certificate mutations
+  const assignCertificatesToProfileMutation = useMutation({
+    mutationFn: (data: { profileId: string; certificateIds: string[] }) =>
+      productService.assignCertificatesToProfile(
+        data.profileId,
+        data.certificateIds,
+      ),
+    onSuccess: () => {
+      toast.success("Profile certificates updated successfully");
+      refetchProfiles();
+    },
+    onError: (error) => {
+      console.error("Error updating profile certificates:", error);
+      toast.error("Failed to update profile certificates");
+    },
+  });
+
+  // Profile badge mutations
+  const assignBadgesToProfileMutation = useMutation({
+    mutationFn: (data: { profileId: string; badgeIds: string[] }) =>
+      productService.assignBadgesToProfile(data.profileId, data.badgeIds),
+    onSuccess: () => {
+      toast.success("Profile badges updated successfully");
+      refetchProfiles();
+    },
+    onError: (error) => {
+      console.error("Error updating profile badges:", error);
+      toast.error("Failed to update profile badges");
+    },
+  });
 
   // Define the context value
   const contextValue: ProductQueryContextState = {
@@ -272,6 +546,11 @@ export const ProductQueryProvider: React.FC<ProductQueryProviderProps> = ({
     categories,
     isCategoriesLoading,
     categoriesError,
+
+    // Profile Categories data
+    profileCategories,
+    isProfileCategoriesLoading,
+    profileCategoriesError,
 
     // Items data
     items,
@@ -302,6 +581,72 @@ export const ProductQueryProvider: React.FC<ProductQueryProviderProps> = ({
     // Utility functions
     refetchProduct,
     refetchAll,
+
+    // Profile mutations
+    createProfileMutation: {
+      mutate: createProfileMutation.mutate,
+      isPending: createProfileMutation.isPending,
+    },
+    updateProfileMutation: {
+      mutate: updateProfileMutation.mutate,
+      isPending: updateProfileMutation.isPending,
+    },
+    deleteProfileMutation: {
+      mutate: deleteProfileMutation.mutate,
+      isPending: deleteProfileMutation.isPending,
+    },
+
+    // Category mutations
+    createCategoryMutation: {
+      mutate: createCategoryMutation.mutate,
+      isPending: createCategoryMutation.isPending,
+    },
+    updateCategoryMutation: {
+      mutate: updateCategoryMutation.mutate,
+      isPending: updateCategoryMutation.isPending,
+    },
+    deleteCategoryMutation: {
+      mutate: deleteCategoryMutation.mutate,
+      isPending: deleteCategoryMutation.isPending,
+    },
+
+    // Item mutations
+    createItemMutation: {
+      mutate: createItemMutation.mutate,
+      isPending: createItemMutation.isPending,
+    },
+    updateItemMutation: {
+      mutate: updateItemMutation.mutate,
+      isPending: updateItemMutation.isPending,
+    },
+    deleteItemMutation: {
+      mutate: deleteItemMutation.mutate,
+      isPending: deleteItemMutation.isPending,
+    },
+
+    // Premium mutations
+    upsertPremiumMutation: {
+      mutate: upsertPremiumMutation.mutate,
+      isPending: upsertPremiumMutation.isPending,
+    },
+
+    // Certificate mutations
+    assignCertificatesToProductMutation: {
+      mutate: assignCertificatesToProductMutation.mutate,
+      isPending: assignCertificatesToProductMutation.isPending,
+    },
+
+    // Profile certificate mutations
+    assignCertificatesToProfileMutation: {
+      mutate: assignCertificatesToProfileMutation.mutate,
+      isPending: assignCertificatesToProfileMutation.isPending,
+    },
+
+    // Profile badge mutations
+    assignBadgesToProfileMutation: {
+      mutate: assignBadgesToProfileMutation.mutate,
+      isPending: assignBadgesToProfileMutation.isPending,
+    },
   };
 
   return (

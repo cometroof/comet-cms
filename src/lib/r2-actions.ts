@@ -48,7 +48,7 @@ async function getR2ObjectsByPrefix(prefix: string): Promise<R2Object[]> {
       return [];
     }
 
-    return response.Contents.map((object) => {
+    const objects = response.Contents.map((object) => {
       const url = `${BASE_URL}/${object.Key}`;
 
       // Determine folder from key
@@ -62,6 +62,13 @@ async function getR2ObjectsByPrefix(prefix: string): Promise<R2Object[]> {
       // Extract filename without folder prefix
       const filename = object.Key!.split("/").pop() || object.Key!;
 
+      // Extract timestamp from filename (assumes format: name-{timestamp}.ext)
+      let timestamp = 0;
+      const timestampMatch = filename.match(/-(\d{13})\./);
+      if (timestampMatch) {
+        timestamp = parseInt(timestampMatch[1], 10);
+      }
+
       return {
         Key: object.Key!,
         id: object.ETag!,
@@ -70,8 +77,19 @@ async function getR2ObjectsByPrefix(prefix: string): Promise<R2Object[]> {
         size: object.Size!,
         uploadedAt: object.LastModified!,
         folder,
+        timestamp, // Add timestamp for sorting
       };
     });
+
+    // Sort by timestamp descending (terbaru dulu)
+    // Jika timestamp tidak ada (0), fallback ke LastModified
+    objects.sort((a, b) => {
+      const timeA = a.timestamp || a.uploadedAt.getTime();
+      const timeB = b.timestamp || b.uploadedAt.getTime();
+      return timeB - timeA;
+    });
+
+    return objects;
   } catch (error) {
     console.error(`Error listing files from ${prefix}:`, error);
     throw new Error(`Failed to list objects: ${(error as Error).message}`);

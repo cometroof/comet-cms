@@ -50,8 +50,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Label } from "@/components/ui/label";
 import {
   Plus,
   Edit,
@@ -109,23 +107,19 @@ const ItemManager = ({ productId, product, onUpdate }: ItemManagerProps) => {
     items,
     profiles,
     categories,
+    profileCategories,
     isItemsLoading: loading,
+    isProfileCategoriesLoading,
     refetchAll,
   } = useProductQuery();
-  const [profileCategories, setProfileCategories] = useState<
-    Record<string, ProductCategory[]>
-  >({});
   const [showItemForm, setShowItemForm] = useState(false);
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
   const [showImageSelector, setShowImageSelector] = useState(false);
   const [editingItem, setEditingItem] = useState<ProductItem | null>(null);
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
-  const [selectedFlowType, setSelectedFlowType] =
-    useState<ProductFlowType>("direct");
   const [selectedProfileId, setSelectedProfileId] = useState<string | null>(
     null,
   );
-  const [formStep, setFormStep] = useState(1); // 1 = flow selection, 2 = item details
 
   // Create form
   const form = useForm<z.infer<typeof formSchema>>({
@@ -142,27 +136,7 @@ const ItemManager = ({ productId, product, onUpdate }: ItemManagerProps) => {
     },
   });
 
-  // Load profile categories when profiles change
-  useEffect(() => {
-    loadProfileCategories();
-  }, [profiles]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const loadProfileCategories = async () => {
-    try {
-      // Load profile categories for each profile
-      const profileCatsMap: Record<string, ProductCategory[]> = {};
-      for (const profile of profiles) {
-        const profileCats = await productService.getProfileCategories(
-          profile.id,
-        );
-        profileCatsMap[profile.id] = profileCats;
-      }
-      setProfileCategories(profileCatsMap);
-    } catch (error) {
-      console.error("Error loading profile categories:", error);
-      toast.error("Failed to load profile categories");
-    }
-  };
+  // Profile categories are now loaded via React Query in the ProductQueryContext
 
   const groupItemsByFlow = (items: ProductItem[]) => {
     const directItems: ProductItem[] = [];
@@ -249,9 +223,7 @@ const ItemManager = ({ productId, product, onUpdate }: ItemManagerProps) => {
       flow_type: "direct",
     });
     setEditingItem(null);
-    setSelectedFlowType("direct");
     setSelectedProfileId(null);
-    setFormStep(1);
     setShowItemForm(true);
   };
 
@@ -270,9 +242,7 @@ const ItemManager = ({ productId, product, onUpdate }: ItemManagerProps) => {
     });
 
     setEditingItem(item);
-    setSelectedFlowType(flowType);
     setSelectedProfileId(item.product_profile_id || null);
-    setFormStep(2); // Skip flow selection when editing
     setShowItemForm(true);
   };
 
@@ -302,26 +272,12 @@ const ItemManager = ({ productId, product, onUpdate }: ItemManagerProps) => {
     }
   };
 
-  const handleFlowTypeChange = (value: ProductFlowType) => {
-    setSelectedFlowType(value);
-    form.setValue("flow_type", value);
-
-    // Reset related fields when flow type changes
-    form.setValue("product_profile_id", null);
-    form.setValue("product_category_id", null);
-    setSelectedProfileId(null);
-  };
-
-  const handleProfileChange = (profileId: string) => {
+  const handleProfileChange = (profileId: string | null) => {
     setSelectedProfileId(profileId);
     form.setValue("product_profile_id", profileId);
 
     // Reset category when profile changes
     form.setValue("product_category_id", null);
-  };
-
-  const handleContinueToItemDetails = () => {
-    setFormStep(2);
   };
 
   const handleImageSelect = (image: string) => {
@@ -331,30 +287,26 @@ const ItemManager = ({ productId, product, onUpdate }: ItemManagerProps) => {
 
   const onSubmit = async (data: z.infer<typeof formSchema>) => {
     try {
-      // Clean up data based on flow type
+      // Auto-detect flow type based on filled fields
+      let detectedFlowType: ProductFlowType = "direct";
+      if (data.product_profile_id && data.product_category_id) {
+        detectedFlowType = "profile-category";
+      } else if (data.product_profile_id) {
+        detectedFlowType = "profile";
+      } else if (data.product_category_id) {
+        detectedFlowType = "category";
+      }
+
+      // Build item data
       const itemData: Omit<ProductItem, "id" | "created_at" | "updated_at"> = {
         product_id: data.product_id,
         name: data.name,
         weight: data.weight || null,
         length: data.length || null,
         image: data.image,
-        product_profile_id: null,
-        product_category_id: null,
+        product_profile_id: data.product_profile_id || null,
+        product_category_id: data.product_category_id || null,
       };
-
-      // Set relevant parent IDs based on flow type
-      switch (data.flow_type) {
-        case "profile":
-          itemData.product_profile_id = data.product_profile_id || null;
-          break;
-        case "category":
-          itemData.product_category_id = data.product_category_id || null;
-          break;
-        case "profile-category":
-          itemData.product_profile_id = data.product_profile_id || null;
-          itemData.product_category_id = data.product_category_id || null;
-          break;
-      }
 
       if (editingItem) {
         // Update existing item
@@ -388,17 +340,15 @@ const ItemManager = ({ productId, product, onUpdate }: ItemManagerProps) => {
   };
 
   // Group items by their flow type
-  const groupedItems = groupItemsByFlow(items as any);
+  const groupedItems = groupItemsByFlow(items as ProductItem[]);
 
-  const getCategoriesForCurrentFlow = () => {
-    if (selectedFlowType === "category") {
-      // For 'category' flow, show product categories
-      return categories;
-    } else if (selectedFlowType === "profile-category" && selectedProfileId) {
-      // For 'profile-category' flow, show categories of the selected profile
+  const getAvailableCategories = () => {
+    // If profile is selected, show categories from that profile
+    // Otherwise, show product categories
+    if (selectedProfileId) {
       return profileCategories[selectedProfileId] || [];
     }
-    return [];
+    return categories;
   };
 
   const renderItemsSection = (
@@ -545,304 +495,196 @@ const ItemManager = ({ productId, product, onUpdate }: ItemManagerProps) => {
               {editingItem ? "Edit Item" : "Add New Item"}
             </DialogTitle>
             <DialogDescription>
-              {editingItem
-                ? "Update item information"
-                : formStep === 1
-                  ? "Select how this item is organized in your product hierarchy"
-                  : "Enter item details"}
+              Fill in the item details. Profile and category are optional - the
+              system will automatically determine the relationship based on what
+              you select.
             </DialogDescription>
           </DialogHeader>
 
-          {formStep === 1 ? (
-            /* Step 1: Flow Selection */
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <h3 className="text-sm font-medium">Select Flow Type</h3>
-                <p className="text-sm text-muted-foreground">
-                  Choose how this item relates to other parts of your product
-                </p>
-              </div>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Item Name *</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter item name" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-              <RadioGroup
-                defaultValue={selectedFlowType}
-                onValueChange={(v) =>
-                  handleFlowTypeChange(v as ProductFlowType)
-                }
-                className="space-y-3"
-              >
-                <div className="flex items-start space-x-2 border rounded-md p-3">
-                  <RadioGroupItem
-                    value="direct"
-                    id="flow-direct"
-                    className="mt-1"
-                  />
-                  <Label
-                    htmlFor="flow-direct"
-                    className="flex flex-col gap-1 cursor-pointer"
-                  >
-                    <span className="font-medium">Product → Item</span>
-                    <span className="text-sm text-muted-foreground">
-                      Item belongs directly to the product with no intermediary
-                    </span>
-                  </Label>
-                </div>
-                <div className="flex items-start space-x-2 border rounded-md p-3">
-                  <RadioGroupItem
-                    value="category"
-                    id="flow-category"
-                    className="mt-1"
-                  />
-                  <Label
-                    htmlFor="flow-category"
-                    className="flex flex-col gap-1 cursor-pointer"
-                  >
-                    <span className="font-medium">
-                      Product → Category → Item
-                    </span>
-                    <span className="text-sm text-muted-foreground">
-                      Item belongs to a category directly under the product
-                    </span>
-                  </Label>
-                </div>
-                <div className="flex items-start space-x-2 border rounded-md p-3">
-                  <RadioGroupItem
-                    value="profile"
-                    id="flow-profile"
-                    className="mt-1"
-                  />
-                  <Label
-                    htmlFor="flow-profile"
-                    className="flex flex-col gap-1 cursor-pointer"
-                  >
-                    <span className="font-medium">
-                      Product → Profile → Item
-                    </span>
-                    <span className="text-sm text-muted-foreground">
-                      Item belongs to a specific profile of the product
-                    </span>
-                  </Label>
-                </div>
-                <div className="flex items-start space-x-2 border rounded-md p-3">
-                  <RadioGroupItem
-                    value="profile-category"
-                    id="flow-profile-category"
-                    className="mt-1"
-                  />
-                  <Label
-                    htmlFor="flow-profile-category"
-                    className="flex flex-col gap-1 cursor-pointer"
-                  >
-                    <span className="font-medium">
-                      Product → Profile → Category → Item
-                    </span>
-                    <span className="text-sm text-muted-foreground">
-                      Item belongs to a category under a specific profile
-                    </span>
-                  </Label>
-                </div>
-              </RadioGroup>
-
-              {/* Additional fields based on selected flow type */}
-              {(selectedFlowType === "profile" ||
-                selectedFlowType === "profile-category") && (
-                <div className="pt-4">
-                  <FormLabel>Select Profile</FormLabel>
-                  <Select
-                    onValueChange={handleProfileChange}
-                    defaultValue={
-                      form.getValues().product_profile_id || undefined
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Choose a profile" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {profiles.map((profile) => (
-                        <SelectItem key={profile.id} value={profile.id}>
-                          {profile.name}
+              <FormField
+                control={form.control}
+                name="product_profile_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Profile (Optional)</FormLabel>
+                    <Select
+                      onValueChange={(value) => {
+                        const profileId = value === "none" ? null : value;
+                        field.onChange(profileId);
+                        handleProfileChange(profileId);
+                      }}
+                      value={field.value || "none"}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a profile" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="none">
+                          <span className="text-muted-foreground">
+                            No profile (Direct item)
+                          </span>
                         </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Select the profile this item belongs to
-                  </p>
-                </div>
-              )}
+                        {profiles.map((profile) => (
+                          <SelectItem key={profile.id} value={profile.id}>
+                            {profile.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormDescription>
+                      Leave empty for a direct item, or select a profile
+                    </FormDescription>
+                  </FormItem>
+                )}
+              />
 
-              {(selectedFlowType === "category" ||
-                (selectedFlowType === "profile-category" &&
-                  selectedProfileId)) && (
-                <div className="pt-4">
-                  <FormLabel>Select Category</FormLabel>
-                  <Select
-                    onValueChange={(value) =>
-                      form.setValue("product_category_id", value)
-                    }
-                    defaultValue={
-                      form.getValues().product_category_id || undefined
-                    }
-                    disabled={
-                      selectedFlowType === "profile-category" &&
-                      !selectedProfileId
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Choose a category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {getCategoriesForCurrentFlow().map((category) => (
-                        <SelectItem key={category.id} value={category.id}>
-                          {category.name}
+              <FormField
+                control={form.control}
+                name="product_category_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Category (Optional)</FormLabel>
+                    <Select
+                      onValueChange={(value) => {
+                        field.onChange(value === "none" ? null : value);
+                      }}
+                      value={field.value || "none"}
+                      disabled={getAvailableCategories().length === 0}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a category" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="none">
+                          <span className="text-muted-foreground">
+                            No category
+                          </span>
                         </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Select the category this item belongs to
-                  </p>
-                </div>
-              )}
+                        {getAvailableCategories().map((category) => (
+                          <SelectItem key={category.id} value={category.id}>
+                            {category.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormDescription>
+                      {selectedProfileId
+                        ? "Showing categories from selected profile"
+                        : "Showing product categories"}
+                      {getAvailableCategories().length === 0 &&
+                        " (No categories available)"}
+                    </FormDescription>
+                  </FormItem>
+                )}
+              />
 
-              <DialogFooter className="mt-6">
-                <DialogClose asChild>
-                  <Button variant="outline">Cancel</Button>
-                </DialogClose>
-                <Button
-                  type="button"
-                  onClick={handleContinueToItemDetails}
-                  disabled={
-                    ((selectedFlowType === "profile" ||
-                      selectedFlowType === "profile-category") &&
-                      !form.getValues().product_profile_id) ||
-                    ((selectedFlowType === "category" ||
-                      selectedFlowType === "profile-category") &&
-                      !form.getValues().product_category_id)
-                  }
-                >
-                  Continue
-                </Button>
-              </DialogFooter>
-            </div>
-          ) : (
-            /* Step 2: Item Details */
-            <Form {...form}>
-              <form
-                onSubmit={form.handleSubmit(onSubmit)}
-                className="space-y-4"
-              >
-                <div className="text-sm text-muted-foreground mb-4">
-                  Flow:{" "}
-                  <span className="font-medium">
-                    {getFlowDisplayName(selectedFlowType)}
-                  </span>
-                </div>
-
+              <div className="grid grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
-                  name="name"
+                  name="weight"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Item Name *</FormLabel>
+                      <FormLabel>Weight</FormLabel>
                       <FormControl>
-                        <Input placeholder="Enter item name" {...field} />
+                        <Input
+                          placeholder="e.g., 5.2kg"
+                          {...field}
+                          value={field.value || ""}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
 
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="weight"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Weight</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="e.g., 5.2kg"
-                            {...field}
-                            value={field.value || ""}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="length"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Length</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="e.g., 2.4m"
-                            {...field}
-                            value={field.value || ""}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
                 <FormField
                   control={form.control}
-                  name="image"
+                  name="length"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Image *</FormLabel>
-                      <div className="flex gap-2">
-                        <FormControl>
-                          <Input
-                            placeholder="Image URL"
-                            {...field}
-                            value={field.value || ""}
-                            readOnly
-                          />
-                        </FormControl>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => setShowImageSelector(true)}
-                        >
-                          Browse
-                        </Button>
-                      </div>
-                      {field.value && (
-                        <div className="mt-2 border rounded-md p-2 w-32 h-32">
-                          <img
-                            src={field.value}
-                            alt="Selected item image"
-                            className="w-full h-full object-cover rounded"
-                          />
-                        </div>
-                      )}
+                      <FormLabel>Length</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="e.g., 2.4m"
+                          {...field}
+                          value={field.value || ""}
+                        />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
+              </div>
 
-                <DialogFooter className="mt-6">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setFormStep(1)}
-                    disabled={!!editingItem}
-                  >
-                    Back
+              <FormField
+                control={form.control}
+                name="image"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Image *</FormLabel>
+                    <div className="flex gap-2">
+                      <FormControl>
+                        <Input
+                          placeholder="Image URL"
+                          {...field}
+                          value={field.value || ""}
+                          readOnly
+                        />
+                      </FormControl>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setShowImageSelector(true)}
+                      >
+                        Browse
+                      </Button>
+                    </div>
+                    {field.value && (
+                      <div className="mt-2 border rounded-md p-2 w-32 h-32">
+                        <img
+                          src={field.value}
+                          alt="Selected item image"
+                          className="w-full h-full object-cover rounded"
+                        />
+                      </div>
+                    )}
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <DialogFooter className="mt-6">
+                <DialogClose asChild>
+                  <Button type="button" variant="outline">
+                    Cancel
                   </Button>
-                  <Button type="submit">
-                    {editingItem ? "Update Item" : "Create Item"}
-                  </Button>
-                </DialogFooter>
-              </form>
-            </Form>
-          )}
+                </DialogClose>
+                <Button type="submit">
+                  {editingItem ? "Update Item" : "Create Item"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
         </DialogContent>
       </Dialog>
 

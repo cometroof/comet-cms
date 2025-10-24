@@ -1,6 +1,10 @@
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import {
+  ProductsQueryContext,
+  useProductsQuery,
+} from "@/contexts/ProductsQueryContext";
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -116,15 +120,17 @@ const ProductForm = ({
     },
   });
 
+  // Get mutations from context
+  const { createProductMutation, updateProductMutation } = useProductsQuery();
+
   // Handle form submission
   const onSubmit = async (data: ProductFormData) => {
     setLoading(true);
-    try {
-      let savedProduct: Product | null;
 
-      if (isEditing && product) {
-        // Update existing product - type casting to satisfy TypeScript
-        savedProduct = await productService.updateProduct(product.id, {
+    if (isEditing && product) {
+      try {
+        // Update existing product
+        const updatedProduct = await productService.updateProduct(product.id, {
           name: data.name,
           title: data.title || null,
           slug: data.slug || null,
@@ -136,15 +142,23 @@ const ProductForm = ({
           is_highlight: data.is_highlight || false,
           brand_image: data.brand_image || null,
         });
-        if (savedProduct) {
+
+        if (updatedProduct) {
           toast.success("Product updated successfully");
-          onSave(savedProduct);
+          onSave(updatedProduct);
         } else {
           toast.error("Failed to update product");
         }
-      } else {
-        // Create new product - type casting to satisfy TypeScript
-        savedProduct = await productService.createProduct({
+      } catch (error) {
+        console.error("Error updating product:", error);
+        toast.error("An error occurred while updating the product");
+      } finally {
+        setLoading(false);
+      }
+    } else {
+      try {
+        // Create new product
+        const savedProduct = await productService.createProduct({
           name: data.name,
           title: data.title || null,
           slug: data.slug || null,
@@ -156,18 +170,19 @@ const ProductForm = ({
           is_highlight: data.is_highlight || false,
           brand_image: data.brand_image || null,
         });
+
         if (savedProduct) {
           toast.success("Product created successfully");
           onSave(savedProduct);
         } else {
           toast.error("Failed to create product");
         }
+      } catch (error) {
+        console.error("Error creating product:", error);
+        toast.error("An error occurred while creating the product");
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error("Error saving product:", error);
-      toast.error("An error occurred while saving the product");
-    } finally {
-      setLoading(false);
     }
   };
 

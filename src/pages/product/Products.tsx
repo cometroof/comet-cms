@@ -1,40 +1,29 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus, Loader2 } from "lucide-react";
-import { toast } from "sonner";
 import DashboardLayout from "@/components/DashboardLayout";
 import ProductsTable from "./ProductsTable";
 import ProductForm from "./ProductForm";
 import ProductDetail from "./ProductDetail";
 import { useNavigate, useParams } from "react-router-dom";
 import { Product } from "./types";
-import * as productService from "@/services/product.service";
+import {
+  ProductsQueryContext,
+  ProductsQueryProvider,
+  useProductsQuery,
+} from "@/contexts/ProductsQueryContext";
 
-const Products = () => {
+const ProductsContent = () => {
   const { id } = useParams();
-  const [loading, setLoading] = useState<boolean>(false);
   const [showProductForm, setShowProductForm] = useState<boolean>(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [products, setProducts] = useState<Product[]>([]);
   const navigate = useNavigate();
 
-  const loadProducts = async () => {
-    setLoading(true);
-    try {
-      const data = await productService.getProducts();
-      setProducts(data);
-    } catch (error) {
-      console.error("Error loading products:", error);
-      toast.error("Failed to load products");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Load products on mount
-  useEffect(() => {
-    loadProducts();
-  }, []);
+  const {
+    products,
+    isProductsLoading: loading,
+    deleteProductMutation,
+  } = useProductsQuery();
 
   const handleAddProduct = () => {
     setSelectedProduct(null);
@@ -53,7 +42,6 @@ const Products = () => {
 
   const handleSaveProduct = async (product: Product) => {
     setShowProductForm(false);
-    await loadProducts();
     navigate(`/dashboard/products/${product.id}`);
   };
 
@@ -62,24 +50,8 @@ const Products = () => {
   };
 
   const handleDeleteProduct = async (id: string) => {
-    try {
-      const success = await productService.deleteProduct(id);
-      if (success) {
-        toast.success("Product deleted successfully");
-        loadProducts();
-      } else {
-        toast.error("Failed to delete product");
-      }
-    } catch (error) {
-      console.error("Error deleting product:", error);
-      toast.error("An error occurred while deleting the product");
-    }
+    deleteProductMutation.mutate(id);
   };
-
-  // If we have an ID in the route params, show the product detail view
-  if (id) {
-    return <ProductDetail />;
-  }
 
   return (
     <DashboardLayout>
@@ -125,6 +97,21 @@ const Products = () => {
         )}
       </div>
     </DashboardLayout>
+  );
+};
+
+const Products = () => {
+  const { id } = useParams();
+
+  // If we have an ID in the route params, show the product detail view
+  if (id) {
+    return <ProductDetail />;
+  }
+
+  return (
+    <ProductsQueryProvider>
+      <ProductsContent />
+    </ProductsQueryProvider>
   );
 };
 
