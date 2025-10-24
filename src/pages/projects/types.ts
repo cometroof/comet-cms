@@ -13,6 +13,7 @@ export interface ProjectImage {
   image_url: string;
   is_highlight: boolean;
   order: number;
+  created_at?: string;
 }
 
 export interface Project {

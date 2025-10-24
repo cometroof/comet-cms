@@ -61,6 +61,8 @@ export const categoriesApi = {
 };
 
 // Projects API
+import { v4 as uuidv4 } from "uuid";
+
 export const projectsApi = {
   async getAll() {
     const { data: projects, error: projectsError } = await supabase
@@ -151,10 +153,15 @@ export const projectsApi = {
     // Insert images if any
     if (images && images.length > 0) {
       const imagesData = images.map((img) => {
-        // Omit the 'id' field to let Supabase auto-generate UUIDs
-        const { id, ...imageWithoutId } = img;
+        // Generate UUID for new images
+        const imageId =
+          img.id && !img.id.startsWith("temp-") ? img.id : uuidv4();
+
         return {
-          ...imageWithoutId,
+          id: imageId,
+          image_url: img.image_url,
+          is_highlight: img.is_highlight,
+          order: img.order,
           project_id: newProject.id,
         };
       });
@@ -218,32 +225,51 @@ export const projectsApi = {
 
     // Handle images update if provided
     if (images !== undefined) {
-      // Delete existing images
-      await supabase.from("project_images").delete().eq("project_id", id);
+      // Fetch existing images to determine which ones to delete
+      const { data: existingImages } = await supabase
+        .from("project_images")
+        .select("id")
+        .eq("project_id", id);
 
-      // Insert new images
+      const existingImageIds = new Set(
+        existingImages?.map((img) => img.id) || [],
+      );
+      const incomingImageIds = new Set(
+        images
+          .filter((img) => img.id && !img.id.startsWith("temp-"))
+          .map((img) => img.id),
+      );
+
+      // Delete images that are not in the incoming list
+      const imagesToDelete = Array.from(existingImageIds).filter(
+        (imgId) => !incomingImageIds.has(imgId),
+      );
+
+      if (imagesToDelete.length > 0) {
+        await supabase.from("project_images").delete().in("id", imagesToDelete);
+      }
+
+      // Prepare images for upsert
       if (images.length > 0) {
         const imagesData = images.map((img) => {
-          // Omit the 'id' field to let Supabase auto-generate UUIDs
-          // Only keep id if it's a valid UUID (not temp-*)
-          const { id: imgId, ...imageWithoutId } = img;
-          const shouldIncludeId =
-            imgId &&
-            !imgId.startsWith("temp-") &&
-            imgId.match(
-              /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
-            );
+          // Generate UUID for new images (temp-* or no id)
+          const isNewImage = !img.id || img.id.startsWith("temp-");
+          const imageId = isNewImage ? uuidv4() : img.id;
 
           return {
-            ...imageWithoutId,
-            ...(shouldIncludeId && { id: imgId }),
+            id: imageId,
+            image_url: img.image_url,
+            is_highlight: img.is_highlight ?? false,
+            order: img.order,
             project_id: id,
+            created_at: img.created_at || new Date().toISOString(),
+            updated_at: new Date().toISOString(),
           };
         });
 
-        const { data: newImages, error: imagesError } = await supabase
+        const { data: upsertedImages, error: imagesError } = await supabase
           .from("project_images")
-          .insert(imagesData)
+          .upsert(imagesData, { onConflict: "id" })
           .select();
 
         if (imagesError) throw imagesError;
@@ -259,7 +285,7 @@ export const projectsApi = {
 
         return {
           ...updatedProject,
-          images: newImages,
+          images: upsertedImages,
           category_ids: finalCategoryIds,
         } as Project;
       }
@@ -289,7 +315,13 @@ export const projectsApi = {
   },
 
   async delete(id: string) {
-    // Delete images first (due to foreign key constraint)
+    // Delete category relations first
+    await supabase
+      .from("project_category_relations")
+      .delete()
+      .eq("project_id", id);
+
+    // Delete images (due to foreign key constraint)
     await supabase.from("project_images").delete().eq("project_id", id);
 
     // Delete project
