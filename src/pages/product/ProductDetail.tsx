@@ -140,12 +140,11 @@ const ProductDetailContent = () => {
           onValueChange={handleTabChange}
           className="space-y-4"
         >
-          <TabsList className="grid grid-cols-5">
+          <TabsList className="grid grid-cols-4">
             <TabsTrigger value="info">Basic Info</TabsTrigger>
             <TabsTrigger value="profiles">Profiles</TabsTrigger>
             <TabsTrigger value="categories">Categories</TabsTrigger>
             <TabsTrigger value="items">Items</TabsTrigger>
-            <TabsTrigger value="premium">Premium</TabsTrigger>
           </TabsList>
 
           <TabsContent value="info" className="space-y-4">
@@ -355,7 +354,7 @@ const ProductDetailContent = () => {
           <TabsContent value="profiles" className="space-y-4">
             <ProfileManager
               productId={(product as ProductWithRelations)?.id || ""}
-              product={(product || {}) as Product}
+              product={product as Product}
               onUpdate={() =>
                 queryClient.invalidateQueries({ queryKey: ["product", id] })
               }
@@ -374,16 +373,6 @@ const ProductDetailContent = () => {
 
           <TabsContent value="items" className="space-y-4">
             <ItemManager
-              productId={(product as ProductWithRelations)?.id || ""}
-              product={(product || {}) as Product}
-              onUpdate={() =>
-                queryClient.invalidateQueries({ queryKey: ["product", id] })
-              }
-            />
-          </TabsContent>
-
-          <TabsContent value="premium" className="space-y-4">
-            <PremiumManager
               productId={(product as ProductWithRelations)?.id || ""}
               product={(product || {}) as Product}
               onUpdate={() =>

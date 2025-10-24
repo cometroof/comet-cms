@@ -12,31 +12,6 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "13.0.5";
   };
-  graphql_public: {
-    Tables: {
-      [_ in never]: never;
-    };
-    Views: {
-      [_ in never]: never;
-    };
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json;
-          operationName?: string;
-          query?: string;
-          variables?: Json;
-        };
-        Returns: Json;
-      };
-    };
-    Enums: {
-      [_ in never]: never;
-    };
-    CompositeTypes: {
-      [_ in never]: never;
-    };
-  };
   public: {
     Tables: {
       articles: {
@@ -423,34 +398,49 @@ export type Database = {
       };
       product_premium: {
         Row: {
+          content_image_url: string | null;
           created_at: string | null;
+          description_en: string | null;
+          description_id: string | null;
           effective_size: string | null;
           id: string;
           material_fullname: string | null;
           material_name: string | null;
+          premium_image_url: string | null;
           product_id: string;
+          product_profile_id: string | null;
           reng_distance: string | null;
           size_per_panel: string | null;
           updated_at: string | null;
         };
         Insert: {
+          content_image_url?: string | null;
           created_at?: string | null;
+          description_en?: string | null;
+          description_id?: string | null;
           effective_size?: string | null;
           id?: string;
           material_fullname?: string | null;
           material_name?: string | null;
+          premium_image_url?: string | null;
           product_id: string;
+          product_profile_id?: string | null;
           reng_distance?: string | null;
           size_per_panel?: string | null;
           updated_at?: string | null;
         };
         Update: {
+          content_image_url?: string | null;
           created_at?: string | null;
+          description_en?: string | null;
+          description_id?: string | null;
           effective_size?: string | null;
           id?: string;
           material_fullname?: string | null;
           material_name?: string | null;
+          premium_image_url?: string | null;
           product_id?: string;
+          product_profile_id?: string | null;
           reng_distance?: string | null;
           size_per_panel?: string | null;
           updated_at?: string | null;
@@ -461,6 +451,13 @@ export type Database = {
             columns: ["product_id"];
             isOneToOne: true;
             referencedRelation: "product";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "product_premium_product_profile_id_fkey";
+            columns: ["product_profile_id"];
+            isOneToOne: false;
+            referencedRelation: "product_profile";
             referencedColumns: ["id"];
           },
         ];
@@ -956,9 +953,6 @@ export type CompositeTypes<
     : never;
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {},
   },

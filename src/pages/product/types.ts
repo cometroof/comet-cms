@@ -33,6 +33,15 @@ export interface ProductProfile {
     weight: string;
     thickness: string;
   }> | null;
+  // Premium fields (integrated from product_premium)
+  is_premium: boolean | null;
+  description_id: string | null;
+  description_en: string | null;
+  premium_materials: string | null; // maps to material_fullname
+  material_name: string | null;
+  premium_image_url: string | null;
+  content_image_url: string | null;
+  reng_distance: string | null;
   created_at: string | null;
   updated_at: string | null;
 }
@@ -63,11 +72,16 @@ export interface ProductItem {
 export interface ProductPremium {
   id: string;
   product_id: string;
+  product_profile_id: string | null;
   material_fullname: string | null;
   material_name: string | null;
   size_per_panel: string | null;
   effective_size: string | null;
   reng_distance: string | null;
+  description_en: string | null;
+  description_id: string | null;
+  premium_image_url: string | null;
+  content_image_url: string | null;
   created_at: string | null;
   updated_at: string | null;
 }
@@ -170,6 +184,15 @@ export interface ProfileFormData {
   }>;
   certificates?: string[];
   badges?: string[];
+  // Premium fields
+  is_premium?: boolean;
+  description_id?: string;
+  description_en?: string;
+  premium_materials?: string; // maps to material_fullname in product_premium
+  material_name?: string;
+  premium_image_url?: string;
+  content_image_url?: string;
+  reng_distance?: string;
 }
 
 export interface CategoryFormData {
@@ -192,9 +215,16 @@ export interface ItemFormData {
 
 export interface PremiumFormData {
   product_id: string;
+  product_profile_id?: string;
   material_fullname?: string;
   material_name?: string;
   size_per_panel?: string;
   effective_size?: string;
   reng_distance?: string;
+  description_en?: string;
+  description_id?: string;
+  premium_image_url?: string;
+  content_image_url?: string;
+  created_at?: string | null;
+  updated_at?: string | null;
 }

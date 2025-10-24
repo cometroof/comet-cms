@@ -10,7 +10,6 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-  CardFooter,
 } from "@/components/ui/card";
 import {
   Table,
@@ -30,20 +29,8 @@ import {
   DialogClose,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Separator } from "@/components/ui/separator";
-import { PlusCircle, Trash } from "lucide-react";
-import { Label } from "@/components/ui/label";
-import { type Json } from "@/lib/supabase-types";
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
+import ImageSelectorDialog from "@/components/ImageSelectorDialog";
+import { Form } from "@/components/ui/form";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -61,14 +48,19 @@ import {
   Award,
   FileText,
   Ruler,
-  Check,
+  Crown,
 } from "lucide-react";
 import { toast } from "sonner";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useForm } from "react-hook-form";
 import * as productService from "@/services/product.service";
-import { ProductProfile, ProfileFormData, Product } from "./types";
+import {
+  ProductProfile,
+  ProfileFormData,
+  Product,
+  ProductPremium,
+} from "./types";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -82,6 +74,11 @@ import {
 import { Badge } from "@/components/ui/badge";
 import CertificatesBadgesManager from "./CertificatesBadgesManager";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import GeneralTab from "./profile-tabs/GeneralTab";
+import SizeTab from "./profile-tabs/SizeTab";
+import CertificatesTab from "./profile-tabs/CertificatesTab";
+import BadgesTab from "./profile-tabs/BadgesTab";
+import PremiumTab from "./profile-tabs/PremiumTab";
 
 // Define form validation schema
 const formSchema = z.object({
@@ -106,6 +103,15 @@ const formSchema = z.object({
     .optional(),
   certificates: z.array(z.string()).optional(),
   badges: z.array(z.string()).optional(),
+  // Premium fields
+  is_premium: z.boolean().optional(),
+  description_id: z.string().optional(),
+  description_en: z.string().optional(),
+  premium_materials: z.string().optional(),
+  material_name: z.string().optional(),
+  premium_image_url: z.string().optional(),
+  content_image_url: z.string().optional(),
+  reng_distance: z.string().optional(),
 });
 
 interface ProfileManagerProps {
@@ -138,13 +144,17 @@ const ProfileManager = ({
     null,
   );
   const [loadingCertsAndBadges, setLoadingCertsAndBadges] = useState(false);
-
+  const [showPremiumImageSelector, setShowPremiumImageSelector] =
+    useState(false);
+  const [showContentImageSelector, setShowContentImageSelector] =
+    useState(false);
   // Create form
+  console.log({ product });
   const form = useForm<ProfileFormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       product_id: productId,
-      name: "",
+      name: product.name,
       size_per_panel: "",
       effective_size: "",
       panel_amount: undefined,
@@ -155,6 +165,14 @@ const ProfileManager = ({
       weight: "",
       certificates: [],
       badges: [],
+      is_premium: false,
+      description_id: "",
+      description_en: "",
+      premium_materials: "",
+      material_name: "",
+      premium_image_url: "",
+      content_image_url: "",
+      reng_distance: "",
     },
   });
 
@@ -185,6 +203,14 @@ const ProfileManager = ({
       size: [],
       certificates: [],
       badges: [],
+      is_premium: false,
+      description_id: "",
+      description_en: "",
+      premium_materials: "",
+      material_name: "",
+      premium_image_url: "",
+      content_image_url: "",
+      reng_distance: "",
     });
     setEditingProfile(null);
     setShowProfileForm(true);
@@ -206,21 +232,23 @@ const ProfileManager = ({
     setEditingProfile(profile as unknown as ProductProfile);
     setLoadingCertsAndBadges(true);
 
-    // Load certificates and badges for this profile
     let certificateIds: string[] = [];
     let badgeIds: string[] = [];
+    let premiumData: ProductPremium | null = null;
 
     try {
-      const [assignedCerts, assignedBadges] = await Promise.all([
+      const [assignedCerts, assignedBadges, premium] = await Promise.all([
         productService.getProfileCertificates(profile.id),
         productService.getProfileBadges(profile.id),
+        productService.getProfilePremium(profile.id),
       ]);
 
       certificateIds = assignedCerts.map((cert) => cert.id);
       badgeIds = assignedBadges.map((badge) => badge.id);
+      premiumData = premium;
     } catch (error) {
-      console.error("Error loading certificates and badges:", error);
-      toast.error("Failed to load certificates and badges");
+      console.error("Error loading data:", error);
+      toast.error("Failed to load profile data");
     } finally {
       setLoadingCertsAndBadges(false);
     }
@@ -228,17 +256,20 @@ const ProfileManager = ({
     form.reset({
       product_id: profile.product_id,
       name: profile.name,
-      size_per_panel: profile.size_per_panel || "",
-      effective_size: profile.effective_size || "",
-      panel_amount: profile.panel_amount || undefined,
-      materials: profile.materials || "",
-      tkdn_value: profile.tkdn_value || "",
-      thickness: profile.thickness || "",
-      weight: profile.weight || "",
-      size: profile.size || [],
+      // ... field profile lainnya
       certificates: certificateIds,
       badges: badgeIds,
+
+      is_premium: !!premiumData,
+      description_id: premiumData?.description_id || "",
+      description_en: premiumData?.description_en || "",
+      premium_materials: premiumData?.material_fullname || "",
+      material_name: premiumData?.material_name || "",
+      premium_image_url: premiumData?.premium_image_url || "",
+      content_image_url: premiumData?.content_image_url || "",
+      reng_distance: premiumData?.reng_distance || "",
     });
+
     setShowProfileForm(true);
   };
 
@@ -351,14 +382,38 @@ const ProfileManager = ({
   };
 
   const onSubmit = async (data: ProfileFormData) => {
-    // Extract certificates and badges from form data
-    const { certificates, badges, ...profileFields } = data;
+    // Extract certificates, badges, and premium fields from form data
+    const {
+      certificates,
+      badges,
+      is_premium,
+      description_id,
+      description_en,
+      premium_materials,
+      material_name,
+      premium_image_url,
+      content_image_url,
+      reng_distance,
+      ...profileFields
+    } = data;
 
     // Ensure size is an array (not undefined)
-    const formattedData = {
+    const formattedData: Partial<ProductProfile> = {
       ...profileFields,
       size: profileFields.size || [],
     };
+
+    // If premium is enabled, include premium fields in the profile data
+    // if (is_premium) {
+    //   formattedData.is_premium = is_premium;
+    //   formattedData.description_id = description_id;
+    //   formattedData.description_en = description_en;
+    //   formattedData.premium_materials = premium_materials;
+    //   formattedData.material_name = material_name;
+    //   formattedData.premium_image_url = premium_image_url;
+    //   formattedData.content_image_url = content_image_url;
+    //   formattedData.reng_distance = reng_distance;
+    // }
 
     const profileData = formattedData as Omit<
       ProductProfile,
@@ -391,6 +446,31 @@ const ProfileManager = ({
                 );
               }
             }
+
+            // Handle premium data synchronization if needed
+            if (is_premium && editingProfile?.product_id) {
+              try {
+                const premiumData: PremiumFormData = {
+                  product_id: editingProfile.product_id,
+                  product_profile_id: editingProfile.id,
+                  material_fullname: premium_materials || undefined,
+                  material_name: material_name || undefined,
+                  description_en: description_en || undefined,
+                  description_id: description_id || undefined,
+                  premium_image_url: premium_image_url || undefined,
+                  content_image_url: content_image_url || undefined,
+                  effective_size: profileFields.effective_size,
+                  size_per_panel: profileFields.size_per_panel,
+                  reng_distance: reng_distance || undefined,
+                };
+                await productService.upsertPremium(premiumData);
+              } catch (error) {
+                console.error("Error updating premium data:", error);
+                toast.warning(
+                  "Profile saved but premium data may not be fully synced",
+                );
+              }
+            }
           },
         },
       );
@@ -415,6 +495,31 @@ const ProfileManager = ({
               console.error("Error saving certificates/badges:", error);
               toast.error(
                 "Profile created but failed to save certificates/badges",
+              );
+            }
+          }
+
+          // Handle premium data if enabled
+          if (is_premium && newProfile) {
+            try {
+              const premiumData: PremiumFormData = {
+                product_id: newProfile.product_id,
+                product_profile_id: newProfile.id,
+                material_fullname: premium_materials || undefined,
+                material_name: material_name || undefined,
+                description_en: description_en || undefined,
+                description_id: description_id || undefined,
+                premium_image_url: premium_image_url || undefined,
+                content_image_url: content_image_url || undefined,
+                effective_size: profileFields.effective_size,
+                size_per_panel: profileFields.size_per_panel,
+                reng_distance: reng_distance || undefined,
+              };
+              await productService.upsertPremium(premiumData);
+            } catch (error) {
+              console.error("Error saving premium data:", error);
+              toast.warning(
+                "Profile created but premium data may not be fully synced",
               );
             }
           }
@@ -615,424 +720,60 @@ const ProfileManager = ({
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <Tabs defaultValue="general">
-                <TabsList className="grid w-full grid-cols-4">
+                <TabsList className="grid w-full grid-cols-5">
                   <TabsTrigger value="general">General</TabsTrigger>
                   <TabsTrigger value="size">Size</TabsTrigger>
                   <TabsTrigger value="certificates">Certificates</TabsTrigger>
                   <TabsTrigger value="badges">Badges</TabsTrigger>
+                  <TabsTrigger value="premium">
+                    <Crown className="h-5 w-5 text-amber-600 mr-1" /> Premium
+                  </TabsTrigger>
                 </TabsList>
 
-                <TabsContent
-                  value="general"
-                  className="max-h-[520px] overflow-y-auto"
-                >
-                  <FormField
+                <TabsContent value="general">
+                  <GeneralTab control={form.control} watch={form.watch} />
+                </TabsContent>
+                <TabsContent value="size">
+                  <SizeTab
                     control={form.control}
-                    name="name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Name *</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Enter profile name" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
+                    watch={form.watch}
+                    addSizeItem={addSizeItem}
+                    removeSizeItem={removeSizeItem}
                   />
-                  <div className="grid grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="size_per_panel"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Size per Panel</FormLabel>
-                          <FormControl>
-                            <Input
-                              placeholder="e.g., 1060mm × 2500mm"
-                              {...field}
-                              value={field.value || ""}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="effective_size"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Effective Size</FormLabel>
-                          <FormControl>
-                            <Input
-                              placeholder="e.g., 1000mm × 2400mm"
-                              {...field}
-                              value={field.value || ""}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="panel_amount"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Panel Amount</FormLabel>
-                          <FormControl>
-                            <Input
-                              type="number"
-                              placeholder="Number of panels"
-                              {...field}
-                              value={field.value || ""}
-                              onChange={(e) => {
-                                const value = e.target.value
-                                  ? parseInt(e.target.value, 10)
-                                  : undefined;
-                                field.onChange(value);
-                              }}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="materials"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Materials</FormLabel>
-                          <FormControl>
-                            <Input
-                              placeholder="e.g., Zinc, Aluminum, Steel"
-                              {...field}
-                              value={field.value || ""}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="tkdn_value"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>TKDN Value</FormLabel>
-                          <FormControl>
-                            <Input
-                              placeholder="TKDN value"
-                              {...field}
-                              value={field.value || ""}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                </TabsContent>
-                <TabsContent
-                  value="size"
-                  className="max-h-[520px] overflow-y-auto"
-                >
-                  {/* Size Fields */}
-                  <div className="space-y-4 grid-flow-col">
-                    <div className="flex items-center justify-between">
-                      <Label className="text-base font-medium">
-                        Size Specifications
-                      </Label>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        className="gap-1"
-                        onClick={addSizeItem}
-                        disabled={(form.watch("size") || [])?.length >= 5}
-                      >
-                        <PlusCircle className="h-4 w-4" />
-                        Add Size
-                      </Button>
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      Add up to 5 size specifications with name, weight and
-                      thickness
-                    </p>
-
-                    {(form.watch("size") || []).map((_, index) => (
-                      <div
-                        key={index}
-                        className="space-y-4 rounded-md border p-4"
-                      >
-                        <div className="flex items-center justify-between">
-                          <h4 className="text-sm font-medium">
-                            Size {index + 1}
-                          </h4>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => removeSizeItem(index)}
-                          >
-                            <Trash className="h-4 w-4" />
-                          </Button>
-                        </div>
-
-                        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                          <FormField
-                            control={form.control}
-                            name={`size.${index}.name`}
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Name*</FormLabel>
-                                <FormControl>
-                                  <Input placeholder="Size name" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-
-                          <FormField
-                            control={form.control}
-                            name={`size.${index}.weight`}
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Weight*</FormLabel>
-                                <FormControl>
-                                  <Input placeholder="Weight" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-
-                          <FormField
-                            control={form.control}
-                            name={`size.${index}.thickness`}
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Thickness*</FormLabel>
-                                <FormControl>
-                                  <Input placeholder="Thickness" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        </div>
-                      </div>
-                    ))}
-
-                    {((form.watch("size") || [])?.length || 0) === 0 && (
-                      <div className="rounded-md border border-dashed p-6 text-center">
-                        <p className="text-sm text-muted-foreground">
-                          No size specifications added yet.
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Add specifications including name, weight, and
-                          thickness
-                        </p>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          className="mt-4 gap-1"
-                          onClick={addSizeItem}
-                        >
-                          <PlusCircle className="h-4 w-4" />
-                          Add Size
-                        </Button>
-                      </div>
-                    )}
-                  </div>
                 </TabsContent>
 
-                <TabsContent
-                  value="certificates"
-                  className="max-h-[520px] overflow-y-auto"
-                >
-                  <div className="space-y-4">
-                    <div>
-                      <Label className="text-base font-medium">
-                        Certificates
-                      </Label>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        Select certificates to associate with this profile
-                      </p>
-                    </div>
-
-                    {loadingCertsAndBadges ? (
-                      <div className="flex justify-center py-8">
-                        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-                      </div>
-                    ) : !availableCertificates ||
-                      availableCertificates.length === 0 ? (
-                      <div className="rounded-md border border-dashed p-6 text-center">
-                        <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
-                        <p className="text-sm text-muted-foreground">
-                          No certificates available
-                        </p>
-                      </div>
-                    ) : (
-                      <div className="grid grid-cols-1 gap-3">
-                        {availableCertificates.map((certificate: any) => {
-                          const isSelected = (
-                            form.watch("certificates") || []
-                          ).includes(certificate.id);
-                          return (
-                            <div
-                              key={certificate.id}
-                              className={`border rounded-md p-3 flex items-center gap-3 cursor-pointer transition-colors ${
-                                isSelected
-                                  ? "border-primary bg-primary/5"
-                                  : "hover:bg-muted"
-                              }`}
-                              onClick={() => {
-                                const currentCerts =
-                                  form.watch("certificates") || [];
-                                if (isSelected) {
-                                  form.setValue(
-                                    "certificates",
-                                    currentCerts.filter(
-                                      (id) => id !== certificate.id,
-                                    ),
-                                  );
-                                } else {
-                                  form.setValue("certificates", [
-                                    ...currentCerts,
-                                    certificate.id,
-                                  ]);
-                                }
-                              }}
-                            >
-                              <div className="flex-shrink-0 w-10 h-10 bg-muted rounded-md flex items-center justify-center">
-                                {certificate.image ? (
-                                  <img
-                                    src={certificate.image}
-                                    alt={certificate.name}
-                                    className="w-8 h-8 object-contain"
-                                  />
-                                ) : (
-                                  <FileText className="w-5 h-5 text-muted-foreground" />
-                                )}
-                              </div>
-                              <div className="flex-grow">
-                                <h4 className="font-medium text-sm">
-                                  {certificate.name}
-                                </h4>
-                              </div>
-                              <div className="flex-shrink-0">
-                                {isSelected ? (
-                                  <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center">
-                                    <Check className="w-3 h-3 text-white" />
-                                  </div>
-                                ) : (
-                                  <div className="w-5 h-5 rounded-full border-2 border-muted-foreground" />
-                                )}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
+                <TabsContent value="premium">
+                  <PremiumTab
+                    control={form.control}
+                    watch={form.watch}
+                    setValue={form.setValue}
+                    onSelectPremiumImage={() =>
+                      setShowPremiumImageSelector(true)
+                    }
+                    onSelectContentImage={() =>
+                      setShowContentImageSelector(true)
+                    }
+                  />
                 </TabsContent>
 
-                <TabsContent
-                  value="badges"
-                  className="max-h-[520px] overflow-y-auto"
-                >
-                  <div className="space-y-4">
-                    <div>
-                      <Label className="text-base font-medium">Badges</Label>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        Select badges to associate with this profile
-                      </p>
-                    </div>
+                <TabsContent value="certificates">
+                  <CertificatesTab
+                    control={form.control}
+                    watch={form.watch}
+                    setValue={form.setValue}
+                    availableCertificates={availableCertificates || []}
+                    loadingCertsAndBadges={loadingCertsAndBadges}
+                  />
+                </TabsContent>
 
-                    {loadingCertsAndBadges ? (
-                      <div className="flex justify-center py-8">
-                        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-                      </div>
-                    ) : !availableBadges || availableBadges.length === 0 ? (
-                      <div className="rounded-md border border-dashed p-6 text-center">
-                        <Award className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
-                        <p className="text-sm text-muted-foreground">
-                          No badges available
-                        </p>
-                      </div>
-                    ) : (
-                      <div className="grid grid-cols-1 gap-3">
-                        {availableBadges.map((badge: any) => {
-                          const isSelected = (
-                            form.watch("badges") || []
-                          ).includes(badge.id);
-                          return (
-                            <div
-                              key={badge.id}
-                              className={`border rounded-md p-3 flex items-center gap-3 cursor-pointer transition-colors ${
-                                isSelected
-                                  ? "border-primary bg-primary/5"
-                                  : "hover:bg-muted"
-                              }`}
-                              onClick={() => {
-                                const currentBadges =
-                                  form.watch("badges") || [];
-                                if (isSelected) {
-                                  form.setValue(
-                                    "badges",
-                                    currentBadges.filter(
-                                      (id) => id !== badge.id,
-                                    ),
-                                  );
-                                } else {
-                                  form.setValue("badges", [
-                                    ...currentBadges,
-                                    badge.id,
-                                  ]);
-                                }
-                              }}
-                            >
-                              <div className="flex-shrink-0 w-10 h-10 bg-muted rounded-md flex items-center justify-center">
-                                {badge.image ? (
-                                  <img
-                                    src={badge.image}
-                                    alt={badge.name}
-                                    className="w-8 h-8 object-contain"
-                                  />
-                                ) : (
-                                  <Award className="w-5 h-5 text-muted-foreground" />
-                                )}
-                              </div>
-                              <div className="flex-grow">
-                                <h4 className="font-medium text-sm">
-                                  {badge.name}
-                                </h4>
-                              </div>
-                              <div className="flex-shrink-0">
-                                {isSelected ? (
-                                  <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center">
-                                    <Check className="w-3 h-3 text-white" />
-                                  </div>
-                                ) : (
-                                  <div className="w-5 h-5 rounded-full border-2 border-muted-foreground" />
-                                )}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
+                <TabsContent value="badges">
+                  <BadgesTab
+                    control={form.control}
+                    watch={form.watch}
+                    setValue={form.setValue}
+                    availableBadges={availableBadges || []}
+                    loadingCertsAndBadges={loadingCertsAndBadges}
+                  />
                 </TabsContent>
               </Tabs>
 
@@ -1141,6 +882,32 @@ const ProfileManager = ({
           entityType="profile"
         />
       )}
+
+      {/* Premium Image Selector */}
+      <ImageSelectorDialog
+        open={showPremiumImageSelector}
+        onOpenChange={setShowPremiumImageSelector}
+        onSelect={(url) => {
+          form.setValue("premium_image_url", url);
+          setShowPremiumImageSelector(false);
+        }}
+        title="Select Premium Brand Image"
+        multiple={false}
+        multipleSelection={false}
+      />
+
+      {/* Content Image Selector */}
+      <ImageSelectorDialog
+        open={showContentImageSelector}
+        onOpenChange={setShowContentImageSelector}
+        onSelect={(url) => {
+          form.setValue("content_image_url", url);
+          setShowContentImageSelector(false);
+        }}
+        title="Select Premium Content Image"
+        multiple={false}
+        multipleSelection={false}
+      />
     </>
   );
 };

@@ -897,3 +897,23 @@ export const assignBadgesToProfile = async (
 
   return true;
 };
+
+/**
+ * Get product premium by profile ID
+ */
+export const getProfilePremium = async (
+  profileId: string,
+): Promise<ProductPremium | null> => {
+  const { data, error } = await supabase
+    .from(PREMIUM_TABLE)
+    .select("*")
+    .eq("product_profile_id", profileId)
+    .single();
+
+  if (error && error.code !== "PGRST116") {
+    console.error(`Error fetching premium for profile ${profileId}:`, error);
+    return null;
+  }
+
+  return data || null;
+};
