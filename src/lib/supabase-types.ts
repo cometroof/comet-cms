@@ -212,6 +212,7 @@ export type Database = {
       };
       product: {
         Row: {
+          banner_url: string | null;
           brand_image: string | null;
           catalogue: string | null;
           created_at: string | null;
@@ -222,6 +223,8 @@ export type Database = {
           highlight_bottom_label_en: string | null;
           highlight_bottom_label_id: string | null;
           highlight_icon: string | null;
+          highlight_section_description_en: string | null;
+          highlight_section_description_id: string | null;
           highlight_top_description_en: string | null;
           highlight_top_description_id: string | null;
           highlight_top_label_en: string | null;
@@ -238,6 +241,7 @@ export type Database = {
           updated_at: string | null;
         };
         Insert: {
+          banner_url?: string | null;
           brand_image?: string | null;
           catalogue?: string | null;
           created_at?: string | null;
@@ -248,6 +252,8 @@ export type Database = {
           highlight_bottom_label_en?: string | null;
           highlight_bottom_label_id?: string | null;
           highlight_icon?: string | null;
+          highlight_section_description_en?: string | null;
+          highlight_section_description_id?: string | null;
           highlight_top_description_en?: string | null;
           highlight_top_description_id?: string | null;
           highlight_top_label_en?: string | null;
@@ -264,6 +270,7 @@ export type Database = {
           updated_at?: string | null;
         };
         Update: {
+          banner_url?: string | null;
           brand_image?: string | null;
           catalogue?: string | null;
           created_at?: string | null;
@@ -274,6 +281,8 @@ export type Database = {
           highlight_bottom_label_en?: string | null;
           highlight_bottom_label_id?: string | null;
           highlight_icon?: string | null;
+          highlight_section_description_en?: string | null;
+          highlight_section_description_id?: string | null;
           highlight_top_description_en?: string | null;
           highlight_top_description_id?: string | null;
           highlight_top_label_en?: string | null;

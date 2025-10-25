@@ -6,17 +6,16 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components";
 import { CheckCircle, FileText, Plus, X } from "lucide-react";
 import { Product, ProductWithRelations } from "../../types";
+import FileSelectorDialog from "@/components/FileSelectorDialog/FileSelectorDialog";
 
 interface AdditionalInfoFormProps {
   product: Product;
   onProductChange: (updates: Partial<Product>) => void;
-  onCatalogueSelect: () => void;
 }
 
 export default function AdditionalInfoForm({
   product,
   onProductChange,
-  onCatalogueSelect,
 }: AdditionalInfoFormProps) {
   // Parse suitables
   const getSuitableItems = () => {
@@ -45,6 +44,7 @@ export default function AdditionalInfoForm({
   const [suitables, setSuitables] = useState<string[]>(getSuitableItems());
   const [newSuitable, setNewSuitable] = useState("");
   const [catalogueUrl, setCatalogueUrl] = useState(product?.catalogue || "");
+  const [catalogueDialogOpen, setCatalogueDialogOpen] = useState(false);
 
   const handleAddSuitable = () => {
     if (newSuitable.trim()) {
@@ -64,6 +64,12 @@ export default function AdditionalInfoForm({
   const handleCatalogueChange = (value: string) => {
     setCatalogueUrl(value);
     onProductChange({ catalogue: value });
+  };
+
+  const handleCatalogueSelect = (fileUrl: string) => {
+    setCatalogueUrl(fileUrl);
+    onProductChange({ catalogue: fileUrl });
+    setCatalogueDialogOpen(false);
   };
 
   return (
@@ -132,7 +138,7 @@ export default function AdditionalInfoForm({
             type="button"
             variant="outline"
             size="sm"
-            onClick={onCatalogueSelect}
+            onClick={() => setCatalogueDialogOpen(true)}
             className="flex items-center gap-2"
           >
             <FileText className="h-4 w-4" />
@@ -145,11 +151,7 @@ export default function AdditionalInfoForm({
               asChild
               className="flex items-center gap-2"
             >
-              <a
-                href={catalogueUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
+              <a href={catalogueUrl} target="_blank" rel="noopener noreferrer">
                 <FileText className="h-4 w-4" />
                 View Catalogue
               </a>
@@ -157,6 +159,19 @@ export default function AdditionalInfoForm({
           )}
         </div>
       </div>
+
+      {/* File Selector Dialog */}
+      <FileSelectorDialog
+        open={catalogueDialogOpen}
+        onOpenChange={setCatalogueDialogOpen}
+        onSelect={handleCatalogueSelect}
+        title="Select Catalogue File"
+        acceptedFileTypes=".pdf,.doc,.docx"
+        maxFileSize={10}
+        multiple={false}
+        multipleSelection={false}
+        initialSelection={catalogueUrl}
+      />
     </div>
   );
 }

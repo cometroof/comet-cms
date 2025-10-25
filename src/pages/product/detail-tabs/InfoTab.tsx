@@ -7,19 +7,22 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 import { Package, ChevronRight } from "lucide-react";
-import { ProductWithRelations, Product, ProductProfile } from "../types";
+import { Product, ProductProfile } from "../types";
 import {
   ProductInfoForm,
   HighlightSectionForm,
   BrandImageSelector,
   AdditionalInfoForm,
+  CategorySection,
+  ItemSection,
 } from "./components";
+import { useProductQuery } from "@/contexts/ProductQueryContext";
+import { toast } from "sonner";
+import * as productService from "@/services/product.service";
 
 export default function InfoTab({
   product,
-  handleEditProduct,
   onTabChange,
 }: {
   product: Product;
@@ -28,6 +31,7 @@ export default function InfoTab({
 }) {
   const [formUpdates, setFormUpdates] = useState<Partial<Product>>({});
   const [isSaving, setIsSaving] = useState(false);
+  const { refetchProduct } = useProductQuery();
 
   // Handler untuk mengumpulkan perubahan dari semua form
   const handleProductChange = (updates: Partial<Product>) => {
@@ -38,53 +42,113 @@ export default function InfoTab({
   const handleSaveChanges = async () => {
     setIsSaving(true);
     try {
-      // TODO: Implement actual save logic here
-      // Example: await updateProduct(product.id, formUpdates);
-      console.log("Saving changes:", formUpdates);
+      // Prepare the data for updating
+      const updateData: Partial<Product> = {};
 
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      // Map all the form updates to the correct database fields
+      if (formUpdates.name !== undefined) updateData.name = formUpdates.name;
+      if (formUpdates.title !== undefined) updateData.title = formUpdates.title;
+      if (formUpdates.description_en !== undefined)
+        updateData.description_en = formUpdates.description_en;
+      if (formUpdates.description_id !== undefined)
+        updateData.description_id = formUpdates.description_id;
+      if (formUpdates.brand_image !== undefined)
+        updateData.brand_image = formUpdates.brand_image;
+      if (formUpdates.catalogue !== undefined)
+        updateData.catalogue = formUpdates.catalogue;
+      if (formUpdates.banner_url !== undefined)
+        updateData.banner_url = formUpdates.banner_url;
+      if (formUpdates.slug !== undefined) updateData.slug = formUpdates.slug;
+
+      // Handle suitables field - ensure it's properly formatted as JSON
+      if (formUpdates.suitables !== undefined) {
+        updateData.suitables = formUpdates.suitables;
+      }
+
+      // Handle highlight section fields
+      if (formUpdates.is_highlight_section !== undefined)
+        updateData.is_highlight_section = formUpdates.is_highlight_section;
+      if (formUpdates.highlight_section_description_en !== undefined)
+        updateData.highlight_section_description_en =
+          formUpdates.highlight_section_description_en;
+      if (formUpdates.highlight_section_description_id !== undefined)
+        updateData.highlight_section_description_id =
+          formUpdates.highlight_section_description_id;
+      if (formUpdates.highlight_icon !== undefined)
+        updateData.highlight_icon = formUpdates.highlight_icon;
+
+      // Handle highlight top fields
+      if (formUpdates.highlight_top_label_en !== undefined)
+        updateData.highlight_top_label_en = formUpdates.highlight_top_label_en;
+      if (formUpdates.highlight_top_label_id !== undefined)
+        updateData.highlight_top_label_id = formUpdates.highlight_top_label_id;
+      if (formUpdates.highlight_top_description_en !== undefined)
+        updateData.highlight_top_description_en =
+          formUpdates.highlight_top_description_en;
+      if (formUpdates.highlight_top_description_id !== undefined)
+        updateData.highlight_top_description_id =
+          formUpdates.highlight_top_description_id;
+
+      // Handle highlight bottom fields
+      if (formUpdates.highlight_bottom_label_en !== undefined)
+        updateData.highlight_bottom_label_en =
+          formUpdates.highlight_bottom_label_en;
+      if (formUpdates.highlight_bottom_label_id !== undefined)
+        updateData.highlight_bottom_label_id =
+          formUpdates.highlight_bottom_label_id;
+      if (formUpdates.highlight_bottom_description_en !== undefined)
+        updateData.highlight_bottom_description_en =
+          formUpdates.highlight_bottom_description_en;
+      if (formUpdates.highlight_bottom_description_id !== undefined)
+        updateData.highlight_bottom_description_id =
+          formUpdates.highlight_bottom_description_id;
+
+      // Handle other boolean flags
+      if (formUpdates.is_highlight !== undefined)
+        updateData.is_highlight = formUpdates.is_highlight;
+      if (formUpdates.is_profile_highlight !== undefined)
+        updateData.is_profile_highlight = formUpdates.is_profile_highlight;
+      if (formUpdates.is_under_product !== undefined)
+        updateData.is_under_product = formUpdates.is_under_product;
+
+      // Update the product in the database
+      const result = await productService.updateProduct(product.id, updateData);
+
+      if (!result) {
+        throw new Error("Failed to update product");
+      }
 
       // Reset form updates after successful save
       setFormUpdates({});
 
-      // Optionally show success message
-      alert("Product updated successfully!");
+      // Refetch product data to get the latest state
+      await refetchProduct();
+
+      // Show success message
+      toast.success("Product updated successfully!");
     } catch (error) {
       console.error("Error saving product:", error);
-      alert("Failed to save product changes");
+      toast.error("Failed to save product changes. Please try again.");
     } finally {
       setIsSaving(false);
     }
   };
 
-  // Handlers untuk dialog selectors
-  const handleBrandImageSelect = () => {
-    // TODO: Open image selector dialog
-    console.log("Open brand image selector");
-  };
-
-  const handleBrandImageRemove = () => {
-    handleProductChange({ brand_image: "" });
-  };
-
-  const handleHighlightIconSelect = () => {
-    // TODO: Open icon selector dialog
-    console.log("Open highlight icon selector");
-  };
-
-  const handleCatalogueSelect = () => {
-    // TODO: Open file selector dialog
-    console.log("Open catalogue file selector");
-  };
-
   const hasChanges = Object.keys(formUpdates).length > 0;
+
+  // Check if product has profiles
+  const hasProfiles =
+    product?.profiles &&
+    Array.isArray(product.profiles) &&
+    product.profiles.length > 0 &&
+    typeof product.profiles[0] === "object" &&
+    !("count" in product.profiles[0]);
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {/* Main Product Information */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="md:grid-cols-1 lg:col-span-2 space-y-6">
           <ProductInfoForm
             product={product}
             onProductChange={handleProductChange}
@@ -104,10 +168,15 @@ export default function InfoTab({
               <AdditionalInfoForm
                 product={product}
                 onProductChange={handleProductChange}
-                onCatalogueSelect={handleCatalogueSelect}
               />
             </CardContent>
           </Card>
+
+          {/* Categories Section - Only show if product has no profiles */}
+          {!hasProfiles && <CategorySection productId={product.id} />}
+
+          {/* Items Section - Only show if product has no profiles */}
+          {!hasProfiles && <ItemSection productId={product.id} />}
         </div>
 
         {/* Images and Highlight Sidebar */}
@@ -115,15 +184,13 @@ export default function InfoTab({
           {/* Brand Image */}
           <BrandImageSelector
             product={{ ...product, ...formUpdates }}
-            onImageSelect={handleBrandImageSelect}
-            onImageRemove={handleBrandImageRemove}
+            onProductChange={handleProductChange}
           />
 
           {/* Highlight Section */}
           <HighlightSectionForm
             product={{ ...product, ...formUpdates }}
             onProductChange={handleProductChange}
-            onIconSelect={handleHighlightIconSelect}
           />
 
           {/* Product Profiles Preview */}

@@ -110,7 +110,7 @@ const ProductDetailContent = () => {
               </div>
             </div>
           </div>
-          <Button onClick={handleEditProduct}>Edit Product</Button>
+          {/*<Button onClick={handleEditProduct}>Edit Product</Button>*/}
         </div>
 
         {/* Tabs for product management */}

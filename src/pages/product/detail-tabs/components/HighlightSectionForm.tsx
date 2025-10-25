@@ -15,17 +15,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components";
 import { Sparkles, Upload, X } from "lucide-react";
 import { Product } from "../../types";
+import ImageSelectorDialog from "@/components/ImageSelectorDialog";
 
 interface HighlightSectionFormProps {
   product: Product;
   onProductChange: (updates: Partial<Product>) => void;
-  onIconSelect: () => void;
 }
 
 export default function HighlightSectionForm({
   product,
   onProductChange,
-  onIconSelect,
 }: HighlightSectionFormProps) {
   const [formData, setFormData] = useState({
     is_highlight_section: product?.is_highlight_section || false,
@@ -41,6 +40,7 @@ export default function HighlightSectionForm({
     highlight_bottom_description_id:
       product?.highlight_bottom_description_id || "",
   });
+  const [iconDialogOpen, setIconDialogOpen] = useState(false);
 
   const handleFieldChange = (field: string, value: string | boolean) => {
     const updates = { ...formData, [field]: value };
@@ -50,6 +50,11 @@ export default function HighlightSectionForm({
 
   const handleRemoveIcon = () => {
     handleFieldChange("highlight_icon", "");
+  };
+
+  const handleIconSelect = (iconUrl: string) => {
+    handleFieldChange("highlight_icon", iconUrl);
+    setIconDialogOpen(false);
   };
 
   return (
@@ -100,7 +105,7 @@ export default function HighlightSectionForm({
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={onIconSelect}
+                onClick={() => setIconDialogOpen(true)}
                 className="flex items-center gap-2"
               >
                 <Upload className="h-4 w-4" />
@@ -280,6 +285,17 @@ export default function HighlightSectionForm({
           </div>
         </CardContent>
       )}
+
+      {/* Image Selector Dialog */}
+      <ImageSelectorDialog
+        open={iconDialogOpen}
+        onOpenChange={setIconDialogOpen}
+        onSelect={handleIconSelect}
+        title="Select Highlight Icon"
+        multiple={false}
+        multipleSelection={false}
+        initialSelection={formData.highlight_icon}
+      />
     </Card>
   );
 }
