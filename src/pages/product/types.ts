@@ -1,127 +1,23 @@
 // Product Management Types
 // These types match the database schema and include additional types for the UI
-import { type Json } from "@/lib/supabase-types";
+import {
+  Database,
+  type Tables,
+  type TablesInsert,
+  type TablesUpdate,
+} from "@/lib/supabase-types";
 
-export interface Product {
-  id: string;
-  name: string;
-  title: string | null;
-  description_en: string | null;
-  description_id: string | null;
-  catalogue: string | null;
-  suitables: Json | null;
-  is_highlight: boolean | null;
-  brand_image: string | null;
-  slug: string | null;
-  created_at: string | null;
-  updated_at: string | null;
-}
-
-export interface ProductProfile {
-  id: string;
-  product_id: string;
-  name: string;
-  size_per_panel: string | null;
-  effective_size: string | null;
-  panel_amount: number | null;
-  materials: string | null;
-  tkdn_value: string | null;
-  thickness: string | null;
-  weight: string | null;
-  size?: Array<{
-    name: string;
-    weight: string;
-    thickness: string;
-  }> | null;
-  // Premium fields (integrated from product_premium)
-  is_premium: boolean | null;
-  description_id: string | null;
-  description_en: string | null;
-  premium_materials: string | null; // maps to material_fullname
-  material_name: string | null;
-  premium_image_url: string | null;
-  content_image_url: string | null;
-  reng_distance: string | null;
-  created_at: string | null;
-  updated_at: string | null;
-}
-
-export interface ProductCategory {
-  id: string;
-  product_id: string | null;
-  product_profile_id: string | null;
-  name: string;
-  subtitle: string | null;
-  created_at: string | null;
-  updated_at: string | null;
-}
-
-export interface ProductItem {
-  id: string;
-  product_id: string;
-  product_profile_id: string | null;
-  product_category_id: string | null;
-  name: string;
-  weight: string | null;
-  length: string | null;
-  image: string | null;
-  created_at: string | null;
-  updated_at: string | null;
-}
-
-export interface ProductPremium {
-  id: string;
-  product_id: string;
-  product_profile_id: string | null;
-  material_fullname: string | null;
-  material_name: string | null;
-  size_per_panel: string | null;
-  effective_size: string | null;
-  reng_distance: string | null;
-  description_en: string | null;
-  description_id: string | null;
-  premium_image_url: string | null;
-  content_image_url: string | null;
-  created_at: string | null;
-  updated_at: string | null;
-}
-
-export interface Certificate {
-  id: string;
-  name: string;
-  image: string | null;
-  created_at: string | null;
-  updated_at: string | null;
-}
-
-export interface ProductBadge {
-  id: string;
-  name: string;
-  image: string | null;
-  created_at: string | null;
-  updated_at: string | null;
-}
-
-export interface ProductCertificate {
-  id: string;
-  product_id: string;
-  certificate_id: string;
-  created_at: string | null;
-}
-
-export interface ProductProfileCertificate {
-  id: string;
-  product_profile_id: string;
-  certificate_id: string;
-  created_at: string | null;
-}
-
-export interface ProductProfileBadge {
-  id: string;
-  product_profile_id: string;
-  badge_id: string;
-  created_at: string | null;
-}
+// Use Database types directly
+export type Product = Tables<"product">;
+export type ProductProfile = Tables<"product_profile">;
+export type ProductCategory = Tables<"product_category">;
+export type ProductItem = Tables<"product_item">;
+export type ProductPremium = Tables<"product_premium">;
+export type Certificate = Tables<"certificates">;
+export type ProductBadge = Tables<"product_badges">;
+export type ProductCertificate = Tables<"product_certificates">;
+export type ProductProfileCertificate = Tables<"product_profile_certificates">;
+export type ProductProfileBadge = Tables<"product_profile_badges">;
 
 // Extended types with relationships
 export interface ProductWithRelations extends Product {
@@ -167,16 +63,12 @@ export interface ProductFormData {
   slug?: string;
 }
 
-export interface ProfileFormData {
-  product_id: string;
-  name: string;
-  size_per_panel?: string;
-  effective_size?: string;
-  panel_amount?: number;
-  materials?: string;
-  tkdn_value?: string;
-  thickness?: string;
-  weight?: string;
+type ProductProfileFormDB = Omit<
+  Database["public"]["Tables"]["product_profile"]["Insert"],
+  "size"
+>;
+
+export interface ProfileFormData extends ProductProfileFormDB {
   size?: Array<{
     name: string;
     weight: string;
@@ -184,15 +76,6 @@ export interface ProfileFormData {
   }>;
   certificates?: string[];
   badges?: string[];
-  // Premium fields
-  is_premium?: boolean;
-  description_id?: string;
-  description_en?: string;
-  premium_materials?: string; // maps to material_fullname in product_premium
-  material_name?: string;
-  premium_image_url?: string;
-  content_image_url?: string;
-  reng_distance?: string;
 }
 
 export interface CategoryFormData {

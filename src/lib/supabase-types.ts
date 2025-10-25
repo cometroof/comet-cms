@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "13.0.5";
   };
+  graphql_public: {
+    Tables: {
+      [_ in never]: never;
+    };
+    Views: {
+      [_ in never]: never;
+    };
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json;
+          operationName?: string;
+          query?: string;
+          variables?: Json;
+        };
+        Returns: Json;
+      };
+    };
+    Enums: {
+      [_ in never]: never;
+    };
+    CompositeTypes: {
+      [_ in never]: never;
+    };
+  };
   public: {
     Tables: {
       articles: {
@@ -345,6 +370,7 @@ export type Database = {
           product_category_id: string | null;
           product_id: string;
           product_profile_id: string | null;
+          spec_info: Json | null;
           updated_at: string | null;
           weight: string | null;
         };
@@ -357,6 +383,7 @@ export type Database = {
           product_category_id?: string | null;
           product_id: string;
           product_profile_id?: string | null;
+          spec_info?: Json | null;
           updated_at?: string | null;
           weight?: string | null;
         };
@@ -369,6 +396,7 @@ export type Database = {
           product_category_id?: string | null;
           product_id?: string;
           product_profile_id?: string | null;
+          spec_info?: Json | null;
           updated_at?: string | null;
           weight?: string | null;
         };
@@ -471,6 +499,8 @@ export type Database = {
           name: string;
           panel_amount: number | null;
           product_id: string;
+          profile_banner_url: string | null;
+          profile_image_url: string | null;
           size: Json | null;
           size_per_panel: string | null;
           thickness: string | null;
@@ -486,6 +516,8 @@ export type Database = {
           name: string;
           panel_amount?: number | null;
           product_id: string;
+          profile_banner_url?: string | null;
+          profile_image_url?: string | null;
           size?: Json | null;
           size_per_panel?: string | null;
           thickness?: string | null;
@@ -501,6 +533,8 @@ export type Database = {
           name?: string;
           panel_amount?: number | null;
           product_id?: string;
+          profile_banner_url?: string | null;
+          profile_image_url?: string | null;
           size?: Json | null;
           size_per_panel?: string | null;
           thickness?: string | null;
@@ -953,6 +987,9 @@ export type CompositeTypes<
     : never;
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {},
   },

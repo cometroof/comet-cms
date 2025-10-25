@@ -4,26 +4,15 @@ import * as productService from "@/services/product.service";
 import { toast } from "sonner";
 import { Database } from "@/lib/supabase-types";
 
+type ProductProfileDB =
+  Database["public"]["Tables"]["product_profile"]["Insert"];
 // Define types for our context
-export interface ProductProfile {
-  id: string;
-  name: string;
-  product_id: string;
-  size_per_panel?: string;
-  effective_size?: string;
-  panel_amount?: number;
-  materials?: string;
-  tkdn_value?: string;
-  thickness?: string;
-  weight?: string;
-  size?: Array<{
-    name: string;
-    weight: string;
-    thickness: string;
-  }> | null;
-  created_at?: string;
-  updated_at?: string;
-  [key: string]: unknown;
+export interface ProductProfile extends ProductProfileDB {
+  size: { name?: string; weight?: string; thickness?: string }[];
+  profile_banner_url: Database["public"]["Tables"]["product_profile"]["Insert"]["profile_banner_url"];
+  profile_image_url: Database["public"]["Tables"]["product_profile"]["Insert"]["profile_image_url"];
+  certificates: string[];
+  badges: string[];
 }
 
 export interface ProductCategory {

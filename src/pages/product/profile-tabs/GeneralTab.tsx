@@ -1,4 +1,5 @@
-import { Control, UseFormWatch } from "react-hook-form";
+import { useState } from "react";
+import { Control, UseFormWatch, UseFormSetValue } from "react-hook-form";
 import {
   FormControl,
   FormField,
@@ -7,14 +8,44 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Image as ImageIcon, X } from "lucide-react";
 import { ProfileFormData } from "../types";
+import ImageSelectorDialog from "@/components/ImageSelectorDialog";
 
 interface GeneralTabProps {
   control: Control<ProfileFormData>;
   watch: UseFormWatch<ProfileFormData>;
+  setValue: UseFormSetValue<ProfileFormData>;
 }
 
-export default function GeneralTab({ control, watch }: GeneralTabProps) {
+export default function GeneralTab({
+  control,
+  watch,
+  setValue,
+}: GeneralTabProps) {
+  const [showImageSelector, setShowImageSelector] = useState(false);
+  const [showBannerSelector, setShowBannerSelector] = useState(false);
+  const [imageType, setImageType] = useState<"image" | "banner">("image");
+
+  const profileImageUrl = watch("profile_image_url");
+  const profileBannerUrl = watch("profile_banner_url");
+
+  const handleImageSelect = (url: string) => {
+    if (imageType === "image") {
+      setValue("profile_image_url", url);
+    } else {
+      setValue("profile_banner_url", url);
+    }
+  };
+
+  const handleRemoveImage = (type: "image" | "banner") => {
+    if (type === "image") {
+      setValue("profile_image_url", "");
+    } else {
+      setValue("profile_banner_url", "");
+    }
+  };
   return (
     <div className="max-h-[520px] overflow-y-auto space-y-4">
       <FormField
@@ -130,6 +161,136 @@ export default function GeneralTab({ control, watch }: GeneralTabProps) {
           )}
         />
       </div>
+
+      {/* Profile Image */}
+      <FormField
+        control={control}
+        name="profile_image_url"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Profile Image</FormLabel>
+            <FormControl>
+              <div className="space-y-2">
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Image URL"
+                    {...field}
+                    value={field.value || ""}
+                    readOnly
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setImageType("image");
+                      setShowImageSelector(true);
+                    }}
+                  >
+                    <ImageIcon className="w-4 h-4 mr-2" />
+                    Select
+                  </Button>
+                </div>
+                {profileImageUrl && (
+                  <div className="relative w-full h-40 border rounded-md overflow-hidden">
+                    <img
+                      src={profileImageUrl}
+                      alt="Profile"
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = "/placeholder.svg";
+                      }}
+                    />
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="icon"
+                      className="absolute top-2 right-2 h-8 w-8"
+                      onClick={() => handleRemoveImage("image")}
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      {/* Profile Banner */}
+      <FormField
+        control={control}
+        name="profile_banner_url"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Profile Banner</FormLabel>
+            <FormControl>
+              <div className="space-y-2">
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Banner URL"
+                    {...field}
+                    value={field.value || ""}
+                    readOnly
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setImageType("banner");
+                      setShowBannerSelector(true);
+                    }}
+                  >
+                    <ImageIcon className="w-4 h-4 mr-2" />
+                    Select
+                  </Button>
+                </div>
+                {profileBannerUrl && (
+                  <div className="relative w-full h-40 border rounded-md overflow-hidden">
+                    <img
+                      src={profileBannerUrl}
+                      alt="Banner"
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = "/placeholder.svg";
+                      }}
+                    />
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="icon"
+                      className="absolute top-2 right-2 h-8 w-8"
+                      onClick={() => handleRemoveImage("banner")}
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      {/* Image Selector Dialog */}
+      <ImageSelectorDialog
+        open={showImageSelector}
+        onOpenChange={setShowImageSelector}
+        onSelect={handleImageSelect}
+        title="Select Profile Image"
+        multipleSelection={false}
+      />
+
+      {/* Banner Selector Dialog */}
+      <ImageSelectorDialog
+        open={showBannerSelector}
+        onOpenChange={setShowBannerSelector}
+        onSelect={handleImageSelect}
+        title="Select Profile Banner"
+        multipleSelection={false}
+      />
     </div>
   );
 }

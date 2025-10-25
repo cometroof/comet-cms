@@ -72,7 +72,7 @@ import SizeTab from "./profile-tabs/SizeTab";
 import CertificatesTab from "./profile-tabs/CertificatesTab";
 import BadgesTab from "./profile-tabs/BadgesTab";
 
-// Define form validation schema (without premium fields)
+// Define form validation schema
 const formSchema = z.object({
   product_id: z.string(),
   name: z.string().min(1, "Profile name is required"),
@@ -83,6 +83,8 @@ const formSchema = z.object({
   tkdn_value: z.string().optional(),
   thickness: z.string().optional(),
   weight: z.string().optional(),
+  profile_image_url: z.string().optional(),
+  profile_banner_url: z.string().optional(),
   size: z
     .array(
       z.object({
@@ -142,6 +144,8 @@ const ProfileManager = ({
       tkdn_value: "",
       thickness: "",
       weight: "",
+      profile_image_url: "",
+      profile_banner_url: "",
       certificates: [],
       badges: [],
     },
@@ -164,6 +168,8 @@ const ProfileManager = ({
       tkdn_value: "",
       thickness: "",
       weight: "",
+      profile_image_url: "",
+      profile_banner_url: "",
       size: [],
       certificates: [],
       badges: [],
@@ -217,6 +223,8 @@ const ProfileManager = ({
       tkdn_value: profile.tkdn_value || "",
       thickness: profile.thickness || "",
       weight: profile.weight || "",
+      profile_image_url: profile.profile_image_url || "",
+      profile_banner_url: profile.profile_banner_url || "",
       size: profile.size || [],
       certificates: certificateIds,
       badges: badgeIds,
@@ -526,7 +534,7 @@ const ProfileManager = ({
                               size="icon"
                               className="h-8 w-8"
                               onClick={() =>
-                                handleManageCertificatesBadges(profile as any)
+                                handleManageCertificatesBadges(profile)
                               }
                             >
                               <FileText className="h-4 w-4" />
@@ -554,9 +562,7 @@ const ProfileManager = ({
                             <DropdownMenuContent align="end">
                               <DropdownMenuLabel>Actions</DropdownMenuLabel>
                               <DropdownMenuItem
-                                onClick={() =>
-                                  handleEditProfile(profile as any)
-                                }
+                                onClick={() => handleEditProfile(profile)}
                               >
                                 <Edit className="mr-2 h-4 w-4" />
                                 Edit Profile
@@ -606,7 +612,11 @@ const ProfileManager = ({
                 </TabsList>
 
                 <TabsContent value="general">
-                  <GeneralTab control={form.control} watch={form.watch} />
+                  <GeneralTab
+                    control={form.control}
+                    watch={form.watch}
+                    setValue={form.setValue}
+                  />
                 </TabsContent>
                 <TabsContent value="size">
                   <SizeTab
