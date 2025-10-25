@@ -35,10 +35,13 @@ import {
   Image as ImageIcon,
   FileText,
   GripVertical,
+  Loader2,
+  Info,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -59,6 +62,11 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import * as productService from "@/services/product.service";
 import type { ProductWithRelations, ProductItem } from "./types";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface ProductsTableProps {
   products: ProductWithRelations[];
@@ -76,6 +84,9 @@ const ProductsTable = ({
   const [searchQuery, setSearchQuery] = useState("");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [productToDelete, setProductToDelete] = useState<string | null>(null);
+  const [updatingHighlightId, setUpdatingHighlightId] = useState<string | null>(
+    null,
+  );
   const [filters, setFilters] = useState({
     isHighlight: false,
     hasProfile: false,
@@ -128,6 +139,35 @@ const ProductsTable = ({
       [filter]: !prev[filter],
     }));
   };
+
+  // Highlight mutation
+  const highlightMutation = useMutation({
+    mutationFn: async ({
+      productId,
+      isHighlight,
+    }: {
+      productId: string;
+      isHighlight: boolean;
+    }) => {
+      setUpdatingHighlightId(productId);
+      const success = await productService.updateProductHighlight(
+        productId,
+        isHighlight,
+      );
+      if (!success) {
+        throw new Error("Failed to update product highlight");
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      toast.success("Product highlight updated");
+      setUpdatingHighlightId(null);
+    },
+    onError: () => {
+      toast.error("Failed to update product highlight");
+      setUpdatingHighlightId(null);
+    },
+  });
 
   // Reorder mutation
   const reorderMutation = useMutation({
@@ -282,7 +322,21 @@ const ProductsTable = ({
                         <TableHead>Name</TableHead>
                         <TableHead>Profiles</TableHead>
                         <TableHead>Items</TableHead>
-                        <TableHead>Status</TableHead>
+                        <TableHead className="flex items-center gap-1">
+                          Highlight{" "}
+                          <Tooltip>
+                            <TooltipTrigger>
+                              <Info className="size-4" />
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              Highlight item will be forced to suggest after
+                              <span className="font-mono text-primary">
+                                /product
+                              </span>{" "}
+                              data.
+                            </TooltipContent>
+                          </Tooltip>{" "}
+                        </TableHead>
                         <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -365,16 +419,26 @@ const ProductsTable = ({
                                     </Badge>
                                   </TableCell>
                                   <TableCell>
-                                    {product.is_highlight && (
-                                      <Badge className="bg-amber-500">
-                                        Highlight
-                                      </Badge>
-                                    )}
-                                    {product.premium && (
-                                      <Badge className="bg-purple-500 ml-1">
-                                        Premium
-                                      </Badge>
-                                    )}
+                                    <div
+                                      onClick={(e) => e.stopPropagation()}
+                                      className="flex items-center justify-start gap-2"
+                                    >
+                                      <Switch
+                                        checked={product.is_highlight || false}
+                                        onCheckedChange={(checked) => {
+                                          highlightMutation.mutate({
+                                            productId: product.id,
+                                            isHighlight: checked,
+                                          });
+                                        }}
+                                        disabled={
+                                          updatingHighlightId === product.id
+                                        }
+                                      />
+                                      {updatingHighlightId === product.id && (
+                                        <Loader2 className="size-3 animate-spin" />
+                                      )}
+                                    </div>
                                   </TableCell>
                                   <TableCell className="text-right">
                                     <div onClick={(e) => e.stopPropagation()}>

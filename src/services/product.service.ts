@@ -933,3 +933,38 @@ export const updateProductOrder = async (
 
   return true;
 };
+
+/**
+ * Update product highlight status
+ * Ensures only one product can be highlighted at a time
+ */
+export const updateProductHighlight = async (
+  productId: string,
+  isHighlight: boolean,
+): Promise<boolean> => {
+  // If setting this product as highlight, first remove highlight from all other products
+  if (isHighlight) {
+    const { error: clearError } = await supabase
+      .from(PRODUCT_TABLE)
+      .update({ is_highlight: false, updated_at: new Date().toISOString() })
+      .neq("id", productId);
+
+    if (clearError) {
+      console.error("Error clearing other product highlights:", clearError);
+      return false;
+    }
+  }
+
+  // Now update the target product
+  const { error } = await supabase
+    .from(PRODUCT_TABLE)
+    .update({ is_highlight: isHighlight, updated_at: new Date().toISOString() })
+    .eq("id", productId);
+
+  if (error) {
+    console.error(`Error updating highlight for product ${productId}:`, error);
+    return false;
+  }
+
+  return true;
+};
