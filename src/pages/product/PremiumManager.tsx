@@ -164,18 +164,81 @@ const PremiumManager = ({
     if (w_descriptionEn !== undefined) setDescEnLoaded(true);
   }, [w_descriptionEn]);
 
+  //
+  const fieldImage = (
+    <div>
+      {/* Premium Image */}
+      <FormField
+        control={form.control}
+        name="premium_image_url"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Premium Brand Image</FormLabel>
+            <FormControl>
+              <div className="space-y-2">
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Premium image URL"
+                    {...field}
+                    value={field.value || ""}
+                    readOnly
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={onSelectPremiumImage}
+                  >
+                    Select
+                  </Button>
+                </div>
+                {field.value && (
+                  <div className="relative w-full h-32 border rounded-md overflow-hidden">
+                    <img
+                      src={field.value}
+                      alt="Premium brand"
+                      className="w-full h-full object-contain bg-muted"
+                    />
+                    <Button
+                      type="button"
+                      size="icon"
+                      variant="destructive"
+                      className="absolute top-1 right-1 h-6 w-6"
+                      onClick={() => field.onChange("")}
+                    >
+                      <Trash className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </FormControl>
+            <FormDescription>Brand image for premium profile</FormDescription>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+    </div>
+  );
+  //
+
   return (
     <>
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardHeader
+          className={`flex flex-row items-center justify-between space-y-0 pb-2 p-6 rounded-md border-2 border-amber-700 ${premium === null ? "" : "bg-amber-50"}`}
+        >
           <div className="space-y-1">
-            <CardTitle className="flex items-center gap-2">
+            <div className="flex items-start gap-4">
               <Crown className="h-5 w-5 text-amber-500" />
-              Premium Specifications
-            </CardTitle>
-            <CardDescription>
-              Add premium technical details for {product.name}
-            </CardDescription>
+              <div>
+                <CardTitle className="flex items-center gap-2 text-amber-700">
+                  Premium Specifications
+                </CardTitle>
+                <CardDescription className="text-amber-800">
+                  Add premium technical details for{" "}
+                  <strong>{product.name}</strong>
+                </CardDescription>
+              </div>
+            </div>
           </div>
           <div className="flex items-center space-x-2">
             <Switch
@@ -212,215 +275,99 @@ const PremiumManager = ({
                 onSubmit={form.handleSubmit(onSubmit)}
                 className="space-y-6 py-4"
               >
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="material_fullname"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Material Full Name</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="e.g., Zinc Aluminum Alloy"
-                            {...field}
-                            value={field.value || ""}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                <div className="xl:flex xl:items-start xl:gap-20">
+                  {/*COL 1*/}
+                  <div className="xl:w-1/3 xl:space-y-10">
+                    {/*Material Name*/}
+                    <FormField
+                      control={form.control}
+                      name="material_fullname"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Material Full Name</FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="e.g., Zinc Aluminum Alloy"
+                              {...field}
+                              value={field.value || ""}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <div className="hidden xl:block">{fieldImage}</div>
+                  </div>
 
-                  {/*<FormField
-                  control={form.control}
-                  name="material_name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Material Name</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="e.g., ZA"
-                          {...field}
-                          value={field.value || ""}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />*/}
-                </div>
-
-                <div className="grid grid-cols-3 gap-4">
-                  {/*<FormField
-                  control={form.control}
-                  name="size_per_panel"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Size per Panel</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="e.g., 1060mm × 2500mm"
-                          {...field}
-                          value={field.value || ""}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="effective_size"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Effective Size</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="e.g., 1000mm × 2400mm"
-                          {...field}
-                          value={field.value || ""}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="reng_distance"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Reng Distance</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="e.g., 600mm"
-                          {...field}
-                          value={field.value || ""}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />*/}
-                </div>
-
-                {/* Premium Descriptions */}
-                <div className="space-y-2">
-                  <Label className="text-base font-medium">Description</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Detailed description of this premium profile in multiple
-                    languages
-                  </p>
-                  <Tabs defaultValue="en" className="w-full">
-                    <TabsList className="grid w-full grid-cols-2">
-                      <TabsTrigger value="en">English</TabsTrigger>
-                      <TabsTrigger value="id">Bahasa Indonesia</TabsTrigger>
-                    </TabsList>
-                    <TabsContent value="id" className="mt-4">
-                      <FormField
-                        control={control}
-                        name="description_id"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormControl>
-                              {_descIdLoaded ? (
-                                <RichTextEditor
-                                  value={field.value || ""}
-                                  onChange={field.onChange}
-                                />
-                              ) : (
-                                <div className="flex items-center justify-center h-[300px] border rounded-lg">
-                                  <Loader2 className="w-8 h-8 animate-spin text-primary" />
-                                </div>
-                              )}
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </TabsContent>
-                    <TabsContent value="en" className="mt-4">
-                      <FormField
-                        control={control}
-                        name="description_en"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormControl>
-                              {_descEnLoaded ? (
-                                <RichTextEditor
-                                  value={field.value || ""}
-                                  onChange={field.onChange}
-                                />
-                              ) : (
-                                <div className="flex items-center justify-center h-[300px] border rounded-lg">
-                                  <Loader2 className="w-8 h-8 animate-spin text-primary" />
-                                </div>
-                              )}
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </TabsContent>
-                  </Tabs>
-                </div>
-
-                <div>
-                  {/* Premium Image */}
-                  <FormField
-                    control={form.control}
-                    name="premium_image_url"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Premium Brand Image</FormLabel>
-                        <FormControl>
-                          <div className="space-y-2">
-                            <div className="flex gap-2">
-                              <Input
-                                placeholder="Premium image URL"
-                                {...field}
-                                value={field.value || ""}
-                                readOnly
-                              />
-                              <Button
-                                type="button"
-                                variant="outline"
-                                onClick={onSelectPremiumImage}
-                              >
-                                Select
-                              </Button>
-                            </div>
-                            {field.value && (
-                              <div className="relative w-full h-32 border rounded-md overflow-hidden">
-                                <img
-                                  src={field.value}
-                                  alt="Premium brand"
-                                  className="w-full h-full object-contain bg-muted"
-                                />
-                                <Button
-                                  type="button"
-                                  size="icon"
-                                  variant="destructive"
-                                  className="absolute top-1 right-1 h-6 w-6"
-                                  onClick={() => field.onChange("")}
-                                >
-                                  <Trash className="h-4 w-4" />
-                                </Button>
-                              </div>
+                  {/*COL 2*/}
+                  <div className="xl:w-2/3">
+                    {/* Premium Descriptions */}
+                    <div className="space-y-2">
+                      <Label className="text-base font-medium">
+                        Description
+                      </Label>
+                      <p className="text-sm text-muted-foreground">
+                        Detailed description of this premium profile in multiple
+                        languages
+                      </p>
+                      <Tabs defaultValue="en" className="w-full">
+                        <TabsList className="grid w-full grid-cols-2">
+                          <TabsTrigger value="en">English</TabsTrigger>
+                          <TabsTrigger value="id">Bahasa Indonesia</TabsTrigger>
+                        </TabsList>
+                        <TabsContent value="id" className="mt-4">
+                          <FormField
+                            control={control}
+                            name="description_id"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormControl>
+                                  {_descIdLoaded ? (
+                                    <RichTextEditor
+                                      value={field.value || ""}
+                                      onChange={field.onChange}
+                                    />
+                                  ) : (
+                                    <div className="flex items-center justify-center h-[300px] border rounded-lg">
+                                      <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                                    </div>
+                                  )}
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
                             )}
-                          </div>
-                        </FormControl>
-                        <FormDescription>
-                          Brand image for premium profile
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                          />
+                        </TabsContent>
+                        <TabsContent value="en" className="mt-4">
+                          <FormField
+                            control={control}
+                            name="description_en"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormControl>
+                                  {_descEnLoaded ? (
+                                    <RichTextEditor
+                                      value={field.value || ""}
+                                      onChange={field.onChange}
+                                    />
+                                  ) : (
+                                    <div className="flex items-center justify-center h-[300px] border rounded-lg">
+                                      <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                                    </div>
+                                  )}
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </TabsContent>
+                      </Tabs>
+                    </div>
+                    <div className="xl:hidden">{fieldImage}</div>
+                  </div>
                 </div>
 
+                {/*ACTION AREA*/}
                 <div className="flex justify-end">
                   {premium && (
                     <Button
