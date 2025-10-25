@@ -57,22 +57,6 @@ const CertificatesBadgesManager = ({
     refetchAll,
   } = useProductQuery();
 
-  // Load certificates and badges from context when dialog opens
-  useEffect(() => {
-    if (isOpen) {
-      loadCertsAndBadges();
-    }
-  }, [
-    isOpen,
-    productId,
-    profileId,
-    entityType,
-    availableCertificates,
-    availableBadges,
-    productCertificates,
-    loadCertsAndBadges,
-  ]);
-
   const loadCertsAndBadges = async () => {
     setLoading(true);
     try {
@@ -108,6 +92,13 @@ const CertificatesBadgesManager = ({
       setLoading(false);
     }
   };
+
+  // Load certificates and badges from context when dialog opens
+  useEffect(() => {
+    if (isOpen) {
+      loadCertsAndBadges();
+    }
+  }, [isOpen, productId, profileId, entityType]);
 
   const toggleCertificate = (id: string) => {
     setSelectedCertificates((prev) =>

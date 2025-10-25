@@ -8,14 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+
 import {
   Dialog,
   DialogContent,
@@ -26,7 +19,17 @@ import {
   DialogClose,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Form } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import ImageSelectorDialog from "@/components/ImageSelectorDialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -36,6 +39,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Plus,
   Edit,
   Trash2,
@@ -44,13 +54,16 @@ import {
   Award,
   FileText,
   Ruler,
+  Folder,
+  PackageOpen,
+  ImageIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useForm } from "react-hook-form";
 import * as productService from "@/services/product.service";
-import { ProductProfile, ProfileFormData, Product } from "./types";
+import { ProductProfile, ProfileFormData, Product, ProductItem } from "./types";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -68,6 +81,13 @@ import GeneralTab from "./profile-tabs/GeneralTab";
 import SizeTab from "./profile-tabs/SizeTab";
 import CertificatesTab from "./profile-tabs/CertificatesTab";
 import BadgesTab from "./profile-tabs/BadgesTab";
+import {
+  Table,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 type ProductContextProfile = ProductProfile;
 
@@ -98,11 +118,356 @@ const formSchema = z.object({
   badges: z.array(z.string()).optional(),
 });
 
+// Item form validation schema
+const itemFormSchema = z.object({
+  product_id: z.string(),
+  product_profile_id: z.string(),
+  product_category_id: z.string().optional().nullable(),
+  name: z.string().min(1, "Item name is required"),
+  weight: z.string().optional(),
+  length: z.string().optional(),
+  image: z.string().min(1, "Image is required"),
+});
+
 interface ProfileManagerProps {
   productId: string;
   product: Product;
   onUpdate?: () => void;
 }
+
+// Profile Card Component
+interface ProfileCardProps {
+  profile: ProductProfile;
+  onEdit: (profile: ProductProfile) => void;
+  onDelete: (profileId: string) => void;
+  onManageCertsBadges: (
+    profile: ProductProfile,
+    tab: "certificates" | "badges",
+  ) => void;
+  onAddItemFromCategory: (profile: ProductProfile, categoryId: string) => void;
+  onEditCategory: (categoryId: string) => void;
+}
+
+const ProfileCard = ({
+  profile,
+  onEdit,
+  onDelete,
+  onManageCertsBadges,
+  onAddItemFromCategory,
+  onEditCategory,
+}: ProfileCardProps) => {
+  const [certificatesCount, setCertificatesCount] = useState(0);
+  const [badgesCount, setBadgesCount] = useState(0);
+  const [itemsCount, setItemsCount] = useState(0);
+  const { profileCategories, items } = useProductQuery();
+
+  useEffect(() => {
+    const loadCounts = async () => {
+      try {
+        const [certs, badges] = await Promise.all([
+          productService.getProfileCertificates(profile.id),
+          productService.getProfileBadges(profile.id),
+        ]);
+        setCertificatesCount(certs.length);
+        setBadgesCount(badges.length);
+      } catch (error) {
+        console.error("Error loading counts:", error);
+      }
+    };
+    loadCounts();
+
+    // Count items for this profile
+    const profileItems = items.filter(
+      (item) => item.product_profile_id === profile.id,
+    );
+    setItemsCount(profileItems.length);
+  }, [profile.id, items]);
+
+  const profileCats = profileCategories[profile.id] || [];
+
+  function findItemsByCategory(categoryId: string) {
+    const itemsByCategory = items.filter(
+      (item) => item.product_category_id === categoryId,
+    );
+    return itemsByCategory;
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-start justify-between">
+          <div>
+            <CardTitle className="text-xl">{profile.name}</CardTitle>
+            <CardDescription className="mt-1">
+              Technical specifications and details
+            </CardDescription>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={() => onEdit(profile)}>
+              <Edit className="mr-2 h-4 w-4" />
+              Edit
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm">
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                <DropdownMenuItem
+                  onClick={() => onManageCertsBadges(profile, "certificates")}
+                >
+                  <FileText className="mr-2 h-4 w-4" />
+                  Manage Certificates
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => onManageCertsBadges(profile, "badges")}
+                >
+                  <Award className="mr-2 h-4 w-4" />
+                  Manage Badges
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => onDelete(profile.id)}
+                  className="text-destructive focus:text-destructive"
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete Profile
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {/* Compact Info Grid */}
+        <div className="grid lg:grid-cols-2 gap-2 text-sm">
+          {profile.size_per_panel && (
+            <div className="flex flex-col">
+              <span className="text-xs text-muted-foreground">Size/Panel</span>
+              <span className="font-medium">{profile.size_per_panel}</span>
+            </div>
+          )}
+          {profile.effective_size && (
+            <div className="flex flex-col">
+              <span className="text-xs text-muted-foreground">Effective</span>
+              <span className="font-medium">{profile.effective_size}</span>
+            </div>
+          )}
+          {profile.materials && (
+            <div className="flex flex-col">
+              <span className="text-xs text-muted-foreground">Material</span>
+              <span className="font-medium">{profile.materials}</span>
+            </div>
+          )}
+          {profile.thickness && (
+            <div className="flex flex-col">
+              <span className="text-xs text-muted-foreground">Thickness</span>
+              <span className="font-medium">{profile.thickness}</span>
+            </div>
+          )}
+          {profile.weight && (
+            <div className="flex flex-col">
+              <span className="text-xs text-muted-foreground">Weight</span>
+              <span className="font-medium">{profile.weight}</span>
+            </div>
+          )}
+          {profile.tkdn_value && (
+            <div className="flex flex-col">
+              <span className="text-xs text-muted-foreground">TKDN</span>
+              <span className="font-medium">{profile.tkdn_value}</span>
+            </div>
+          )}
+        </div>
+
+        {/* Compact Stats Grid - Size, Certificates, Badges, Items */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+          {/* Size Specifications */}
+          <div className="border rounded-lg p-2">
+            <div className="flex items-center justify-center mb-1">
+              <Ruler className="h-4 w-4 text-muted-foreground" />
+            </div>
+            <div className="text-center">
+              <div className="text-lg font-bold">
+                {profile.size && Array.isArray(profile.size)
+                  ? profile.size.length
+                  : 0}
+              </div>
+              <div className="text-xs text-muted-foreground">Sizes</div>
+            </div>
+            {profile.size &&
+              Array.isArray(profile.size) &&
+              profile.size.length > 0 && (
+                <div className="mt-2 flex flex-wrap gap-1">
+                  {profile.size.map((item, idx) => (
+                    <Badge key={idx} variant="secondary" className="text-xs">
+                      {item.name}
+                    </Badge>
+                  ))}
+                </div>
+              )}
+          </div>
+
+          {/* Certificates */}
+          <div className="border rounded-lg p-2 text-center">
+            <FileText className="h-4 w-4 mx-auto mb-1 text-muted-foreground" />
+            <div className="text-lg font-bold">{certificatesCount}</div>
+            <div className="text-xs text-muted-foreground">Certificates</div>
+          </div>
+
+          {/* Badges */}
+          <div className="border rounded-lg p-2 text-center">
+            <Award className="h-4 w-4 mx-auto mb-1 text-muted-foreground" />
+            <div className="text-lg font-bold">{badgesCount}</div>
+            <div className="text-xs text-muted-foreground">Badges</div>
+          </div>
+
+          {/* Items */}
+          <div className="border rounded-lg p-2 text-center">
+            <PackageOpen className="h-4 w-4 mx-auto mb-1 text-muted-foreground" />
+            <div className="text-lg font-bold">{itemsCount}</div>
+            <div className="text-xs text-muted-foreground">Items</div>
+          </div>
+        </div>
+
+        {/* Categories as Cards */}
+        {profileCats.length > 0 && (
+          <div className="space-y-2">
+            <h4 className="text-sm font-semibold flex items-center gap-2">
+              <Folder className="h-4 w-4" />
+              Categories ({profileCats.length})
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              {profileCats.map((category) => {
+                const itemsCategorized = findItemsByCategory(category.id);
+                const itemsAmount = itemsCategorized?.length || 0;
+                return (
+                  <Card
+                    key={category.id}
+                    className={`${itemsAmount > 0 ? "col-span-full" : ""} hover:shadow-lg`}
+                  >
+                    <CardHeader className="p-3">
+                      <div className="flex items-start justify-between gap-5">
+                        <div>
+                          <CardTitle className="text-sm">
+                            {category.name}
+                          </CardTitle>
+                          {category.subtitle && (
+                            <CardDescription className="text-xs">
+                              {category.subtitle}
+                            </CardDescription>
+                          )}
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex-1 text-xs"
+                            onClick={() => onEditCategory(category.id)}
+                          >
+                            <Edit className="mr-1 h-3 w-3" />
+                            <span className="hidden lg:inline">
+                              Edit Category
+                            </span>
+                          </Button>
+                          <Button
+                            variant="default"
+                            size="sm"
+                            className="flex-1 text-xs"
+                            onClick={() =>
+                              onAddItemFromCategory(profile, category.id)
+                            }
+                          >
+                            <Plus className="mr-1 h-3 w-3" />
+                            <span className="hidden lg:inline">Add</span> Item
+                          </Button>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="p-3 pt-0">
+                      <div className="text-muted-foreground text-sm">
+                        {itemsAmount} item(s)
+                      </div>
+                      {itemsAmount > 0 && (
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead className="w-[100px]">Image</TableHead>
+                              <TableHead>Name</TableHead>
+                              <TableHead className="text-right">
+                                Actions
+                              </TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          {itemsCategorized.map((item) => (
+                            <TableRow
+                              key={item.id}
+                              className="last:border-b-transparent"
+                            >
+                              <TableCell>
+                                {item.image ? (
+                                  <img
+                                    src={item.image}
+                                    alt={item.name}
+                                    className="w-16 h-16 object-cover rounded-md"
+                                  />
+                                ) : (
+                                  <div className="w-16 h-16 bg-muted rounded-md flex items-center justify-center">
+                                    <ImageIcon className="w-6 h-6 text-muted-foreground" />
+                                  </div>
+                                )}
+                              </TableCell>
+                              <TableCell className="font-medium">
+                                {item.name}
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      className="h-8 w-8 p-0"
+                                    >
+                                      <span className="sr-only">Open menu</span>
+                                      <MoreVertical className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuLabel>
+                                      Actions
+                                    </DropdownMenuLabel>
+                                    <DropdownMenuItem
+                                    // onClick={() => handleEditItem(item)}
+                                    >
+                                      <Edit className="mr-2 h-4 w-4" />
+                                      Edit Item
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem
+                                      // onClick={() => handleDeleteClick(item.id)}
+                                      className="text-destructive focus:text-destructive"
+                                    >
+                                      <Trash2 className="mr-2 h-4 w-4" />
+                                      Delete Item
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </Table>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
 
 const ProfileManager = ({
   productId,
@@ -116,6 +481,7 @@ const ProfileManager = ({
     profilesError: error,
     availableCertificates,
     availableBadges,
+    profileCategories,
   } = useProductQuery();
   const [showProfileForm, setShowProfileForm] = useState(false);
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
@@ -127,7 +493,18 @@ const ProfileManager = ({
   const [selectedProfile, setSelectedProfile] = useState<ProductProfile | null>(
     null,
   );
+  const [certBadgeTab, setCertBadgeTab] = useState<"certificates" | "badges">(
+    "certificates",
+  );
   const [loadingCertsAndBadges, setLoadingCertsAndBadges] = useState(false);
+  const [showItemForm, setShowItemForm] = useState(false);
+  const [itemFormProfile, setItemFormProfile] = useState<ProductProfile | null>(
+    null,
+  );
+  const [itemFormCategoryId, setItemFormCategoryId] = useState<string | null>(
+    null,
+  );
+  const [showImageSelector, setShowImageSelector] = useState(false);
 
   // Create form
   const form = useForm<ProfileFormData>({
@@ -147,6 +524,20 @@ const ProfileManager = ({
       profile_banner_url: "",
       certificates: [],
       badges: [],
+    },
+  });
+
+  // Item form
+  const itemForm = useForm<z.infer<typeof itemFormSchema>>({
+    resolver: zodResolver(itemFormSchema),
+    defaultValues: {
+      product_id: productId,
+      product_profile_id: "",
+      product_category_id: null,
+      name: "",
+      weight: "",
+      length: "",
+      image: "",
     },
   });
 
@@ -262,9 +653,74 @@ const ProfileManager = ({
     deleteMutation.mutate(profileToDelete);
   };
 
-  const handleManageCertificatesBadges = (profile: ProductContextProfile) => {
+  const handleManageCertificatesBadges = (
+    profile: ProductContextProfile,
+    tab: "certificates" | "badges",
+  ) => {
     setSelectedProfile(profile as unknown as ProductProfile);
+    setCertBadgeTab(tab);
     setShowCertBadges(true);
+  };
+
+  const handleAddItemFromCategory = (
+    profile: ProductContextProfile,
+    categoryId: string,
+  ) => {
+    const typedProfile = profile as unknown as ProductProfile;
+    setItemFormProfile(typedProfile);
+    setItemFormCategoryId(categoryId);
+
+    // Auto-fill form with profile and category data
+    itemForm.reset({
+      product_id: productId,
+      product_profile_id: typedProfile.id,
+      product_category_id: categoryId,
+      name: typedProfile.name,
+      weight: typedProfile.weight || "",
+      length: "",
+      image: typedProfile.profile_image_url || "",
+    });
+
+    setShowItemForm(true);
+  };
+
+  const handleEditCategory = (categoryId: string) => {
+    // TODO: Implement edit category functionality
+    toast.info("Edit category functionality to be implemented");
+  };
+
+  const handleImageSelect = (image: string) => {
+    itemForm.setValue("image", image);
+    setShowImageSelector(false);
+  };
+
+  const onItemSubmit = async (data: z.infer<typeof itemFormSchema>) => {
+    try {
+      const itemData: Omit<ProductItem, "id" | "created_at" | "updated_at"> = {
+        product_id: data.product_id,
+        product_profile_id: data.product_profile_id,
+        product_category_id: data.product_category_id || null,
+        name: data.name,
+        weight: data.weight || null,
+        length: data.length || null,
+        image: data.image,
+      };
+
+      const created = await productService.createItem(itemData);
+      if (created) {
+        toast.success("Item created successfully");
+        queryClient.invalidateQueries({
+          queryKey: ["productItems", productId],
+        });
+        if (onUpdate) onUpdate();
+        setShowItemForm(false);
+      } else {
+        toast.error("Failed to create item");
+      }
+    } catch (error) {
+      console.error("Error creating item:", error);
+      toast.error("An error occurred while creating the item");
+    }
   };
 
   // Create profile mutation
@@ -415,26 +871,31 @@ const ProfileManager = ({
 
   return (
     <>
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <div className="space-y-1">
-            <CardTitle>Profiles</CardTitle>
-            <CardDescription>
-              Manage technical specifications for {product.name}
-            </CardDescription>
-          </div>
-          <Button onClick={handleAddProfile}>
-            <Plus className="mr-2 h-4 w-4" />
-            Add Profile
-          </Button>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="flex justify-center py-8">
-              <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      <div className="space-y-4">
+        {/* Header */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+            <div className="space-y-1">
+              <CardTitle>Profiles</CardTitle>
+              <CardDescription>
+                Manage technical specifications for {product.name}
+              </CardDescription>
             </div>
-          ) : profiles && profiles.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-8 text-center">
+            <Button onClick={handleAddProfile}>
+              <Plus className="mr-2 h-4 w-4" />
+              Add Profile
+            </Button>
+          </CardHeader>
+        </Card>
+
+        {/* Profile Cards */}
+        {isLoading ? (
+          <div className="flex justify-center py-8">
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          </div>
+        ) : profiles && profiles.length === 0 ? (
+          <Card>
+            <CardContent className="flex flex-col items-center justify-center py-8 text-center">
               <Ruler className="h-12 w-12 text-muted-foreground mb-4" />
               <h3 className="text-lg font-semibold">No profiles yet</h3>
               <p className="text-muted-foreground mb-4">
@@ -444,147 +905,26 @@ const ProfileManager = ({
                 <Plus className="mr-2 h-4 w-4" />
                 Add Profile
               </Button>
-            </div>
-          ) : (
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Size</TableHead>
-                    <TableHead>Specs</TableHead>
-                    <TableHead>Badges</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {profiles &&
-                    Array.isArray(profiles) &&
-                    profiles.map((profile) => (
-                      <TableRow key={profile.id}>
-                        <TableCell className="font-medium">
-                          {profile.name}
-                        </TableCell>
-                        <TableCell>
-                          {profile.size_per_panel && (
-                            <div className="text-sm">
-                              <span className="font-medium">
-                                Size per panel:
-                              </span>{" "}
-                              {profile.size_per_panel}
-                            </div>
-                          )}
-                          {profile.effective_size && (
-                            <div className="text-sm">
-                              <span className="font-medium">
-                                Effective size:
-                              </span>{" "}
-                              {profile.effective_size}
-                            </div>
-                          )}
-                          {profile.size &&
-                            Array.isArray(profile.size) &&
-                            profile.size.length > 0 && (
-                              <div className="text-sm mt-1">
-                                <span className="font-medium">
-                                  Size specifications:
-                                </span>{" "}
-                                <div className="pl-2 mt-1 space-y-1">
-                                  {profile.size &&
-                                    Array.isArray(profile.size) &&
-                                    profile.size.map((item, idx: number) => (
-                                      <div key={idx} className="text-xs">
-                                        <Badge
-                                          variant="outline"
-                                          className="mr-1"
-                                        >
-                                          {item.name}
-                                        </Badge>
-                                        <span className="text-muted-foreground">
-                                          {item.thickness} / {item.weight}
-                                        </span>
-                                      </div>
-                                    ))}
-                                </div>
-                              </div>
-                            )}
-                        </TableCell>
-                        <TableCell>
-                          {profile.materials && (
-                            <Badge variant="outline" className="mr-1">
-                              {profile.materials}
-                            </Badge>
-                          )}
-                          {profile.thickness && (
-                            <Badge variant="outline" className="mr-1">
-                              {profile.thickness}
-                            </Badge>
-                          )}
-                          {profile.weight && (
-                            <Badge variant="outline" className="mr-1">
-                              {profile.weight}
-                            </Badge>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex gap-1">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8"
-                              onClick={() =>
-                                handleManageCertificatesBadges(profile)
-                              }
-                            >
-                              <FileText className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8"
-                              onClick={() =>
-                                handleManageCertificatesBadges(profile)
-                              }
-                            >
-                              <Award className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" className="h-8 w-8 p-0">
-                                <span className="sr-only">Open menu</span>
-                                <MoreVertical className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                              <DropdownMenuItem
-                                onClick={() => handleEditProfile(profile)}
-                              >
-                                <Edit className="mr-2 h-4 w-4" />
-                                Edit Profile
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem
-                                onClick={() => handleDelete(profile.id)}
-                                className="text-destructive focus:text-destructive"
-                              >
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                Delete Profile
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="space-y-4">
+            {profiles &&
+              Array.isArray(profiles) &&
+              profiles.map((profile) => (
+                <ProfileCard
+                  key={profile.id}
+                  profile={profile}
+                  onEdit={handleEditProfile}
+                  onDelete={handleDelete}
+                  onManageCertsBadges={handleManageCertificatesBadges}
+                  onAddItemFromCategory={handleAddItemFromCategory}
+                  onEditCategory={handleEditCategory}
+                />
+              ))}
+          </div>
+        )}
+      </div>
 
       {/* Profile Form Dialog */}
       <Dialog open={showProfileForm} onOpenChange={setShowProfileForm}>
@@ -690,6 +1030,212 @@ const ProfileManager = ({
           profileId={selectedProfile.id}
           productId={productId}
           entityType="profile"
+          defaultTab={certBadgeTab}
+        />
+      )}
+
+      {/* Add Item Form Dialog */}
+      <Dialog open={showItemForm} onOpenChange={setShowItemForm}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Add Item to Profile</DialogTitle>
+            <DialogDescription>
+              Create a new item for {itemFormProfile?.name}. Form is pre-filled
+              with profile data.
+            </DialogDescription>
+          </DialogHeader>
+
+          <Form {...itemForm}>
+            <form
+              onSubmit={itemForm.handleSubmit(onItemSubmit)}
+              className="space-y-4"
+            >
+              <FormField
+                control={itemForm.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Item Name *</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter item name" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={itemForm.control}
+                name="product_profile_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Profile *</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value}
+                      disabled
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a profile" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {profiles.map((profile) => (
+                          <SelectItem key={profile.id} value={profile.id}>
+                            {profile.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormDescription>
+                      Auto-selected from the profile
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={itemForm.control}
+                name="product_category_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      Category {itemFormCategoryId ? "*" : "(Optional)"}
+                    </FormLabel>
+                    <Select
+                      onValueChange={(value) => {
+                        field.onChange(value === "none" ? null : value);
+                      }}
+                      value={field.value || "none"}
+                      disabled={!!itemFormCategoryId}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a category" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="none">
+                          <span className="text-muted-foreground">
+                            No category
+                          </span>
+                        </SelectItem>
+                        {itemFormProfile &&
+                          profileCategories[itemFormProfile.id]?.map(
+                            (category) => (
+                              <SelectItem key={category.id} value={category.id}>
+                                {category.name}
+                              </SelectItem>
+                            ),
+                          )}
+                      </SelectContent>
+                    </Select>
+                    <FormDescription>
+                      {itemFormCategoryId
+                        ? "Auto-selected from the category"
+                        : "Select a category from this profile"}
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={itemForm.control}
+                  name="weight"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Weight</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="e.g., 5.2kg"
+                          {...field}
+                          value={field.value || ""}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={itemForm.control}
+                  name="length"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Length</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="e.g., 2.4m"
+                          {...field}
+                          value={field.value || ""}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <FormField
+                control={itemForm.control}
+                name="image"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Image *</FormLabel>
+                    <div className="flex gap-2">
+                      <FormControl>
+                        <Input
+                          placeholder="Image URL"
+                          {...field}
+                          value={field.value || ""}
+                          readOnly
+                        />
+                      </FormControl>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setShowImageSelector(true)}
+                      >
+                        Browse
+                      </Button>
+                    </div>
+                    {field.value && (
+                      <div className="mt-2 border rounded-md p-2 w-32 h-32">
+                        <img
+                          src={field.value}
+                          alt="Selected item image"
+                          className="w-full h-full object-cover rounded"
+                        />
+                      </div>
+                    )}
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <DialogFooter className="mt-6">
+                <DialogClose asChild>
+                  <Button type="button" variant="outline">
+                    Cancel
+                  </Button>
+                </DialogClose>
+                <Button type="submit">Create Item</Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Image Selector Dialog */}
+      {showImageSelector && (
+        <ImageSelectorDialog
+          open={showImageSelector}
+          onOpenChange={setShowImageSelector}
+          onSelect={handleImageSelect}
         />
       )}
     </>
