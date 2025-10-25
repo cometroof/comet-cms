@@ -49,7 +49,9 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     { name: "Settings", href: "/dashboard/settings", icon: Settings },
   ];
 
-  const isActive = (href: string) => location.pathname === href;
+  const isActive = (href: string) =>
+    location.pathname === href ||
+    (href !== "/" && location.pathname.includes(href));
 
   return (
     <div className="min-h-screen bg-background">
@@ -76,8 +78,10 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       >
         <div className="flex flex-col h-full">
           {/* Logo */}
-          <div className="flex items-center gap-3 px-6 py-5 border-b border-sidebar-border">
-            <div className="flex items-center justify-center w-10 h-10 bg-sidebar-foreground rounded-lg flex-shrink-0">
+          <div
+            className={`flex items-center gap-3 ${desktopCollapsed ? "px-0 justify-center" : "px-6"} py-5 border-b border-sidebar-border`}
+          >
+            <div className="flex items-center justify-center size-10 max-w-full aspect-square bg-sidebar-foreground rounded-lg flex-shrink-0">
               <img className="size-5" src="/comet-icon.svg" alt="Comet Icon" />
             </div>
             {!desktopCollapsed && (

@@ -2,6 +2,7 @@ import React, { createContext, useContext, ReactNode } from "react";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import * as productService from "@/services/product.service";
 import { toast } from "sonner";
+import { Database } from "@/lib/supabase-types";
 
 // Define types for our context
 export interface ProductProfile {
@@ -68,18 +69,9 @@ export interface ProductBadge {
   [key: string]: unknown;
 }
 
-export interface ProductPremium {
-  id: string;
-  product_id: string;
-  material_fullname?: string;
-  material_name?: string;
-  size_per_panel?: string;
-  effective_size?: string;
-  reng_distance?: string;
-  created_at?: string;
-  updated_at?: string;
-  [key: string]: unknown;
-}
+export type ProductPremium = Partial<
+  Database["public"]["Tables"]["product_premium"]["Row"]
+>;
 
 // Context state interface
 interface ProductQueryContextState {

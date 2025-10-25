@@ -29,7 +29,6 @@ import {
   DialogClose,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import ImageSelectorDialog from "@/components/ImageSelectorDialog";
 import { Form } from "@/components/ui/form";
 import {
   DropdownMenu,
@@ -48,19 +47,13 @@ import {
   Award,
   FileText,
   Ruler,
-  Crown,
 } from "lucide-react";
 import { toast } from "sonner";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useForm } from "react-hook-form";
 import * as productService from "@/services/product.service";
-import {
-  ProductProfile,
-  ProfileFormData,
-  Product,
-  ProductPremium,
-} from "./types";
+import { ProductProfile, ProfileFormData, Product } from "./types";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -78,9 +71,8 @@ import GeneralTab from "./profile-tabs/GeneralTab";
 import SizeTab from "./profile-tabs/SizeTab";
 import CertificatesTab from "./profile-tabs/CertificatesTab";
 import BadgesTab from "./profile-tabs/BadgesTab";
-import PremiumTab from "./profile-tabs/PremiumTab";
 
-// Define form validation schema
+// Define form validation schema (without premium fields)
 const formSchema = z.object({
   product_id: z.string(),
   name: z.string().min(1, "Profile name is required"),
@@ -103,15 +95,6 @@ const formSchema = z.object({
     .optional(),
   certificates: z.array(z.string()).optional(),
   badges: z.array(z.string()).optional(),
-  // Premium fields
-  is_premium: z.boolean().optional(),
-  description_id: z.string().optional(),
-  description_en: z.string().optional(),
-  premium_materials: z.string().optional(),
-  material_name: z.string().optional(),
-  premium_image_url: z.string().optional(),
-  content_image_url: z.string().optional(),
-  reng_distance: z.string().optional(),
 });
 
 interface ProfileManagerProps {
@@ -144,12 +127,8 @@ const ProfileManager = ({
     null,
   );
   const [loadingCertsAndBadges, setLoadingCertsAndBadges] = useState(false);
-  const [showPremiumImageSelector, setShowPremiumImageSelector] =
-    useState(false);
-  const [showContentImageSelector, setShowContentImageSelector] =
-    useState(false);
-  // Create form
 
+  // Create form
   const form = useForm<ProfileFormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -165,23 +144,8 @@ const ProfileManager = ({
       weight: "",
       certificates: [],
       badges: [],
-      is_premium: false,
-      description_id: "",
-      description_en: "",
-      premium_materials: "",
-      material_name: "",
-      premium_image_url: "",
-      content_image_url: "",
-      reng_distance: "",
     },
   });
-
-  // Fetch profiles with React Query
-  // const {
-  //   profiles = [],
-  //   isProfilesLoading: isLoading,
-  //   profilesError: error,
-  // } = useProductQuery();
 
   // Handle error separately since onError is not available in the options
   if (error) {
@@ -203,14 +167,6 @@ const ProfileManager = ({
       size: [],
       certificates: [],
       badges: [],
-      is_premium: false,
-      description_id: "",
-      description_en: "",
-      premium_materials: "",
-      material_name: "",
-      premium_image_url: "",
-      content_image_url: "",
-      reng_distance: "",
     });
     setEditingProfile(null);
     setShowProfileForm(true);
@@ -234,18 +190,15 @@ const ProfileManager = ({
 
     let certificateIds: string[] = [];
     let badgeIds: string[] = [];
-    let premiumData: ProductPremium | null = null;
 
     try {
-      const [assignedCerts, assignedBadges, premium] = await Promise.all([
+      const [assignedCerts, assignedBadges] = await Promise.all([
         productService.getProfileCertificates(profile.id),
         productService.getProfileBadges(profile.id),
-        productService.getProfilePremium(profile.id),
       ]);
 
       certificateIds = assignedCerts.map((cert) => cert.id);
       badgeIds = assignedBadges.map((badge) => badge.id);
-      premiumData = premium;
     } catch (error) {
       console.error("Error loading data:", error);
       toast.error("Failed to load profile data");
@@ -253,7 +206,7 @@ const ProfileManager = ({
       setLoadingCertsAndBadges(false);
     }
 
-    // PERBAIKAN: Isi SEMUA field profile
+    // Fill all profile fields
     form.reset({
       product_id: profile.product_id,
       name: profile.name,
@@ -267,14 +220,6 @@ const ProfileManager = ({
       size: profile.size || [],
       certificates: certificateIds,
       badges: badgeIds,
-      is_premium: !!premiumData,
-      description_id: premiumData?.description_id || "",
-      description_en: premiumData?.description_en || "",
-      premium_materials: premiumData?.material_fullname || "",
-      material_name: premiumData?.material_name || "",
-      premium_image_url: premiumData?.premium_image_url || "",
-      content_image_url: premiumData?.content_image_url || "",
-      reng_distance: premiumData?.reng_distance || "",
     });
 
     setShowProfileForm(true);
@@ -389,38 +334,14 @@ const ProfileManager = ({
   };
 
   const onSubmit = async (data: ProfileFormData) => {
-    // Extract certificates, badges, and premium fields from form data
-    const {
-      certificates,
-      badges,
-      is_premium,
-      description_id,
-      description_en,
-      premium_materials,
-      material_name,
-      premium_image_url,
-      content_image_url,
-      reng_distance,
-      ...profileFields
-    } = data;
+    // Extract certificates and badges from form data
+    const { certificates, badges, ...profileFields } = data;
 
     // Ensure size is an array (not undefined)
     const formattedData: Partial<ProductProfile> = {
       ...profileFields,
       size: profileFields.size || [],
     };
-
-    // If premium is enabled, include premium fields in the profile data
-    // if (is_premium) {
-    //   formattedData.is_premium = is_premium;
-    //   formattedData.description_id = description_id;
-    //   formattedData.description_en = description_en;
-    //   formattedData.premium_materials = premium_materials;
-    //   formattedData.material_name = material_name;
-    //   formattedData.premium_image_url = premium_image_url;
-    //   formattedData.content_image_url = content_image_url;
-    //   formattedData.reng_distance = reng_distance;
-    // }
 
     const profileData = formattedData as Omit<
       ProductProfile,
@@ -453,31 +374,6 @@ const ProfileManager = ({
                 );
               }
             }
-
-            // Handle premium data synchronization if needed
-            if (is_premium && editingProfile?.product_id) {
-              try {
-                const premiumData: PremiumFormData = {
-                  product_id: editingProfile.product_id,
-                  product_profile_id: editingProfile.id,
-                  material_fullname: premium_materials || undefined,
-                  material_name: material_name || undefined,
-                  description_en: description_en || undefined,
-                  description_id: description_id || undefined,
-                  premium_image_url: premium_image_url || undefined,
-                  content_image_url: content_image_url || undefined,
-                  effective_size: profileFields.effective_size,
-                  size_per_panel: profileFields.size_per_panel,
-                  reng_distance: reng_distance || undefined,
-                };
-                await productService.upsertPremium(premiumData);
-              } catch (error) {
-                console.error("Error updating premium data:", error);
-                toast.warning(
-                  "Profile saved but premium data may not be fully synced",
-                );
-              }
-            }
           },
         },
       );
@@ -502,31 +398,6 @@ const ProfileManager = ({
               console.error("Error saving certificates/badges:", error);
               toast.error(
                 "Profile created but failed to save certificates/badges",
-              );
-            }
-          }
-
-          // Handle premium data if enabled
-          if (is_premium && newProfile) {
-            try {
-              const premiumData: PremiumFormData = {
-                product_id: newProfile.product_id,
-                product_profile_id: newProfile.id,
-                material_fullname: premium_materials || undefined,
-                material_name: material_name || undefined,
-                description_en: description_en || undefined,
-                description_id: description_id || undefined,
-                premium_image_url: premium_image_url || undefined,
-                content_image_url: content_image_url || undefined,
-                effective_size: profileFields.effective_size,
-                size_per_panel: profileFields.size_per_panel,
-                reng_distance: reng_distance || undefined,
-              };
-              await productService.upsertPremium(premiumData);
-            } catch (error) {
-              console.error("Error saving premium data:", error);
-              toast.warning(
-                "Profile created but premium data may not be fully synced",
               );
             }
           }
@@ -727,14 +598,11 @@ const ProfileManager = ({
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <Tabs defaultValue="general">
-                <TabsList className="grid w-full grid-cols-5">
+                <TabsList className="grid w-full grid-cols-4">
                   <TabsTrigger value="general">General</TabsTrigger>
                   <TabsTrigger value="size">Size</TabsTrigger>
                   <TabsTrigger value="certificates">Certificates</TabsTrigger>
                   <TabsTrigger value="badges">Badges</TabsTrigger>
-                  <TabsTrigger value="premium">
-                    <Crown className="h-5 w-5 text-amber-600 mr-1" /> Premium
-                  </TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="general">
@@ -746,20 +614,6 @@ const ProfileManager = ({
                     watch={form.watch}
                     addSizeItem={addSizeItem}
                     removeSizeItem={removeSizeItem}
-                  />
-                </TabsContent>
-
-                <TabsContent value="premium">
-                  <PremiumTab
-                    control={form.control}
-                    watch={form.watch}
-                    setValue={form.setValue}
-                    onSelectPremiumImage={() =>
-                      setShowPremiumImageSelector(true)
-                    }
-                    onSelectContentImage={() =>
-                      setShowContentImageSelector(true)
-                    }
                   />
                 </TabsContent>
 
@@ -783,66 +637,6 @@ const ProfileManager = ({
                   />
                 </TabsContent>
               </Tabs>
-
-              {/*<Separator className="my-4" />*/}
-
-              {/*<div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="tkdn_value"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>TKDN Value</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="TKDN value"
-                          {...field}
-                          value={field.value || ""}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="thickness"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Thickness</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="e.g., 0.45mm"
-                          {...field}
-                          value={field.value || ""}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="weight"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Weight</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="e.g., 4.5kg/m²"
-                          {...field}
-                          value={field.value || ""}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>*/}
-
-              {/*<Separator className="my-4" />*/}
 
               <DialogFooter className="mt-6">
                 <DialogClose asChild>
@@ -889,32 +683,6 @@ const ProfileManager = ({
           entityType="profile"
         />
       )}
-
-      {/* Premium Image Selector */}
-      <ImageSelectorDialog
-        open={showPremiumImageSelector}
-        onOpenChange={setShowPremiumImageSelector}
-        onSelect={(url) => {
-          form.setValue("premium_image_url", url);
-          setShowPremiumImageSelector(false);
-        }}
-        title="Select Premium Brand Image"
-        multiple={false}
-        multipleSelection={false}
-      />
-
-      {/* Content Image Selector */}
-      <ImageSelectorDialog
-        open={showContentImageSelector}
-        onOpenChange={setShowContentImageSelector}
-        onSelect={(url) => {
-          form.setValue("content_image_url", url);
-          setShowContentImageSelector(false);
-        }}
-        title="Select Premium Content Image"
-        multiple={false}
-        multipleSelection={false}
-      />
     </>
   );
 };
