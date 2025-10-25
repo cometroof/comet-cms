@@ -670,15 +670,15 @@ const ProfileManager = ({
     setItemFormProfile(typedProfile);
     setItemFormCategoryId(categoryId);
 
-    // Auto-fill form with profile and category data
+    // Auto-fill form with only profile and category selection, leave name and image empty
     itemForm.reset({
       product_id: productId,
       product_profile_id: typedProfile.id,
       product_category_id: categoryId,
-      name: typedProfile.name,
-      weight: typedProfile.weight || "",
+      name: "",
+      weight: "",
       length: "",
-      image: typedProfile.profile_image_url || "",
+      image: "",
     });
 
     setShowItemForm(true);
