@@ -1,167 +1,240 @@
 import { Button } from "@/components";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CheckCircle, FileText } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import {
+  CheckCircle,
+  FileText,
+  Package,
+  Image as ImageIcon,
+} from "lucide-react";
+import { ProductWithRelations, Product } from "../types";
 
 export default function InfoTab({
   product,
   handleEditProduct,
 }: {
-  product: any;
+  product: Product;
   handleEditProduct: () => void;
 }) {
+  // Parse suitables
+  const getSuitableItems = () => {
+    if (!product?.suitables) return [];
+
+    let suitableItems = [];
+    try {
+      if (typeof product.suitables === "string") {
+        suitableItems = JSON.parse(product.suitables);
+      } else if (Array.isArray(product.suitables)) {
+        suitableItems = product.suitables;
+      } else {
+        suitableItems = [String(product.suitables)];
+      }
+    } catch {
+      suitableItems = [String((product as ProductWithRelations).suitables)];
+    }
+
+    if (!Array.isArray(suitableItems)) {
+      suitableItems = [String(suitableItems)];
+    }
+
+    return suitableItems;
+  };
+
   return (
-    <div className="grid grid-cols-2 gap-8">
-      <div>
-        <h2 className="text-lg font-medium mb-4">Product Information</h2>
-        <div className="space-y-3">
-          <div>
-            <div className="text-sm font-medium text-muted-foreground">
-              Name
-            </div>
-            <div className="text-base">{product && product.name}</div>
-          </div>
-          {product && product.title && (
-            <div>
-              <div className="text-sm font-medium text-muted-foreground">
-                Title
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* Main Product Information */}
+      <div className="lg:col-span-2 space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Package className="h-5 w-5" />
+              Product Information
+            </CardTitle>
+            <CardDescription>
+              Basic details and information about this product
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Name & Title */}
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-muted-foreground">
+                  Product Name
+                </label>
+                <p className="text-lg font-semibold">{product?.name || "-"}</p>
               </div>
-              <div className="text-base">{product.title}</div>
-            </div>
-          )}
-          {product && product.slug && (
-            <div>
-              <div className="text-sm font-medium text-muted-foreground">
-                Slug
-              </div>
-              <div className="font-mono text-sm">{product.slug}</div>
-            </div>
-          )}
-          {product && (product.description_en || product.description_id) && (
-            <div>
-              <div className="text-sm font-medium text-muted-foreground">
-                Description
-              </div>
-              <Tabs defaultValue="en" className="mt-2">
-                <TabsList className="grid w-full grid-cols-2 mb-2">
-                  <TabsTrigger value="en">English</TabsTrigger>
-                  <TabsTrigger value="id">Indonesian</TabsTrigger>
-                </TabsList>
-                <TabsContent value="en" className="pt-2">
-                  <div className="text-base">
-                    {product.description_en || (
-                      <span className="text-muted-foreground italic">
-                        No English description available
-                      </span>
-                    )}
-                  </div>
-                </TabsContent>
-                <TabsContent value="id" className="pt-2">
-                  <div className="text-base">
-                    {product.description_id || (
-                      <span className="text-muted-foreground italic">
-                        No Indonesian description available
-                      </span>
-                    )}
-                  </div>
-                </TabsContent>
-              </Tabs>
-            </div>
-          )}
-          {product && product.suitables && (
-            <div>
-              <div className="text-sm font-medium text-muted-foreground">
-                Suitable For
-              </div>
-              <div className="text-base">
-                <ul className="list-none pl-0 space-y-1.5">
-                  {(() => {
-                    let suitableItems = [];
-                    try {
-                      if (typeof product.suitables === "string") {
-                        suitableItems = JSON.parse(product.suitables as string);
-                      } else if (Array.isArray(product.suitables)) {
-                        suitableItems = product.suitables as string[];
-                      } else {
-                        suitableItems = [String(product.suitables)];
-                      }
-                    } catch {
-                      suitableItems = [
-                        String((product as ProductWithRelations).suitables),
-                      ];
-                    }
 
-                    // Ensure we have an array
-                    if (!Array.isArray(suitableItems)) {
-                      suitableItems = [String(suitableItems)];
-                    }
+              {product?.title && (
+                <>
+                  <Separator />
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-muted-foreground">
+                      Title
+                    </label>
+                    <p className="text-base">{product.title}</p>
+                  </div>
+                </>
+              )}
 
-                    return suitableItems.map((suitable, index) => (
-                      <li key={index} className="flex items-center gap-2">
-                        <CheckCircle className="h-4 w-4 text-green-500" />
+              {product?.slug && (
+                <>
+                  <Separator />
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-muted-foreground">
+                      Slug
+                    </label>
+                    <code className="block px-3 py-2 bg-muted rounded-md text-sm font-mono">
+                      {product.slug}
+                    </code>
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Description */}
+            {(product?.description_en || product?.description_id) && (
+              <>
+                <Separator />
+                <div className="space-y-3">
+                  <label className="text-sm font-medium text-muted-foreground">
+                    Description
+                  </label>
+                  <Tabs defaultValue="en" className="w-full">
+                    <TabsList className="grid w-full max-w-[400px] grid-cols-2">
+                      <TabsTrigger value="en">English</TabsTrigger>
+                      <TabsTrigger value="id">Indonesian</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="en" className="mt-4">
+                      <div className="prose prose-sm max-w-none">
+                        {product.description_en || (
+                          <span className="text-muted-foreground italic">
+                            No English description available
+                          </span>
+                        )}
+                      </div>
+                    </TabsContent>
+                    <TabsContent value="id" className="mt-4">
+                      <div className="prose prose-sm max-w-none">
+                        {product.description_id || (
+                          <span className="text-muted-foreground italic">
+                            No Indonesian description available
+                          </span>
+                        )}
+                      </div>
+                    </TabsContent>
+                  </Tabs>
+                </div>
+              </>
+            )}
+
+            {/* Suitables */}
+            {getSuitableItems().length > 0 && (
+              <>
+                <Separator />
+                <div className="space-y-3">
+                  <label className="text-sm font-medium text-muted-foreground">
+                    Suitable For
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {getSuitableItems().map((suitable, index) => (
+                      <Badge
+                        key={index}
+                        variant="secondary"
+                        className="flex items-center gap-1.5 px-3 py-1.5"
+                      >
+                        <CheckCircle className="h-3.5 w-3.5 text-green-600" />
                         <span>{suitable}</span>
-                      </li>
-                    ));
-                  })()}
-                </ul>
-              </div>
-            </div>
-          )}
-          {product && product.catalogue && (
-            <div>
-              <div className="text-sm font-medium text-muted-foreground">
-                Catalogue
-              </div>
-              <div className="text-base">
-                <a
-                  href={product.catalogue}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-primary hover:underline flex items-center gap-1"
-                >
-                  <FileText className="h-4 w-4" />
-                  View Catalogue
-                </a>
-              </div>
-            </div>
-          )}
-        </div>
-        <Button variant="outline" onClick={handleEditProduct} className="mt-6">
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* Catalogue */}
+            {product?.catalogue && (
+              <>
+                <Separator />
+                <div className="space-y-3">
+                  <label className="text-sm font-medium text-muted-foreground">
+                    Catalogue
+                  </label>
+                  <Button variant="outline" size="sm" asChild className="w-fit">
+                    <a
+                      href={product.catalogue}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2"
+                    >
+                      <FileText className="h-4 w-4" />
+                      View Catalogue
+                    </a>
+                  </Button>
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Edit Button */}
+        <Button onClick={handleEditProduct} className="w-full sm:w-auto">
           Edit Product Details
         </Button>
       </div>
 
+      {/* Images Sidebar */}
       <div className="space-y-6">
-        {/* Show brand image if available */}
-        {product && product.brand_image && (
-          <div>
-            <h3 className="text-md font-medium mb-2">Brand Image</h3>
-            <div className="rounded-lg overflow-hidden border w-64 h-64 p-4 flex items-center justify-center">
-              <img
-                src={product.brand_image}
-                alt={`${product.name} brand`}
-                className="object-contain max-w-full max-h-full"
-              />
-            </div>
-          </div>
+        {/* Brand Image */}
+        {product?.brand_image && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <ImageIcon className="h-4 w-4" />
+                Brand Image
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="aspect-square rounded-lg overflow-hidden border bg-muted/20 p-4 flex items-center justify-center">
+                <img
+                  src={product.brand_image}
+                  alt={`${product.name} brand`}
+                  className="object-contain max-w-full max-h-full"
+                />
+              </div>
+            </CardContent>
+          </Card>
         )}
 
-        {/* Show preview of the first item image if available */}
-        {product &&
-          product.items &&
-          product.items.length > 0 &&
+        {/* Product Preview */}
+        {product?.items?.length > 0 &&
           typeof product.items[0] === "object" &&
           product.items[0] !== null &&
           product.items[0].image && (
-            <div>
-              <h3 className="text-md font-medium mb-2">Product Preview</h3>
-              <div className="rounded-lg overflow-hidden border">
-                <img
-                  src={product.items[0].image}
-                  alt={product.name}
-                  className="object-cover w-full h-64"
-                />
-              </div>
-            </div>
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Package className="h-4 w-4" />
+                  Product Preview
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="aspect-video rounded-lg overflow-hidden border bg-muted/20">
+                  <img
+                    src={product.items[0].image}
+                    alt={product.name}
+                    className="object-cover w-full h-full"
+                  />
+                </div>
+              </CardContent>
+            </Card>
           )}
       </div>
     </div>

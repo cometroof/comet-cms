@@ -1,8 +1,5 @@
 import { useState, useEffect } from "react";
-import {
-  ProductPremium,
-  useProductQuery,
-} from "@/contexts/ProductQueryContext";
+import { useProductQuery } from "@/contexts/ProductQueryContext";
 import {
   Card,
   CardContent,
@@ -27,7 +24,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useForm } from "react-hook-form";
 import * as productService from "@/services/product.service";
-import { PremiumFormData, Product } from "./types";
+import { PremiumFormData, Product, ProductPremium } from "./types";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { ImageSelectorDialog } from "@/components";

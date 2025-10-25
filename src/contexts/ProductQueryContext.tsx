@@ -4,7 +4,6 @@ import * as productService from "@/services/product.service";
 import { toast } from "sonner";
 import {
   Product,
-  ProductProfile,
   ProductCategory,
   ProductItem,
   ProductPremium,

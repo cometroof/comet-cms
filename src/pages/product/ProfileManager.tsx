@@ -1,9 +1,6 @@
 import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import {
-  useProductQuery,
-  ProductProfile as ProductContextProfile,
-} from "@/contexts/ProductQueryContext";
+import { useProductQuery } from "@/contexts/ProductQueryContext";
 import {
   Card,
   CardContent,
@@ -71,6 +68,8 @@ import GeneralTab from "./profile-tabs/GeneralTab";
 import SizeTab from "./profile-tabs/SizeTab";
 import CertificatesTab from "./profile-tabs/CertificatesTab";
 import BadgesTab from "./profile-tabs/BadgesTab";
+
+type ProductContextProfile = ProductProfile;
 
 // Define form validation schema
 const formSchema = z.object({
