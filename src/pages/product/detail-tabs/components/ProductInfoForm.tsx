@@ -28,6 +28,7 @@ export default function ProductInfoForm({
   const [formData, setFormData] = useState({
     name: product?.name || "",
     title: product?.title || "",
+    cover_color_hex: product?.cover_color_hex || "#f00",
     slug: product?.slug || "",
     is_under_product: product?.is_under_product || false,
     description_en: product?.description_en || "",
@@ -79,6 +80,47 @@ export default function ProductInfoForm({
               onChange={(e) => handleFieldChange("title", e.target.value)}
               placeholder="Enter product title"
             />
+          </div>
+
+          <Separator />
+
+          <div className="space-y-2">
+            <Label htmlFor="cover-color-hex" className="text-sm font-medium">
+              Hero Section Background Color
+            </Label>
+            <div className="flex gap-2">
+              <div className="relative">
+                <Input
+                  id="cover-color-hex"
+                  type="color"
+                  value={formData.cover_color_hex || "#ffffff"}
+                  onChange={(e) =>
+                    handleFieldChange("cover_color_hex", e.target.value)
+                  }
+                  className="size-0 opacity-0 absolute cursor-pointer"
+                />
+                <label
+                  htmlFor="cover-color-hex"
+                  className="w-14 h-10 rounded-md block"
+                  style={{ backgroundColor: formData.cover_color_hex }}
+                />
+              </div>
+              <Input
+                id="cover-color-hex-display"
+                type="text"
+                value={formData.cover_color_hex}
+                onChange={(e) =>
+                  handleFieldChange("cover_color_hex", e.target.value)
+                }
+                placeholder="#000000"
+                className="font-mono"
+                readOnly
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Choose the background color for the hero section on the product
+              page
+            </p>
           </div>
 
           <Separator />

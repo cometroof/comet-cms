@@ -50,6 +50,7 @@ import {
   Loader2,
   PackageOpen,
   Image as ImageIcon,
+  Folder,
 } from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";

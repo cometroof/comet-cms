@@ -76,10 +76,10 @@ export default function BrandImageSelector({
             </>
           ) : (
             <>
-              <div className="w-full aspect-video border-2 border-dashed rounded-lg bg-muted/20 flex flex-col items-center justify-center text-muted-foreground gap-2">
+              {/*<div className="w-full aspect-video border-2 border-dashed rounded-lg bg-muted/20 flex flex-col items-center justify-center text-muted-foreground gap-2">
                 <Upload className="h-8 w-8" />
                 <p className="text-sm">No brand image</p>
-              </div>
+              </div>*/}
               <Button
                 type="button"
                 variant="outline"
@@ -127,10 +127,10 @@ export default function BrandImageSelector({
             </>
           ) : (
             <>
-              <div className="w-full aspect-video border-2 border-dashed rounded-lg bg-muted/20 flex flex-col items-center justify-center text-muted-foreground gap-2">
+              {/*<div className="w-full aspect-video border-2 border-dashed rounded-lg bg-muted/20 flex flex-col items-center justify-center text-muted-foreground gap-2">
                 <Upload className="h-8 w-8" />
                 <p className="text-sm">No banner image</p>
-              </div>
+              </div>*/}
               <Button
                 type="button"
                 variant="outline"

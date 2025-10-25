@@ -215,6 +215,7 @@ export type Database = {
           banner_url: string | null;
           brand_image: string | null;
           catalogue: string | null;
+          cover_color_hex: string | null;
           created_at: string | null;
           description_en: string | null;
           description_id: string | null;
@@ -225,6 +226,7 @@ export type Database = {
           highlight_icon: string | null;
           highlight_section_description_en: string | null;
           highlight_section_description_id: string | null;
+          highlight_section_image_url: string | null;
           highlight_top_description_en: string | null;
           highlight_top_description_id: string | null;
           highlight_top_label_en: string | null;
@@ -235,6 +237,7 @@ export type Database = {
           is_profile_highlight: boolean | null;
           is_under_product: boolean;
           name: string;
+          order: number;
           slug: string | null;
           suitables: Json | null;
           title: string | null;
@@ -244,6 +247,7 @@ export type Database = {
           banner_url?: string | null;
           brand_image?: string | null;
           catalogue?: string | null;
+          cover_color_hex?: string | null;
           created_at?: string | null;
           description_en?: string | null;
           description_id?: string | null;
@@ -254,6 +258,7 @@ export type Database = {
           highlight_icon?: string | null;
           highlight_section_description_en?: string | null;
           highlight_section_description_id?: string | null;
+          highlight_section_image_url?: string | null;
           highlight_top_description_en?: string | null;
           highlight_top_description_id?: string | null;
           highlight_top_label_en?: string | null;
@@ -264,6 +269,7 @@ export type Database = {
           is_profile_highlight?: boolean | null;
           is_under_product?: boolean;
           name: string;
+          order?: number;
           slug?: string | null;
           suitables?: Json | null;
           title?: string | null;
@@ -273,6 +279,7 @@ export type Database = {
           banner_url?: string | null;
           brand_image?: string | null;
           catalogue?: string | null;
+          cover_color_hex?: string | null;
           created_at?: string | null;
           description_en?: string | null;
           description_id?: string | null;
@@ -283,6 +290,7 @@ export type Database = {
           highlight_icon?: string | null;
           highlight_section_description_en?: string | null;
           highlight_section_description_id?: string | null;
+          highlight_section_image_url?: string | null;
           highlight_top_description_en?: string | null;
           highlight_top_description_id?: string | null;
           highlight_top_label_en?: string | null;
@@ -293,6 +301,7 @@ export type Database = {
           is_profile_highlight?: boolean | null;
           is_under_product?: boolean;
           name?: string;
+          order?: number;
           slug?: string | null;
           suitables?: Json | null;
           title?: string | null;

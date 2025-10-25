@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components";
-import { Sparkles, Upload, X } from "lucide-react";
+import { Plus, Sparkles, Upload, X } from "lucide-react";
 import { Product } from "../../types";
 import ImageSelectorDialog from "@/components/ImageSelectorDialog";
 
@@ -39,8 +39,14 @@ export default function HighlightSectionForm({
       product?.highlight_bottom_description_en || "",
     highlight_bottom_description_id:
       product?.highlight_bottom_description_id || "",
+    highlight_section_description_en:
+      product?.highlight_section_description_en || "",
+    highlight_section_description_id:
+      product?.highlight_section_description_id || "",
+    highlight_section_image_url: product?.highlight_section_image_url || "",
   });
   const [iconDialogOpen, setIconDialogOpen] = useState(false);
+  const [imageDialogOpen, setImageDialogOpen] = useState(false);
 
   const handleFieldChange = (field: string, value: string | boolean) => {
     const updates = { ...formData, [field]: value };
@@ -55,6 +61,11 @@ export default function HighlightSectionForm({
   const handleIconSelect = (iconUrl: string) => {
     handleFieldChange("highlight_icon", iconUrl);
     setIconDialogOpen(false);
+  };
+
+  const handleImageSelect = (imageUrl: string) => {
+    handleFieldChange("highlight_section_image_url", imageUrl);
+    setImageDialogOpen(false);
   };
 
   return (
@@ -112,6 +123,78 @@ export default function HighlightSectionForm({
                 {formData.highlight_icon ? "Change Icon" : "Select Icon"}
               </Button>
             </div>
+          </div>
+
+          <div className="flex">
+            <div
+              role="button"
+              onClick={() => setImageDialogOpen(true)}
+              className={`relative w-full aspect-[4/3] hover:after:bg-primary/10 after:size-full after:absolute after:top-0 after:left-0 rounded-md overflow-hidden${formData.highlight_section_image_url ? "" : " border border-dashed border-primary"}`}
+            >
+              <div className="absolute left-0 top-0 size-full flex gap-1 items-center justify-center">
+                <Plus className="size-3" />
+                <span>Add image for highlight section</span>
+              </div>
+              {formData.highlight_section_image_url && (
+                <img
+                  src={formData.highlight_section_image_url}
+                  alt="Highlight section image"
+                  className="size-full object-cover relative"
+                />
+              )}
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">Highlight Icon</Label>
+            <Tabs defaultValue="en">
+              <TabsList className="w-full grid grid-cols-2">
+                <TabsTrigger value="en">EN</TabsTrigger>
+                <TabsTrigger value="id">ID</TabsTrigger>
+              </TabsList>
+              <TabsContent value="en">
+                <Label
+                  htmlFor="highlight-section-description-en"
+                  className="text-xs"
+                >
+                  Section Description
+                </Label>
+                <Textarea
+                  id="highlight-section-description-en"
+                  value={formData.highlight_section_description_en}
+                  onChange={(e) =>
+                    handleFieldChange(
+                      "highlight_section_description_en",
+                      e.target.value,
+                    )
+                  }
+                  placeholder="Enter top description in English"
+                  rows={3}
+                  className="resize-none"
+                />
+              </TabsContent>
+              <TabsContent value="id">
+                <Label
+                  htmlFor="highlight-section-description-id"
+                  className="text-xs"
+                >
+                  Section Description
+                </Label>
+                <Textarea
+                  id="highlight-section-description-id"
+                  value={formData.highlight_section_description_id}
+                  onChange={(e) =>
+                    handleFieldChange(
+                      "highlight_section_description_id",
+                      e.target.value,
+                    )
+                  }
+                  placeholder="Enter top description in Bahasa"
+                  rows={3}
+                  className="resize-none"
+                />
+              </TabsContent>
+            </Tabs>
           </div>
 
           <Separator />
@@ -287,6 +370,7 @@ export default function HighlightSectionForm({
       )}
 
       {/* Image Selector Dialog */}
+      {/*ICON*/}
       <ImageSelectorDialog
         open={iconDialogOpen}
         onOpenChange={setIconDialogOpen}
@@ -295,6 +379,16 @@ export default function HighlightSectionForm({
         multiple={false}
         multipleSelection={false}
         initialSelection={formData.highlight_icon}
+      />
+      {/*IMAGE SECTION HIGHLIGHT*/}
+      <ImageSelectorDialog
+        open={imageDialogOpen}
+        onOpenChange={setImageDialogOpen}
+        onSelect={handleImageSelect}
+        title="Select Highlight Image"
+        multiple={false}
+        multipleSelection={false}
+        initialSelection={formData.highlight_section_image_url}
       />
     </Card>
   );

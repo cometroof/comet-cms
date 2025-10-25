@@ -8,7 +8,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Package, ChevronRight } from "lucide-react";
-import { Product, ProductProfile } from "../types";
+import { Product, ProductProfile, ProductWithRelations } from "../types";
 import {
   ProductInfoForm,
   HighlightSectionForm,
@@ -25,7 +25,7 @@ export default function InfoTab({
   product,
   onTabChange,
 }: {
-  product: Product;
+  product: ProductWithRelations;
   handleEditProduct: () => void;
   onTabChange?: (tab: string) => void;
 }) {
@@ -76,6 +76,9 @@ export default function InfoTab({
           formUpdates.highlight_section_description_id;
       if (formUpdates.highlight_icon !== undefined)
         updateData.highlight_icon = formUpdates.highlight_icon;
+      if (formUpdates.highlight_section_image_url !== undefined)
+        updateData.highlight_section_image_url =
+          formUpdates.highlight_section_image_url;
 
       // Handle highlight top fields
       if (formUpdates.highlight_top_label_en !== undefined)
@@ -208,32 +211,28 @@ export default function InfoTab({
                   <CardDescription>Product profile variations</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {(product.profiles as ProductProfile[])
-                    .slice(0, 2)
-                    .map((profile) => (
-                      <div
-                        key={profile.id}
-                        className="space-y-2 pb-4 border-b last:border-b-0 last:pb-0"
-                      >
-                        <div className="font-medium text-sm">
-                          {profile.name}
+                  {product.profiles.slice(0, 2).map((profile) => (
+                    <div
+                      key={profile.id}
+                      className="space-y-2 pb-4 border-b last:border-b-0 last:pb-0"
+                    >
+                      <div className="font-medium text-sm">{profile.name}</div>
+                      {profile.subtitle && (
+                        <p className="text-xs text-muted-foreground">
+                          {profile.subtitle}
+                        </p>
+                      )}
+                      {profile.image && (
+                        <div className="aspect-video rounded-lg overflow-hidden border bg-muted/20">
+                          <img
+                            src={profile.image}
+                            alt={profile.name}
+                            className="object-cover w-full h-full"
+                          />
                         </div>
-                        {profile.subtitle && (
-                          <p className="text-xs text-muted-foreground">
-                            {profile.subtitle}
-                          </p>
-                        )}
-                        {profile.image && (
-                          <div className="aspect-video rounded-lg overflow-hidden border bg-muted/20">
-                            <img
-                              src={profile.image}
-                              alt={profile.name}
-                              className="object-cover w-full h-full"
-                            />
-                          </div>
-                        )}
-                      </div>
-                    ))}
+                      )}
+                    </div>
+                  ))}
                   {product.profiles.length > 2 && (
                     <Button
                       variant="outline"

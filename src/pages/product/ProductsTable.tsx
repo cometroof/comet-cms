@@ -34,6 +34,7 @@ import {
   StarOff,
   Image as ImageIcon,
   FileText,
+  GripVertical,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -48,6 +49,15 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  DragDropContext,
+  Droppable,
+  Draggable,
+  DropResult,
+} from "@hello-pangea/dnd";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import * as productService from "@/services/product.service";
 import type { ProductWithRelations, ProductItem } from "./types";
 
 interface ProductsTableProps {
@@ -71,6 +81,7 @@ const ProductsTable = ({
     hasProfile: false,
     hasPremium: false,
   });
+  const queryClient = useQueryClient();
 
   // Filter products based on search query and filters
   const filteredProducts = products.filter((product) => {
@@ -116,6 +127,60 @@ const ProductsTable = ({
       ...prev,
       [filter]: !prev[filter],
     }));
+  };
+
+  // Reorder mutation
+  const reorderMutation = useMutation({
+    mutationFn: async (orderedProducts: ProductWithRelations[]) => {
+      // Update order for each product
+      const updatePromises = orderedProducts.map((product, index) =>
+        productService.updateProductOrder(product.id, index),
+      );
+      await Promise.all(updatePromises);
+      return orderedProducts;
+    },
+    onMutate: async (orderedProducts) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ["products"] });
+
+      // Save current state
+      const previousProducts = queryClient.getQueryData<ProductWithRelations[]>(
+        ["products"],
+      );
+
+      // Optimistically update to new order
+      queryClient.setQueryData<ProductWithRelations[]>(["products"], () => [
+        ...orderedProducts,
+      ]);
+
+      return { previousProducts };
+    },
+    onError: (_, __, context) => {
+      // Revert on error
+      if (context?.previousProducts) {
+        queryClient.setQueryData(["products"], context.previousProducts);
+      }
+      toast.error("Failed to update product order");
+    },
+    onSuccess: () => {
+      toast.success("Product order updated");
+    },
+    onSettled: () => {
+      // Always refetch after error or success
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+    },
+  });
+
+  // Handle drag end
+  const onDragEnd = (result: DropResult) => {
+    if (!result.destination) return;
+
+    const items = Array.from(filteredProducts);
+    const [reorderedItem] = items.splice(result.source.index, 1);
+    items.splice(result.destination.index, 0, reorderedItem);
+
+    // Call the mutation to update the order
+    reorderMutation.mutate(items);
   };
 
   const getProductImage = (product: ProductWithRelations) => {
@@ -203,128 +268,165 @@ const ProductsTable = ({
             </div>
 
             <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[100px]">Image</TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Profiles</TableHead>
-                    <TableHead>Items</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredProducts.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={6} className="h-24 text-center">
-                        No products found.
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    filteredProducts.map((product) => (
-                      <TableRow
-                        key={product.id}
-                        className="cursor-pointer hover:bg-muted/50"
-                        onClick={() => onManage(product)}
-                      >
-                        <TableCell className="font-medium">
-                          {getProductImage(product) ? (
-                            <img
-                              src={getProductImage(product) || ""}
-                              alt={product.name}
-                              className={`w-16 h-16 rounded-md ${product.brand_image ? "object-contain p-1" : "object-cover"}`}
-                            />
-                          ) : (
-                            <div className="w-16 h-16 bg-muted rounded-md flex items-center justify-center">
-                              <ImageIcon className="w-6 h-6 text-muted-foreground" />
-                            </div>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <div className="font-medium">{product.name}</div>
-                          {(product.description_en ||
-                            product.description_id) && (
-                            <div className="text-sm text-muted-foreground truncate max-w-[250px]">
-                              {product.description_en ||
-                                product.description_id ||
-                                ""}
-                            </div>
-                          )}
-                          {product.catalogue && (
-                            <a
-                              href={product.catalogue}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-xs text-primary hover:underline inline-flex items-center mt-1"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <FileText className="h-3 w-3 mr-1" />
-                              View Catalogue
-                            </a>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className="font-mono">
-                            {product.profilesCount || 0}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className="font-mono">
-                            {product.itemsCount || 0}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          {product.is_highlight && (
-                            <Badge className="bg-amber-500">Highlight</Badge>
-                          )}
-                          {product.premium && (
-                            <Badge className="bg-purple-500 ml-1">
-                              Premium
-                            </Badge>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div onClick={(e) => e.stopPropagation()}>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon">
-                                  <MoreVertical className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                <DropdownMenuItem
-                                  onClick={() => onManage(product)}
-                                  className="cursor-pointer"
-                                >
-                                  <Eye className="h-4 w-4 mr-2" />
-                                  Manage
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  onClick={() => onEdit(product)}
-                                  className="cursor-pointer"
-                                >
-                                  <Edit className="h-4 w-4 mr-2" />
-                                  Edit
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem
-                                  onClick={() => handleDeleteClick(product.id)}
-                                  className="text-destructive cursor-pointer focus:text-destructive"
-                                >
-                                  <Trash2 className="h-4 w-4 mr-2" />
-                                  Delete
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </div>
-                        </TableCell>
+              {filteredProducts.length === 0 ? (
+                <div className="text-center p-8 text-muted-foreground">
+                  No products found.
+                </div>
+              ) : (
+                <DragDropContext onDragEnd={onDragEnd}>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-12"></TableHead>
+                        <TableHead className="w-[100px]">Image</TableHead>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Profiles</TableHead>
+                        <TableHead>Items</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
+                    </TableHeader>
+                    <Droppable droppableId="products">
+                      {(provided) => (
+                        <TableBody
+                          ref={provided.innerRef}
+                          {...provided.droppableProps}
+                        >
+                          {filteredProducts.map((product, index) => (
+                            <Draggable
+                              key={product.id}
+                              draggableId={product.id.toString()}
+                              index={index}
+                            >
+                              {(provided, snapshot) => (
+                                <TableRow
+                                  ref={provided.innerRef}
+                                  {...provided.draggableProps}
+                                  className={`cursor-pointer hover:bg-muted/50 ${
+                                    snapshot.isDragging ? "bg-muted" : ""
+                                  }`}
+                                  onClick={() => onManage(product)}
+                                >
+                                  <TableCell {...provided.dragHandleProps}>
+                                    <GripVertical className="h-5 w-5 text-muted-foreground cursor-grab active:cursor-grabbing" />
+                                  </TableCell>
+                                  <TableCell className="font-medium">
+                                    {getProductImage(product) ? (
+                                      <img
+                                        src={getProductImage(product) || ""}
+                                        alt={product.name}
+                                        className={`w-16 h-16 rounded-md ${product.brand_image ? "object-contain p-1" : "object-cover"}`}
+                                      />
+                                    ) : (
+                                      <div className="w-16 h-16 bg-muted rounded-md flex items-center justify-center">
+                                        <ImageIcon className="w-6 h-6 text-muted-foreground" />
+                                      </div>
+                                    )}
+                                  </TableCell>
+                                  <TableCell>
+                                    <div className="font-medium">
+                                      {product.name}
+                                    </div>
+                                    {(product.description_en ||
+                                      product.description_id) && (
+                                      <div className="text-sm text-muted-foreground truncate max-w-[250px]">
+                                        {product.description_en ||
+                                          product.description_id ||
+                                          ""}
+                                      </div>
+                                    )}
+                                    {product.catalogue && (
+                                      <a
+                                        href={product.catalogue}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-xs text-primary hover:underline inline-flex items-center mt-1"
+                                        onClick={(e) => e.stopPropagation()}
+                                      >
+                                        <FileText className="h-3 w-3 mr-1" />
+                                        View Catalogue
+                                      </a>
+                                    )}
+                                  </TableCell>
+                                  <TableCell>
+                                    <Badge
+                                      variant="outline"
+                                      className="font-mono"
+                                    >
+                                      {product.profilesCount || 0}
+                                    </Badge>
+                                  </TableCell>
+                                  <TableCell>
+                                    <Badge
+                                      variant="outline"
+                                      className="font-mono"
+                                    >
+                                      {product.itemsCount || 0}
+                                    </Badge>
+                                  </TableCell>
+                                  <TableCell>
+                                    {product.is_highlight && (
+                                      <Badge className="bg-amber-500">
+                                        Highlight
+                                      </Badge>
+                                    )}
+                                    {product.premium && (
+                                      <Badge className="bg-purple-500 ml-1">
+                                        Premium
+                                      </Badge>
+                                    )}
+                                  </TableCell>
+                                  <TableCell className="text-right">
+                                    <div onClick={(e) => e.stopPropagation()}>
+                                      <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                          <Button variant="ghost" size="icon">
+                                            <MoreVertical className="h-4 w-4" />
+                                          </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end">
+                                          <DropdownMenuLabel>
+                                            Actions
+                                          </DropdownMenuLabel>
+                                          <DropdownMenuItem
+                                            onClick={() => onManage(product)}
+                                            className="cursor-pointer"
+                                          >
+                                            <Eye className="h-4 w-4 mr-2" />
+                                            Manage
+                                          </DropdownMenuItem>
+                                          <DropdownMenuItem
+                                            onClick={() => onEdit(product)}
+                                            className="cursor-pointer"
+                                          >
+                                            <Edit className="h-4 w-4 mr-2" />
+                                            Edit
+                                          </DropdownMenuItem>
+                                          <DropdownMenuSeparator />
+                                          <DropdownMenuItem
+                                            onClick={() =>
+                                              handleDeleteClick(product.id)
+                                            }
+                                            className="text-destructive cursor-pointer focus:text-destructive"
+                                          >
+                                            <Trash2 className="h-4 w-4 mr-2" />
+                                            Delete
+                                          </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                      </DropdownMenu>
+                                    </div>
+                                  </TableCell>
+                                </TableRow>
+                              )}
+                            </Draggable>
+                          ))}
+                          {provided.placeholder}
+                        </TableBody>
+                      )}
+                    </Droppable>
+                  </Table>
+                </DragDropContext>
+              )}
             </div>
           </div>
         </CardContent>

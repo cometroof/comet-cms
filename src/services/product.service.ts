@@ -30,9 +30,6 @@ const PROFILE_BADGES_TABLE = "product_profile_badges";
 /**
  * Get all products with counts
  */
-/**
- * Get all products with counts
- */
 export const getProducts = async (): Promise<ProductWithRelations[]> => {
   const { data, error } = await supabase
     .from(PRODUCT_TABLE)
@@ -43,7 +40,7 @@ export const getProducts = async (): Promise<ProductWithRelations[]> => {
       items:${ITEM_TABLE}(count)
     `,
     )
-    .order("created_at", { ascending: false });
+    .order("order", { ascending: true });
 
   if (error) {
     console.error("Error fetching products:", error);
@@ -915,4 +912,24 @@ export const getProfilePremium = async (
   }
 
   return data || null;
+};
+
+/**
+ * Update product order
+ */
+export const updateProductOrder = async (
+  productId: string,
+  newOrder: number,
+): Promise<boolean> => {
+  const { error } = await supabase
+    .from(PRODUCT_TABLE)
+    .update({ order: newOrder, updated_at: new Date().toISOString() })
+    .eq("id", productId);
+
+  if (error) {
+    console.error(`Error updating order for product ${productId}:`, error);
+    return false;
+  }
+
+  return true;
 };
