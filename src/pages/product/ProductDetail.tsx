@@ -103,7 +103,7 @@ const ProductDetailContent = () => {
             </Button>
             <div>
               <h1 className="text-3xl font-bold text-foreground">
-                {product && (product as ProductWithRelations).name}
+                {product?.name}
               </h1>
               <div className="text-muted-foreground flex items-center gap-2">
                 <span>Product Management</span>
@@ -131,16 +131,13 @@ const ProductDetailContent = () => {
           </TabsList>
 
           <TabsContent value="info" className="space-y-4">
-            <InfoTab
-              product={product as Product}
-              handleEditProduct={handleEditProduct}
-            />
+            <InfoTab product={product!} handleEditProduct={handleEditProduct} />
           </TabsContent>
 
           <TabsContent value="profiles" className="space-y-4">
             <ProfileManager
-              productId={(product as ProductWithRelations)?.id || ""}
-              product={product as Product}
+              productId={product?.id || ""}
+              product={product!}
               onUpdate={() =>
                 queryClient.invalidateQueries({ queryKey: ["product", id] })
               }
@@ -149,8 +146,8 @@ const ProductDetailContent = () => {
 
           <TabsContent value="categories" className="space-y-4">
             <CategoryManager
-              productId={(product as ProductWithRelations)?.id || ""}
-              product={(product || {}) as Product}
+              productId={product?.id || ""}
+              product={product!}
               onUpdate={() =>
                 queryClient.invalidateQueries({ queryKey: ["product", id] })
               }
@@ -159,8 +156,8 @@ const ProductDetailContent = () => {
 
           <TabsContent value="items" className="space-y-4">
             <ItemManager
-              productId={(product as ProductWithRelations)?.id || ""}
-              product={(product || {}) as Product}
+              productId={product?.id || ""}
+              product={product!}
               onUpdate={() =>
                 queryClient.invalidateQueries({ queryKey: ["product", id] })
               }
@@ -169,8 +166,8 @@ const ProductDetailContent = () => {
 
           <TabsContent value="premium" className="space-y-4">
             <PremiumManager
-              productId={(product as ProductWithRelations)?.id || ""}
-              product={(product || {}) as Product}
+              productId={product?.id || ""}
+              product={product!}
               onUpdate={() =>
                 queryClient.invalidateQueries({ queryKey: ["product", id] })
               }
@@ -180,9 +177,9 @@ const ProductDetailContent = () => {
       </div>
 
       {/* Product Form Dialog */}
-      {showProductForm && (
+      {showProductForm && product && (
         <ProductForm
-          product={product as Product}
+          product={product}
           isOpen={showProductForm}
           onClose={() => setShowProductForm(false)}
           onSave={handleProductUpdate}

@@ -2,75 +2,26 @@ import React, { createContext, useContext, ReactNode } from "react";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import * as productService from "@/services/product.service";
 import { toast } from "sonner";
-import { Database } from "@/lib/supabase-types";
-
-type ProductProfileDB =
-  Database["public"]["Tables"]["product_profile"]["Insert"];
-// Define types for our context
-export interface ProductProfile extends ProductProfileDB {
-  size: { name?: string; weight?: string; thickness?: string }[];
-  profile_banner_url: Database["public"]["Tables"]["product_profile"]["Insert"]["profile_banner_url"];
-  profile_image_url: Database["public"]["Tables"]["product_profile"]["Insert"]["profile_image_url"];
-  certificates: string[];
-  badges: string[];
-}
-
-export interface ProductCategory {
-  id: string;
-  name: string;
-  product_id?: string;
-  product_profile_id?: string;
-  subtitle?: string;
-  created_at?: string;
-  updated_at?: string;
-  [key: string]: unknown;
-}
-
-export interface ProductItem {
-  id: string;
-  name: string;
-  product_id?: string;
-  product_profile_id?: string;
-  product_category_id?: string;
-  weight?: string;
-  length?: string;
-  image?: string;
-  created_at?: string;
-  updated_at?: string;
-  [key: string]: unknown;
-}
-
-export interface Certificate {
-  id: string;
-  name: string;
-  image?: string;
-  created_at?: string;
-  updated_at?: string;
-  [key: string]: unknown;
-}
-
-export interface ProductBadge {
-  id: string;
-  name: string;
-  image?: string;
-  created_at?: string;
-  updated_at?: string;
-  [key: string]: unknown;
-}
-
-export type ProductPremium = Partial<
-  Database["public"]["Tables"]["product_premium"]["Row"]
->;
+import {
+  Product,
+  ProductProfile,
+  ProductCategory,
+  ProductItem,
+  ProductPremium,
+  Certificate,
+  ProductBadge,
+  ProductProfileWithRelations,
+} from "@/pages/product/types";
 
 // Context state interface
 interface ProductQueryContextState {
   // Product data
-  product: Record<string, unknown> | null;
+  product: Product | null;
   isProductLoading: boolean;
   productError: Error | null;
 
   // Profiles data
-  profiles: ProductProfile[];
+  profiles: ProductProfileWithRelations[];
   isProfilesLoading: boolean;
   profilesError: Error | null;
 
@@ -116,11 +67,22 @@ interface ProductQueryContextState {
 
   // Profile mutations
   createProfileMutation: {
-    mutate: (profile: Omit<ProductProfile, "id">) => void;
+    mutate: (
+      profile: Omit<
+        ProductProfileWithRelations,
+        | "id"
+        | "created_at"
+        | "updated_at"
+        | "certificates"
+        | "badges"
+        | "categories"
+        | "items"
+      >,
+    ) => void;
     isPending: boolean;
   };
   updateProfileMutation: {
-    mutate: (profile: ProductProfile) => void;
+    mutate: (profile: ProductProfileWithRelations) => void;
     isPending: boolean;
   };
   deleteProfileMutation: {
@@ -205,7 +167,7 @@ export const ProductQueryProvider: React.FC<ProductQueryProviderProps> = ({
     isLoading: isProductLoading,
     error: productError,
     refetch: refetchProductQuery,
-  } = useQuery<Record<string, unknown>>({
+  } = useQuery<Product>({
     queryKey: ["product", productId],
     queryFn: () =>
       productId ? productService.getProductById(productId) : null,
@@ -218,7 +180,7 @@ export const ProductQueryProvider: React.FC<ProductQueryProviderProps> = ({
     isLoading: isProfilesLoading,
     error: profilesError,
     refetch: refetchProfiles,
-  } = useQuery<ProductProfile[]>({
+  } = useQuery<ProductProfileWithRelations[]>({
     queryKey: ["product-profiles", productId],
     queryFn: () =>
       productId ? productService.getProductProfiles(productId) : [],
@@ -335,8 +297,18 @@ export const ProductQueryProvider: React.FC<ProductQueryProviderProps> = ({
 
   // Profile mutations
   const createProfileMutation = useMutation({
-    mutationFn: (newProfile: Omit<ProductProfile, "id">) =>
-      productService.createProfile(newProfile),
+    mutationFn: (
+      newProfile: Omit<
+        ProductProfileWithRelations,
+        | "id"
+        | "created_at"
+        | "updated_at"
+        | "certificates"
+        | "badges"
+        | "categories"
+        | "items"
+      >,
+    ) => productService.createProfile(newProfile),
     onSuccess: () => {
       toast.success("Profile created successfully");
       refetchProfiles();
@@ -348,8 +320,8 @@ export const ProductQueryProvider: React.FC<ProductQueryProviderProps> = ({
   });
 
   const updateProfileMutation = useMutation({
-    mutationFn: (profile: ProductProfile) =>
-      productService.updateProfile(profile),
+    mutationFn: (profile: ProductProfileWithRelations) =>
+      productService.updateProfile(profile.id, profile),
     onSuccess: () => {
       toast.success("Profile updated successfully");
       refetchProfiles();
@@ -390,7 +362,7 @@ export const ProductQueryProvider: React.FC<ProductQueryProviderProps> = ({
 
   const updateCategoryMutation = useMutation({
     mutationFn: (category: ProductCategory) =>
-      productService.updateCategory(category),
+      productService.updateCategory(category.id, category),
     onSuccess: () => {
       toast.success("Category updated successfully");
       refetchCategories();
@@ -429,7 +401,7 @@ export const ProductQueryProvider: React.FC<ProductQueryProviderProps> = ({
   });
 
   const updateItemMutation = useMutation({
-    mutationFn: (item: ProductItem) => productService.updateItem(item),
+    mutationFn: (item: ProductItem) => productService.updateItem(item.id, item),
     onSuccess: () => {
       toast.success("Item updated successfully");
       refetchItems();
@@ -455,7 +427,7 @@ export const ProductQueryProvider: React.FC<ProductQueryProviderProps> = ({
   // Premium mutations
   const upsertPremiumMutation = useMutation({
     mutationFn: (premiumData: Omit<ProductPremium, "id">) =>
-      productService.upsertPremium(productId, premiumData),
+      productService.upsertPremium(premiumData),
     onSuccess: () => {
       toast.success("Premium data saved successfully");
       refetchPremium();
