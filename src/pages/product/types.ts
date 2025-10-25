@@ -90,8 +90,7 @@ export interface ItemFormData {
   product_profile_id?: string;
   product_category_id?: string;
   name: string;
-  weight?: string;
-  length?: string;
+  spec_info?: Record<string, string>;
   image: string;
   flow_type: ProductFlowType;
 }

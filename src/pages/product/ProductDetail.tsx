@@ -119,11 +119,9 @@ const ProductDetailContent = () => {
           onValueChange={handleTabChange}
           className="space-y-4"
         >
-          <TabsList className="grid grid-cols-5">
+          <TabsList className="grid grid-cols-3">
             <TabsTrigger value="info">Basic Info</TabsTrigger>
             <TabsTrigger value="profiles">Profiles</TabsTrigger>
-            <TabsTrigger value="categories">Categories</TabsTrigger>
-            <TabsTrigger value="items">Items</TabsTrigger>
             <TabsTrigger value="premium">
               <Crown className="h-4 w-4 mr-1 text-amber-500" />
               Premium

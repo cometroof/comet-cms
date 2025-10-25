@@ -90,8 +90,14 @@ const formSchema = z.object({
   product_profile_id: z.string().optional().nullable(),
   product_category_id: z.string().optional().nullable(),
   name: z.string().min(1, "Item name is required"),
-  weight: z.string().optional(),
-  length: z.string().optional(),
+  spec_info: z
+    .array(
+      z.object({
+        field: z.string().min(1, "Field name is required"),
+        value: z.string().min(1, "Value is required"),
+      }),
+    )
+    .optional(),
   image: z.string().min(1, "Image is required"),
   flow_type: z.enum(["direct", "category", "profile", "profile-category"]),
 });
@@ -129,8 +135,7 @@ const ItemManager = ({ productId, product, onUpdate }: ItemManagerProps) => {
       product_profile_id: null,
       product_category_id: null,
       name: "",
-      weight: "",
-      length: "",
+      spec_info: [],
       image: "",
       flow_type: "direct" as ProductFlowType,
     },
@@ -217,8 +222,7 @@ const ItemManager = ({ productId, product, onUpdate }: ItemManagerProps) => {
       product_profile_id: null,
       product_category_id: null,
       name: "",
-      weight: "",
-      length: "",
+      spec_info: [],
       image: "",
       flow_type: "direct",
     });
@@ -230,13 +234,21 @@ const ItemManager = ({ productId, product, onUpdate }: ItemManagerProps) => {
   const handleEditItem = (item: ProductItem) => {
     const flowType = getItemFlowType(item);
 
+    // Parse spec_info from JSONB
+    let specInfo: Array<{ field: string; value: string }> = [];
+    if (item.spec_info && typeof item.spec_info === "object") {
+      specInfo = Object.entries(item.spec_info).map(([field, value]) => ({
+        field,
+        value: String(value),
+      }));
+    }
+
     form.reset({
       product_id: productId,
       product_profile_id: item.product_profile_id,
       product_category_id: item.product_category_id,
       name: item.name,
-      weight: item.weight || "",
-      length: item.length || "",
+      spec_info: specInfo,
       image: item.image || "",
       flow_type: flowType,
     });
@@ -297,12 +309,22 @@ const ItemManager = ({ productId, product, onUpdate }: ItemManagerProps) => {
         detectedFlowType = "category";
       }
 
+      // Convert spec_info array to JSONB object
+      const specInfoObject: Record<string, string> = {};
+      if (data.spec_info && data.spec_info.length > 0) {
+        data.spec_info.forEach((item) => {
+          if (item.field && item.value) {
+            specInfoObject[item.field] = item.value;
+          }
+        });
+      }
+
       // Build item data
       const itemData: Omit<ProductItem, "id" | "created_at" | "updated_at"> = {
         product_id: data.product_id,
         name: data.name,
-        weight: data.weight || null,
-        length: data.length || null,
+        spec_info:
+          Object.keys(specInfoObject).length > 0 ? specInfoObject : null,
         image: data.image,
         product_profile_id: data.product_profile_id || null,
         product_category_id: data.product_category_id || null,
@@ -391,8 +413,17 @@ const ItemManager = ({ productId, product, onUpdate }: ItemManagerProps) => {
                   <TableCell className="font-medium">{item.name}</TableCell>
                   <TableCell>{getItemParentName(item)}</TableCell>
                   <TableCell>
-                    {item.weight && <div>Weight: {item.weight}</div>}
-                    {item.length && <div>Length: {item.length}</div>}
+                    {item.spec_info && typeof item.spec_info === "object" && (
+                      <div className="space-y-1">
+                        {Object.entries(item.spec_info).map(
+                          ([field, value]) => (
+                            <div key={field}>
+                              {field}: {String(value)}
+                            </div>
+                          ),
+                        )}
+                      </div>
+                    )}
                   </TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>
@@ -598,42 +629,74 @@ const ItemManager = ({ productId, product, onUpdate }: ItemManagerProps) => {
                 )}
               />
 
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="weight"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Weight</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="e.g., 5.2kg"
-                          {...field}
-                          value={field.value || ""}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="length"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Length</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="e.g., 2.4m"
-                          {...field}
-                          value={field.value || ""}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+              <div className="space-y-3">
+                <FormLabel>Specifications</FormLabel>
+                <div className="space-y-2">
+                  {form.watch("spec_info")?.map((_, index) => (
+                    <div key={index} className="flex gap-2">
+                      <FormField
+                        control={form.control}
+                        name={`spec_info.${index}.field`}
+                        render={({ field }) => (
+                          <FormItem className="flex-1">
+                            <FormControl>
+                              <Input
+                                placeholder="Field (e.g., Weight)"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name={`spec_info.${index}.value`}
+                        render={({ field }) => (
+                          <FormItem className="flex-1">
+                            <FormControl>
+                              <Input
+                                placeholder="Value (e.g., 5.2kg)"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => {
+                          const currentSpecs =
+                            form.getValues("spec_info") || [];
+                          form.setValue(
+                            "spec_info",
+                            currentSpecs.filter((_, i) => i !== index),
+                          );
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const currentSpecs = form.getValues("spec_info") || [];
+                    form.setValue("spec_info", [
+                      ...currentSpecs,
+                      { field: "", value: "" },
+                    ]);
+                  }}
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Specification
+                </Button>
               </div>
 
               <FormField
