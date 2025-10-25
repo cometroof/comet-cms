@@ -14,15 +14,18 @@ import {
   FileText,
   Package,
   Image as ImageIcon,
+  ChevronRight,
 } from "lucide-react";
-import { ProductWithRelations, Product } from "../types";
+import { ProductWithRelations, Product, ProductProfile } from "../types";
 
 export default function InfoTab({
   product,
   handleEditProduct,
+  onTabChange,
 }: {
   product: Product;
   handleEditProduct: () => void;
+  onTabChange?: (tab: string) => void;
 }) {
   // Parse suitables
   const getSuitableItems = () => {
@@ -202,37 +205,67 @@ export default function InfoTab({
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="aspect-square rounded-lg overflow-hidden border bg-muted/20 p-4 flex items-center justify-center">
+              <div className="w-full overflow-hidden flex items-center justify-center">
                 <img
                   src={product.brand_image}
                   alt={`${product.name} brand`}
-                  className="object-contain max-w-full max-h-full"
+                  className="size-full object-contain"
                 />
               </div>
             </CardContent>
           </Card>
         )}
 
-        {/* Product Preview */}
-        {product?.items?.length > 0 &&
-          typeof product.items[0] === "object" &&
-          product.items[0] !== null &&
-          product.items[0].image && (
+        {/* Product Profiles */}
+        {product?.profiles &&
+          Array.isArray(product.profiles) &&
+          product.profiles.length > 0 &&
+          typeof product.profiles[0] === "object" &&
+          !("count" in product.profiles[0]) && (
             <Card>
               <CardHeader>
                 <CardTitle className="text-base flex items-center gap-2">
                   <Package className="h-4 w-4" />
-                  Product Preview
+                  Profile
                 </CardTitle>
+                <CardDescription>Product profile variations</CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="aspect-video rounded-lg overflow-hidden border bg-muted/20">
-                  <img
-                    src={product.items[0].image}
-                    alt={product.name}
-                    className="object-cover w-full h-full"
-                  />
-                </div>
+              <CardContent className="space-y-4">
+                {(product.profiles as ProductProfile[])
+                  .slice(0, 2)
+                  .map((profile) => (
+                    <div
+                      key={profile.id}
+                      className="space-y-2 pb-4 border-b last:border-b-0 last:pb-0"
+                    >
+                      <div className="font-medium text-sm">{profile.name}</div>
+                      {profile.subtitle && (
+                        <p className="text-xs text-muted-foreground">
+                          {profile.subtitle}
+                        </p>
+                      )}
+                      {profile.image && (
+                        <div className="aspect-video rounded-lg overflow-hidden border bg-muted/20">
+                          <img
+                            src={profile.image}
+                            alt={profile.name}
+                            className="object-cover w-full h-full"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                {product.profiles.length > 2 && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full mt-4"
+                    onClick={() => onTabChange?.("profiles")}
+                  >
+                    See More
+                    <ChevronRight className="h-4 w-4 ml-2" />
+                  </Button>
+                )}
               </CardContent>
             </Card>
           )}

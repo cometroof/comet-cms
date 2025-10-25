@@ -1,10 +1,6 @@
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import {
-  ProductsQueryContext,
-  useProductsQuery,
-} from "@/contexts/ProductsQueryContext";
-import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -119,9 +115,6 @@ const ProductForm = ({
       brand_image: product?.brand_image || "",
     },
   });
-
-  // Get mutations from context
-  const { createProductMutation, updateProductMutation } = useProductsQuery();
 
   // Handle form submission
   const onSubmit = async (data: ProductFormData) => {

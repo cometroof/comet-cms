@@ -131,7 +131,11 @@ const ProductDetailContent = () => {
           </TabsList>
 
           <TabsContent value="info" className="space-y-4">
-            <InfoTab product={product} handleEditProduct={handleEditProduct} />
+            <InfoTab
+              product={product}
+              handleEditProduct={handleEditProduct}
+              onTabChange={handleTabChange}
+            />
           </TabsContent>
 
           <TabsContent value="profiles" className="space-y-4">
