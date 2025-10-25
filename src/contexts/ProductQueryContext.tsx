@@ -54,6 +54,14 @@ interface ProductQueryContextState {
   isBadgesLoading: boolean;
   badgesError: Error | null;
 
+  // Profile-specific certificates and badges
+  profileCertificates: Record<string, Certificate[]>;
+  isProfileCertificatesLoading: boolean;
+  profileCertificatesError: Error | null;
+  profileBadges: Record<string, ProductBadge[]>;
+  isProfileBadgesLoading: boolean;
+  profileBadgesError: Error | null;
+
   // Available certificates and badges for assignment
   availableCertificates: Certificate[];
   isAvailableCertificatesLoading: boolean;
@@ -276,6 +284,50 @@ export const ProductQueryProvider: React.FC<ProductQueryProviderProps> = ({
       queryFn: () => productService.getAllBadges(),
     });
 
+  // Fetch profile certificates for all profiles
+  const {
+    data: profileCertificates = {},
+    isLoading: isProfileCertificatesLoading,
+    error: profileCertificatesError,
+    refetch: refetchProfileCertificates,
+  } = useQuery<Record<string, Certificate[]>>({
+    queryKey: ["profile-certificates-map", productId],
+    queryFn: async () => {
+      if (!productId || profiles.length === 0) return {};
+
+      const profileCertsMap: Record<string, Certificate[]> = {};
+      for (const profile of profiles) {
+        const profileCerts = await productService.getProfileCertificates(
+          profile.id,
+        );
+        profileCertsMap[profile.id] = profileCerts;
+      }
+      return profileCertsMap;
+    },
+    enabled: !!productId && profiles.length > 0,
+  });
+
+  // Fetch profile badges for all profiles
+  const {
+    data: profileBadges = {},
+    isLoading: isProfileBadgesLoading,
+    error: profileBadgesError,
+    refetch: refetchProfileBadges,
+  } = useQuery<Record<string, ProductBadge[]>>({
+    queryKey: ["profile-badges-map", productId],
+    queryFn: async () => {
+      if (!productId || profiles.length === 0) return {};
+
+      const profileBadgesMap: Record<string, ProductBadge[]> = {};
+      for (const profile of profiles) {
+        const profileBdgs = await productService.getProfileBadges(profile.id);
+        profileBadgesMap[profile.id] = profileBdgs;
+      }
+      return profileBadgesMap;
+    },
+    enabled: !!productId && profiles.length > 0,
+  });
+
   // Refetch product data
   const refetchProduct = async () => {
     await refetchProductQuery();
@@ -291,6 +343,8 @@ export const ProductQueryProvider: React.FC<ProductQueryProviderProps> = ({
       refetchPremium(),
       refetchCertificates(),
       refetchProfileCategories(),
+      refetchProfileCertificates(),
+      refetchProfileBadges(),
     ]);
   };
 
@@ -523,6 +577,14 @@ export const ProductQueryProvider: React.FC<ProductQueryProviderProps> = ({
     badges: [], // Need to implement fetching badges for product if needed
     isBadgesLoading: false,
     badgesError: null,
+
+    // Profile-specific certificates and badges
+    profileCertificates,
+    isProfileCertificatesLoading,
+    profileCertificatesError,
+    profileBadges,
+    isProfileBadgesLoading,
+    profileBadgesError,
 
     // Available certificates and badges
     availableCertificates,

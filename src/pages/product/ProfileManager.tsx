@@ -156,32 +156,15 @@ const ProfileCard = ({
   onAddItemFromCategory,
   onEditCategory,
 }: ProfileCardProps) => {
-  const [certificatesCount, setCertificatesCount] = useState(0);
-  const [badgesCount, setBadgesCount] = useState(0);
-  const [itemsCount, setItemsCount] = useState(0);
-  const { profileCategories, items } = useProductQuery();
+  const { profileCategories, items, profileCertificates, profileBadges } =
+    useProductQuery();
 
-  useEffect(() => {
-    const loadCounts = async () => {
-      try {
-        const [certs, badges] = await Promise.all([
-          productService.getProfileCertificates(profile.id),
-          productService.getProfileBadges(profile.id),
-        ]);
-        setCertificatesCount(certs.length);
-        setBadgesCount(badges.length);
-      } catch (error) {
-        console.error("Error loading counts:", error);
-      }
-    };
-    loadCounts();
-
-    // Count items for this profile
-    const profileItems = items.filter(
-      (item) => item.product_profile_id === profile.id,
-    );
-    setItemsCount(profileItems.length);
-  }, [profile.id, items]);
+  // Get counts directly from context
+  const certificatesCount = profileCertificates[profile.id]?.length || 0;
+  const badgesCount = profileBadges[profile.id]?.length || 0;
+  const itemsCount = items.filter(
+    (item) => item.product_profile_id === profile.id,
+  ).length;
 
   const profileCats = profileCategories[profile.id] || [];
 
@@ -634,7 +617,13 @@ const ProfileManager = ({
     onSuccess: () => {
       toast.success("Profile deleted successfully");
       queryClient.invalidateQueries({
-        queryKey: ["productProfiles", productId],
+        queryKey: ["product-profiles", productId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["profile-certificates-map", productId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["profile-badges-map", productId],
       });
       if (onUpdate) onUpdate();
       setShowConfirmDelete(false);
@@ -710,7 +699,7 @@ const ProfileManager = ({
       if (created) {
         toast.success("Item created successfully");
         queryClient.invalidateQueries({
-          queryKey: ["productItems", productId],
+          queryKey: ["product-items", productId],
         });
         if (onUpdate) onUpdate();
         setShowItemForm(false);
@@ -735,7 +724,13 @@ const ProfileManager = ({
     onSuccess: () => {
       toast.success("Profile created successfully");
       queryClient.invalidateQueries({
-        queryKey: ["productProfiles", productId],
+        queryKey: ["product-profiles", productId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["profile-certificates-map", productId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["profile-badges-map", productId],
       });
       if (onUpdate) onUpdate();
       setShowProfileForm(false);
@@ -765,7 +760,13 @@ const ProfileManager = ({
     onSuccess: () => {
       toast.success("Profile updated successfully");
       queryClient.invalidateQueries({
-        queryKey: ["productProfiles", productId],
+        queryKey: ["product-profiles", productId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["profile-certificates-map", productId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["profile-badges-map", productId],
       });
       if (onUpdate) onUpdate();
       setShowProfileForm(false);

@@ -15,7 +15,7 @@ import CategoryManager from "./CategoryManager";
 import ItemManager from "./ItemManager";
 import PremiumManager from "./PremiumManager";
 import ProductForm from "./ProductForm";
-import { Product, ProductWithRelations } from "./types";
+import { Product } from "./types";
 import InfoTab from "./detail-tabs/InfoTab";
 
 const ProductDetailContent = () => {
