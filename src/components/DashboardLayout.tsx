@@ -14,8 +14,8 @@ import {
   PackageOpen,
   Menu,
   X,
-  ChevronLeft,
-  ChevronRight,
+  SquareChevronLeft,
+  SquareChevronRight,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -198,9 +198,9 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
             onClick={() => setDesktopCollapsed(!desktopCollapsed)}
           >
             {desktopCollapsed ? (
-              <ChevronRight className="h-5 w-5" />
+              <SquareChevronRight className="!size-6" />
             ) : (
-              <ChevronLeft className="h-5 w-5" />
+              <SquareChevronLeft className="!size-6" />
             )}
           </Button>
         </header>

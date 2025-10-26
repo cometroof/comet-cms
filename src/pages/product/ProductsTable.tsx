@@ -291,7 +291,7 @@ const ProductsTable = ({
                     Has Profiles
                   </Label>
                 </div>
-                <div className="flex items-center space-x-2">
+                {/*<div className="flex items-center space-x-2">
                   <Checkbox
                     id="filter-premium"
                     checked={filters.hasPremium}
@@ -303,7 +303,7 @@ const ProductsTable = ({
                   >
                     Has Premium
                   </Label>
-                </div>
+                </div>*/}
               </div>
             </div>
 
