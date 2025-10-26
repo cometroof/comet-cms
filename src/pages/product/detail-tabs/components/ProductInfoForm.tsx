@@ -28,7 +28,7 @@ export default function ProductInfoForm({
   const [formData, setFormData] = useState({
     name: product?.name || "",
     title: product?.title || "",
-    cover_color_hex: product?.cover_color_hex || "#f00",
+    cover_color_hex: product?.cover_color_hex || "",
     slug: product?.slug || "",
     is_under_product: product?.is_under_product || false,
     description_en: product?.description_en || "",
@@ -90,10 +90,21 @@ export default function ProductInfoForm({
             </Label>
             <div className="flex gap-2">
               <div className="relative">
+                {!formData.cover_color_hex && (
+                  <div
+                    className="size-full absolute top-0 left-0 border border-primary rounded-md pointer-events-none"
+                    style={{
+                      background:
+                        "linear-gradient(-35deg, transparent 0%, transparent 49%, red 49%, red 51%, transparent 51%, transparent 100%)",
+                      width: "100%",
+                      height: "40px",
+                    }}
+                  />
+                )}
                 <Input
                   id="cover-color-hex"
                   type="color"
-                  value={formData.cover_color_hex || "#ffffff"}
+                  value={formData.cover_color_hex}
                   onChange={(e) =>
                     handleFieldChange("cover_color_hex", e.target.value)
                   }
@@ -112,7 +123,7 @@ export default function ProductInfoForm({
                 onChange={(e) =>
                   handleFieldChange("cover_color_hex", e.target.value)
                 }
-                placeholder="#000000"
+                placeholder="Color hex display"
                 className="font-mono"
                 readOnly
               />
