@@ -36,9 +36,11 @@ const CertificateFormDialog = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState<CertificateFormData>({
     name: "",
+    name_id: "",
     info: "",
     is_important_info: false,
     label_name: "",
+    label_name_id: "",
     image: "",
     description_en: "",
     description_id: "",
@@ -53,9 +55,11 @@ const CertificateFormDialog = ({
     if (certificate) {
       setFormData({
         name: certificate.name || "",
+        name_id: certificate.name_id || "",
         info: certificate.info || "",
         is_important_info: certificate.is_important_info || false,
         label_name: certificate.label_name || "",
+        label_name_id: certificate.label_name_id || "",
         image: certificate.image || "",
         description_en: certificate.description_en || "",
         description_id: certificate.description_id || "",
@@ -66,9 +70,11 @@ const CertificateFormDialog = ({
     } else {
       setFormData({
         name: "",
+        name_id: "",
         info: "",
         is_important_info: false,
         label_name: "",
+        label_name_id: "",
         image: "",
         description_en: "",
         description_id: "",
@@ -186,9 +192,9 @@ const CertificateFormDialog = ({
               </div>
             </div>
 
-            {/* Name */}
+            {/* Name (English) */}
             <div className="space-y-2">
-              <Label htmlFor="name">Name *</Label>
+              <Label htmlFor="name">Name (English) *</Label>
               <Input
                 id="name"
                 value={formData.name}
@@ -207,12 +213,30 @@ const CertificateFormDialog = ({
               )}
             </div>
 
-            {/* Label Name */}
+            {/* Name (Indonesian) */}
             <div className="space-y-2">
-              <Label htmlFor="label_name">Label Name</Label>
+              <Label htmlFor="name_id">Name (Indonesian)</Label>
+              <Input
+                id="name_id"
+                value={formData.name_id || ""}
+                onChange={(e) =>
+                  setFormData({ ...formData, name_id: e.target.value })
+                }
+                placeholder="e.g., ISO 9001:2015"
+                maxLength={200}
+                disabled={isSubmitting}
+              />
+              <p className="text-xs text-muted-foreground">
+                {formData.name_id ? formData.name_id.length : 0}/200
+              </p>
+            </div>
+
+            {/* Label Name (English) */}
+            <div className="space-y-2">
+              <Label htmlFor="label_name">Label Name (English)</Label>
               <Input
                 id="label_name"
-                value={formData.label_name}
+                value={formData.label_name || ""}
                 onChange={(e) =>
                   setFormData({ ...formData, label_name: e.target.value })
                 }
@@ -222,6 +246,27 @@ const CertificateFormDialog = ({
               />
               <p className="text-xs text-muted-foreground">
                 {formData.label_name ? formData.label_name.length : 0}/200
+              </p>
+              <p className="text-xs text-muted-foreground">
+                The label will be shown in the product page
+              </p>
+            </div>
+
+            {/* Label Name (Indonesian) */}
+            <div className="space-y-2">
+              <Label htmlFor="label_name_id">Label Name (Indonesian)</Label>
+              <Input
+                id="label_name_id"
+                value={formData.label_name_id || ""}
+                onChange={(e) =>
+                  setFormData({ ...formData, label_name_id: e.target.value })
+                }
+                placeholder="e.g., Sertifikat"
+                maxLength={200}
+                disabled={isSubmitting}
+              />
+              <p className="text-xs text-muted-foreground">
+                {formData.label_name_id ? formData.label_name_id.length : 0}/200
               </p>
               <p className="text-xs text-muted-foreground">
                 The label will be shown in the product page

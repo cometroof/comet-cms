@@ -93,7 +93,9 @@ export type Database = {
           info: string;
           is_important_info: boolean | null;
           label_name: string | null;
+          label_name_id: string | null;
           name: string;
+          name_id: string | null;
           order: number | null;
           updated_at: string | null;
         };
@@ -108,7 +110,9 @@ export type Database = {
           info: string;
           is_important_info?: boolean | null;
           label_name?: string | null;
+          label_name_id?: string | null;
           name: string;
+          name_id?: string | null;
           order?: number | null;
           updated_at?: string | null;
         };
@@ -123,7 +127,9 @@ export type Database = {
           info?: string;
           is_important_info?: boolean | null;
           label_name?: string | null;
+          label_name_id?: string | null;
           name?: string;
+          name_id?: string | null;
           order?: number | null;
           updated_at?: string | null;
         };
