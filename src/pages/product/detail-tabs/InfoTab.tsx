@@ -54,6 +54,8 @@ export default function InfoTab({
         updateData.description_id = formUpdates.description_id;
       if (formUpdates.brand_image !== undefined)
         updateData.brand_image = formUpdates.brand_image;
+      if (formUpdates.product_main_image !== undefined)
+        updateData.product_main_image = formUpdates.product_main_image;
       if (formUpdates.catalogue !== undefined)
         updateData.catalogue = formUpdates.catalogue;
       if (formUpdates.banner_url !== undefined)

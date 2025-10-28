@@ -1,11 +1,6 @@
 // Product Management Types
 // These types match the database schema and include additional types for the UI
-import {
-  Database,
-  type Tables,
-  type TablesInsert,
-  type TablesUpdate,
-} from "@/lib/supabase-types";
+import { Database, type Tables } from "@/lib/supabase-types";
 
 // Use Database types directly
 export type Product = Tables<"product">;

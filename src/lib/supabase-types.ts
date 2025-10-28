@@ -238,6 +238,7 @@ export type Database = {
           is_under_product: boolean;
           name: string;
           order: number;
+          product_main_image: string | null;
           slug: string | null;
           suitables: Json | null;
           title: string | null;
@@ -270,6 +271,7 @@ export type Database = {
           is_under_product?: boolean;
           name: string;
           order?: number;
+          product_main_image?: string | null;
           slug?: string | null;
           suitables?: Json | null;
           title?: string | null;
@@ -302,6 +304,7 @@ export type Database = {
           is_under_product?: boolean;
           name?: string;
           order?: number;
+          product_main_image?: string | null;
           slug?: string | null;
           suitables?: Json | null;
           title?: string | null;

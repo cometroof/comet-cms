@@ -18,6 +18,7 @@ export default function BrandImageSelector({
 }: BrandImageSelectorProps) {
   const [brandImageDialogOpen, setBrandImageDialogOpen] = useState(false);
   const [bannerDialogOpen, setBannerDialogOpen] = useState(false);
+  const [mainImageDialogOpen, setMainImageDialogOpen] = useState(false);
 
   const handleBrandImageSelect = (imageUrl: string) => {
     onProductChange({ brand_image: imageUrl });
@@ -36,6 +37,15 @@ export default function BrandImageSelector({
   const handleBannerRemove = () => {
     onProductChange({ banner_url: null });
   };
+
+  const handleMainImageSelect = (imageUrl: string) => {
+    onProductChange({ product_main_image: imageUrl });
+    setMainImageDialogOpen(false);
+  };
+
+  const handleMainImageRemove = () => {
+    onProductChange({ product_main_image: null });
+  };
   return (
     <Card>
       <CardHeader>
@@ -45,6 +55,55 @@ export default function BrandImageSelector({
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
+        {/* Product Main Image (Thumbnail) */}
+        <div className="space-y-3">
+          <Label className="text-sm font-medium">
+            Product Main Image (Thumbnail)
+          </Label>
+          {product?.product_main_image ? (
+            <>
+              <div className="w-full aspect-video overflow-hidden rounded-lg border bg-muted/20 flex items-center justify-center group relative">
+                <img
+                  src={product.product_main_image}
+                  alt={`${product.name} main`}
+                  className="w-full h-full object-contain"
+                />
+                <button
+                  onClick={handleMainImageRemove}
+                  className="absolute top-2 right-2 p-2 bg-black/50 hover:bg-black/70 rounded-md opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <X className="h-4 w-4 text-white" />
+                </button>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setMainImageDialogOpen(true)}
+                className="w-full flex items-center gap-2"
+              >
+                <Upload className="h-4 w-4" />
+                Change Main Image
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setMainImageDialogOpen(true)}
+                className="w-full flex items-center gap-2"
+              >
+                <Upload className="h-4 w-4" />
+                Select Main Image
+              </Button>
+            </>
+          )}
+        </div>
+
+        <Separator />
+
         {/* Brand Image */}
         <div className="space-y-3">
           <Label className="text-sm font-medium">Brand Image</Label>
@@ -147,6 +206,15 @@ export default function BrandImageSelector({
       </CardContent>
 
       {/* Image Selector Dialogs */}
+      <ImageSelectorDialog
+        open={mainImageDialogOpen}
+        onOpenChange={setMainImageDialogOpen}
+        onSelect={handleMainImageSelect}
+        title="Select Product Main Image"
+        multiple={false}
+        multipleSelection={false}
+        initialSelection={product?.product_main_image || ""}
+      />
       <ImageSelectorDialog
         open={brandImageDialogOpen}
         onOpenChange={setBrandImageDialogOpen}
