@@ -172,11 +172,20 @@ const ProductsTable = ({
   // Reorder mutation
   const reorderMutation = useMutation({
     mutationFn: async (orderedProducts: ProductWithRelations[]) => {
-      // Update order for each product
-      const updatePromises = orderedProducts.map((product, index) =>
-        productService.updateProductOrder(product.id, index),
-      );
-      await Promise.all(updatePromises);
+      // Prepare batch update data
+      const productsToUpdate = orderedProducts.map((product, index) => ({
+        id: product.id,
+        order: index,
+      }));
+
+      // Use batch update to avoid unique constraint conflicts
+      const success =
+        await productService.batchUpdateProductOrders(productsToUpdate);
+
+      if (!success) {
+        throw new Error("Failed to update product orders");
+      }
+
       return orderedProducts;
     },
     onMutate: async (orderedProducts) => {
@@ -215,12 +224,48 @@ const ProductsTable = ({
   const onDragEnd = (result: DropResult) => {
     if (!result.destination) return;
 
-    const items = Array.from(filteredProducts);
-    const [reorderedItem] = items.splice(result.source.index, 1);
-    items.splice(result.destination.index, 0, reorderedItem);
+    console.log("Drag ended:", result);
 
-    // Call the mutation to update the order
-    reorderMutation.mutate(items);
+    // Work with the complete products list, not just filtered
+    const allProducts = Array.from(products);
+
+    // Find the dragged item from filtered products
+    const draggedItem = filteredProducts[result.source.index];
+
+    // Find its current position in the full products array
+    const currentIndex = allProducts.findIndex((p) => p.id === draggedItem.id);
+
+    // Remove it from the full array
+    allProducts.splice(currentIndex, 1);
+
+    // Find where to insert it based on the destination in filtered products
+    let newIndex: number;
+    if (result.destination.index === 0) {
+      // Moving to the top of filtered list
+      newIndex = 0;
+    } else if (result.destination.index >= filteredProducts.length - 1) {
+      // Moving to the bottom of filtered list or beyond
+      const lastFilteredItem = filteredProducts[filteredProducts.length - 1];
+      const lastFilteredIndex = allProducts.findIndex(
+        (p) => p.id === lastFilteredItem.id,
+      );
+      newIndex = lastFilteredIndex + 1;
+    } else {
+      // Moving somewhere in the middle
+      const destinationItem = filteredProducts[result.destination.index];
+      newIndex = allProducts.findIndex((p) => p.id === destinationItem.id);
+
+      // Adjust if we're moving down in the list
+      if (result.destination.index > result.source.index) {
+        newIndex += 1;
+      }
+    }
+
+    // Insert at the new position
+    allProducts.splice(newIndex, 0, draggedItem);
+
+    // Call the mutation to update the order with the complete reordered list
+    reorderMutation.mutate(allProducts);
   };
 
   const getProductImage = (product: ProductWithRelations) => {
@@ -349,7 +394,7 @@ const ProductsTable = ({
                           {filteredProducts.map((product, index) => (
                             <Draggable
                               key={product.id}
-                              draggableId={product.id.toString()}
+                              draggableId={product.id}
                               index={index}
                             >
                               {(provided, snapshot) => (

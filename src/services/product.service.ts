@@ -936,6 +936,45 @@ export const updateProductOrder = async (
 };
 
 /**
+ * Batch update product orders
+ * Uses a two-step approach to avoid unique constraint conflicts:
+ * 1. First, set all orders to negative values (temporary)
+ * 2. Then, set them to the correct positive values
+ */
+export const batchUpdateProductOrders = async (
+  products: { id: string; order: number }[],
+): Promise<boolean> => {
+  try {
+    const timestamp = new Date().toISOString();
+
+    // Step 1: Set all products to negative temporary values to avoid conflicts
+    const tempUpdates = products.map((product, index) =>
+      supabase
+        .from(PRODUCT_TABLE)
+        .update({ order: -(index + 1), updated_at: timestamp })
+        .eq("id", product.id),
+    );
+
+    await Promise.all(tempUpdates);
+
+    // Step 2: Set all products to their final order values
+    const finalUpdates = products.map((product) =>
+      supabase
+        .from(PRODUCT_TABLE)
+        .update({ order: product.order, updated_at: timestamp })
+        .eq("id", product.id),
+    );
+
+    await Promise.all(finalUpdates);
+
+    return true;
+  } catch (error) {
+    console.error("Error batch updating product orders:", error);
+    return false;
+  }
+};
+
+/**
  * Update product highlight status
  * Ensures only one product can be highlighted at a time
  */
