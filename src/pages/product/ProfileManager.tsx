@@ -129,6 +129,13 @@ const itemFormSchema = z.object({
   image: z.string().min(1, "Image is required"),
 });
 
+// Category form validation schema
+const categoryFormSchema = z.object({
+  name: z.string().min(1, "Category name is required"),
+  subtitle: z.string().optional(),
+  product_profile_id: z.string(),
+});
+
 interface ProfileManagerProps {
   productId: string;
   product: Product;
@@ -146,6 +153,8 @@ interface ProfileCardProps {
   ) => void;
   onAddItemFromCategory: (profile: ProductProfile, categoryId: string) => void;
   onEditCategory: (categoryId: string) => void;
+  onAddCategory: (profile: ProductProfile) => void;
+  onAddItemDirect: (profile: ProductProfile) => void;
 }
 
 const ProfileCard = ({
@@ -155,6 +164,8 @@ const ProfileCard = ({
   onManageCertsBadges,
   onAddItemFromCategory,
   onEditCategory,
+  onAddCategory,
+  onAddItemDirect,
 }: ProfileCardProps) => {
   const { profileCategories, items, profileCertificates, profileBadges } =
     useProductQuery();
@@ -314,13 +325,39 @@ const ProfileCard = ({
           </div>
         </div>
 
-        {/* Categories as Cards */}
-        {profileCats.length > 0 && (
-          <div className="space-y-2">
+        {/* Categories Section */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
             <h4 className="text-sm font-semibold flex items-center gap-2">
               <Folder className="h-4 w-4" />
               Categories ({profileCats.length})
             </h4>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onAddCategory(profile)}
+            >
+              <Plus className="mr-1 h-3 w-3" />
+              Add Category
+            </Button>
+          </div>
+
+          {profileCats.length === 0 ? (
+            <div className="border rounded-lg p-4 text-center">
+              <p className="text-sm text-muted-foreground mb-3">
+                No categories yet. Add a category to organize items, or add
+                items directly to this profile.
+              </p>
+              <Button
+                variant="default"
+                size="sm"
+                onClick={() => onAddItemDirect(profile)}
+              >
+                <Plus className="mr-1 h-3 w-3" />
+                Add Item
+              </Button>
+            </div>
+          ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
               {profileCats.map((category) => {
                 const itemsCategorized = findItemsByCategory(category.id);
@@ -445,8 +482,8 @@ const ProfileCard = ({
                 );
               })}
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </CardContent>
     </Card>
   );
@@ -488,6 +525,9 @@ const ProfileManager = ({
     null,
   );
   const [showImageSelector, setShowImageSelector] = useState(false);
+  const [showCategoryForm, setShowCategoryForm] = useState(false);
+  const [categoryFormProfile, setCategoryFormProfile] =
+    useState<ProductProfile | null>(null);
 
   // Create form
   const form = useForm<ProfileFormData>({
@@ -521,6 +561,16 @@ const ProfileManager = ({
       weight: "",
       length: "",
       image: "",
+    },
+  });
+
+  // Category form
+  const categoryForm = useForm<z.infer<typeof categoryFormSchema>>({
+    resolver: zodResolver(categoryFormSchema),
+    defaultValues: {
+      name: "",
+      subtitle: "",
+      product_profile_id: "",
     },
   });
 
@@ -678,6 +728,39 @@ const ProfileManager = ({
     toast.info("Edit category functionality to be implemented");
   };
 
+  const handleAddCategory = (profile: ProductContextProfile) => {
+    const typedProfile = profile as unknown as ProductProfile;
+    setCategoryFormProfile(typedProfile);
+
+    // Auto-fill form with profile
+    categoryForm.reset({
+      name: "",
+      subtitle: "",
+      product_profile_id: typedProfile.id,
+    });
+
+    setShowCategoryForm(true);
+  };
+
+  const handleAddItemDirect = (profile: ProductContextProfile) => {
+    const typedProfile = profile as unknown as ProductProfile;
+    setItemFormProfile(typedProfile);
+    setItemFormCategoryId(null);
+
+    // Auto-fill form with only profile, no category
+    itemForm.reset({
+      product_id: productId,
+      product_profile_id: typedProfile.id,
+      product_category_id: null,
+      name: "",
+      weight: "",
+      length: "",
+      image: "",
+    });
+
+    setShowItemForm(true);
+  };
+
   const handleImageSelect = (image: string) => {
     itemForm.setValue("image", image);
     setShowImageSelector(false);
@@ -709,6 +792,35 @@ const ProfileManager = ({
     } catch (error) {
       console.error("Error creating item:", error);
       toast.error("An error occurred while creating the item");
+    }
+  };
+
+  const onCategorySubmit = async (data: z.infer<typeof categoryFormSchema>) => {
+    try {
+      const categoryData: Omit<
+        ProductCategory,
+        "id" | "created_at" | "updated_at"
+      > = {
+        name: data.name,
+        subtitle: data.subtitle || null,
+        product_id: null,
+        product_profile_id: data.product_profile_id,
+      };
+
+      const created = await productService.createCategory(categoryData);
+      if (created) {
+        toast.success("Category created successfully");
+        queryClient.invalidateQueries({
+          queryKey: ["profile-categories-map", productId],
+        });
+        if (onUpdate) onUpdate();
+        setShowCategoryForm(false);
+      } else {
+        toast.error("Failed to create category");
+      }
+    } catch (error) {
+      console.error("Error creating category:", error);
+      toast.error("An error occurred while creating the category");
     }
   };
 
@@ -921,6 +1033,8 @@ const ProfileManager = ({
                   onManageCertsBadges={handleManageCertificatesBadges}
                   onAddItemFromCategory={handleAddItemFromCategory}
                   onEditCategory={handleEditCategory}
+                  onAddCategory={handleAddCategory}
+                  onAddItemDirect={handleAddItemDirect}
                 />
               ))}
           </div>
@@ -1239,6 +1353,102 @@ const ProfileManager = ({
           onSelect={handleImageSelect}
         />
       )}
+
+      {/* Add Category Form Dialog */}
+      <Dialog open={showCategoryForm} onOpenChange={setShowCategoryForm}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Add New Category</DialogTitle>
+            <DialogDescription>
+              Create a new category for{" "}
+              {categoryFormProfile?.name || "this profile"}
+            </DialogDescription>
+          </DialogHeader>
+
+          <Form {...categoryForm}>
+            <form
+              onSubmit={categoryForm.handleSubmit(onCategorySubmit)}
+              className="space-y-4"
+            >
+              <FormField
+                control={categoryForm.control}
+                name="product_profile_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Profile *</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value}
+                      disabled
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a profile" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {profiles.map((profile) => (
+                          <SelectItem key={profile.id} value={profile.id}>
+                            {profile.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormDescription>
+                      Auto-selected from the profile
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={categoryForm.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Name *</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter category name" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={categoryForm.control}
+                name="subtitle"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Subtitle</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Enter category subtitle (optional)"
+                        {...field}
+                        value={field.value || ""}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      A short description or subtitle for this category
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <DialogFooter className="mt-6">
+                <DialogClose asChild>
+                  <Button type="button" variant="outline">
+                    Cancel
+                  </Button>
+                </DialogClose>
+                <Button type="submit">Create Category</Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };
