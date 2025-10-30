@@ -14,8 +14,9 @@ import {
 } from "@/contexts/ProductsQueryContext";
 
 const ProductsContent = () => {
-  const { id } = useParams();
-  const [showProductForm, setShowProductForm] = useState<boolean>(false);
+  const [showProductForm, setShowProductForm] = useState<boolean | number>(
+    false,
+  );
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const navigate = useNavigate();
 
@@ -27,7 +28,8 @@ const ProductsContent = () => {
 
   const handleAddProduct = () => {
     setSelectedProduct(null);
-    setShowProductForm(true);
+    const lastOrder = Math.max(...products.map((p) => p.order));
+    setShowProductForm(lastOrder);
   };
 
   const handleEditProduct = (product: Product) => {
@@ -90,9 +92,12 @@ const ProductsContent = () => {
         {showProductForm && (
           <ProductForm
             product={selectedProduct}
-            isOpen={showProductForm}
+            isOpen={showProductForm === true || showProductForm > 0}
             onClose={handleCloseForm}
             onSave={handleSaveProduct}
+            lastOrder={
+              typeof showProductForm === "number" ? showProductForm : 0
+            }
           />
         )}
       </div>

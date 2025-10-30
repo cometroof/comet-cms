@@ -117,11 +117,12 @@ export const getProductById = async (
  * Create a new product
  */
 export const createProduct = async (
-  productData: Omit<Product, "id" | "created_at" | "updated_at">,
+  // productData: Omit<Product, "id" | "created_at" | "updated_at">,
+  productData: Partial<Product>,
 ): Promise<Product | null> => {
   const { data, error } = await supabase
     .from(PRODUCT_TABLE)
-    .insert([productData])
+    .insert([{ ...productData, name: productData.name }])
     .select()
     .single();
 

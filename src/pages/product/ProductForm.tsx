@@ -57,6 +57,7 @@ interface ProductFormProps {
   onClose: () => void;
   onSave: (product: Product) => void;
   product?: Product | null;
+  lastOrder?: number;
 }
 
 const ProductForm = ({
@@ -64,6 +65,7 @@ const ProductForm = ({
   onClose,
   onSave,
   product,
+  lastOrder,
 }: ProductFormProps) => {
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("basic");
@@ -162,6 +164,7 @@ const ProductForm = ({
             data.suitables && data.suitables.length > 0 ? data.suitables : null,
           is_highlight: data.is_highlight || false,
           brand_image: data.brand_image || null,
+          order: lastOrder ? lastOrder + 1 : 9999,
         });
 
         if (savedProduct) {
