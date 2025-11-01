@@ -194,6 +194,7 @@ const Image = (props: RenderElementProps) => {
             selected && focused && "ring-2 ring-primary",
           )}
           alt=""
+          loading="lazy"
         />
         {selected && focused && (
           <Button
