@@ -57,7 +57,10 @@ interface RichTextEditorProps {
 }
 
 // Helper functions
-const isBlockActive = (editor: BaseEditor & ReactEditor, format: string): boolean => {
+const isBlockActive = (
+  editor: BaseEditor & ReactEditor,
+  format: string,
+): boolean => {
   const { selection } = editor;
   if (!selection) return false;
 
@@ -68,18 +71,24 @@ const isBlockActive = (editor: BaseEditor & ReactEditor, format: string): boolea
         !Editor.isEditor(n) &&
         SlateElement.isElement(n) &&
         (n as any).type === format,
-    })
+    }),
   );
 
   return !!match;
 };
 
-const isMarkActive = (editor: BaseEditor & ReactEditor, format: string): boolean => {
+const isMarkActive = (
+  editor: BaseEditor & ReactEditor,
+  format: string,
+): boolean => {
   const marks = Editor.marks(editor);
   return marks ? (marks as any)[format] === true : false;
 };
 
-const toggleBlock = (editor: BaseEditor & ReactEditor, format: string): void => {
+const toggleBlock = (
+  editor: BaseEditor & ReactEditor,
+  format: string,
+): void => {
   const isActive = isBlockActive(editor, format);
   const isList = format === "bulleted-list" || format === "numbered-list";
 
@@ -87,8 +96,8 @@ const toggleBlock = (editor: BaseEditor & ReactEditor, format: string): void => 
     match: (n) =>
       !Editor.isEditor(n) &&
       SlateElement.isElement(n) &&
-      ((n as any).type === "bulleted-list" || 
-       (n as any).type === "numbered-list"),
+      ((n as any).type === "bulleted-list" ||
+        (n as any).type === "numbered-list"),
     split: true,
   });
 
@@ -101,10 +110,7 @@ const toggleBlock = (editor: BaseEditor & ReactEditor, format: string): void => 
     newType = format;
   }
 
-  Transforms.setNodes(
-    editor,
-    { type: newType } as any
-  );
+  Transforms.setNodes(editor, { type: newType } as any);
 
   if (!isActive && isList) {
     const block: any = { type: format, children: [] };
@@ -122,14 +128,9 @@ const toggleMark = (editor: BaseEditor & ReactEditor, format: string): void => {
 };
 
 const toggleAlign = (editor: any, align: string): void => {
-  Transforms.setNodes(
-    editor,
-    { align } as any,
-    {
-      match: (n) =>
-        !Editor.isEditor(n) && SlateElement.isElement(n),
-    }
-  );
+  Transforms.setNodes(editor, { align } as any, {
+    match: (n) => !Editor.isEditor(n) && SlateElement.isElement(n),
+  });
 };
 
 const insertLink = (editor: any, url: string): void => {
@@ -172,7 +173,7 @@ const Image = (props: RenderElementProps) => {
   const editor = useSlateStatic() as any;
   const selected = useSelected();
   const focused = useFocused();
-  
+
   const handleDelete = () => {
     try {
       const path = (ReactEditor as any).findPath(editor, element);
@@ -185,15 +186,12 @@ const Image = (props: RenderElementProps) => {
   return (
     <div {...attributes}>
       {children}
-      <div
-        contentEditable={false}
-        className="relative inline-block"
-      >
+      <div contentEditable={false} className="relative inline-block">
         <img
           src={(element as any).url}
           className={cn(
             "block max-w-full max-h-80 rounded",
-            selected && focused && "ring-2 ring-primary"
+            selected && focused && "ring-2 ring-primary",
           )}
           alt=""
         />
@@ -215,26 +213,68 @@ const Image = (props: RenderElementProps) => {
 // Element renderer
 const Element = (props: RenderElementProps) => {
   const { attributes, children, element } = props;
-  const style = (element as any).align ? { textAlign: (element as any).align } : undefined;
+  const style = (element as any).align
+    ? { textAlign: (element as any).align }
+    : undefined;
 
   switch ((element as any).type) {
     case "paragraph":
-      return <p style={style} {...attributes}>{children}</p>;
+      return (
+        <p style={style} {...attributes}>
+          {children}
+        </p>
+      );
     case "heading-one":
-      return <h1 style={style} className="text-3xl font-bold mt-6 mb-4" {...attributes}>{children}</h1>;
+      return (
+        <h1
+          style={style}
+          className="text-3xl font-bold mt-6 mb-4"
+          {...attributes}
+        >
+          {children}
+        </h1>
+      );
     case "heading-two":
-      return <h2 style={style} className="text-2xl font-bold mt-5 mb-3" {...attributes}>{children}</h2>;
+      return (
+        <h2
+          style={style}
+          className="text-2xl font-bold mt-5 mb-3"
+          {...attributes}
+        >
+          {children}
+        </h2>
+      );
     case "heading-three":
-      return <h3 style={style} className="text-xl font-bold mt-4 mb-2" {...attributes}>{children}</h3>;
+      return (
+        <h3
+          style={style}
+          className="text-xl font-bold mt-4 mb-2"
+          {...attributes}
+        >
+          {children}
+        </h3>
+      );
     case "bulleted-list":
-      return <ul className="list-disc pl-10 my-4" {...attributes}>{children}</ul>;
+      return (
+        <ul className="list-disc pl-10 my-4" {...attributes}>
+          {children}
+        </ul>
+      );
     case "numbered-list":
-      return <ol className="list-decimal pl-10 my-4" {...attributes}>{children}</ol>;
+      return (
+        <ol className="list-decimal pl-10 my-4" {...attributes}>
+          {children}
+        </ol>
+      );
     case "list-item":
       return <li {...attributes}>{children}</li>;
     case "link":
       return (
-        <a href={(element as any).url} className="text-primary hover:underline" {...attributes}>
+        <a
+          href={(element as any).url}
+          className="text-primary hover:underline"
+          {...attributes}
+        >
           {children}
         </a>
       );
@@ -266,10 +306,10 @@ const ToolbarButton = ({
     const [match] = Array.from(
       Editor.nodes(editor, {
         match: (n) =>
-          !Editor.isEditor(n) && 
-          SlateElement.isElement(n) && 
+          !Editor.isEditor(n) &&
+          SlateElement.isElement(n) &&
           (n as any).align === format,
-      })
+      }),
     );
     isActive = !!match;
   } else if (isBlock) {
@@ -284,10 +324,7 @@ const ToolbarButton = ({
       variant="ghost"
       size="icon"
       onClick={onClick}
-      className={cn(
-        "h-8 w-8",
-        isActive && "bg-accent"
-      )}
+      className={cn("h-8 w-8", isActive && "bg-accent")}
     >
       {icon}
     </Button>
@@ -314,14 +351,20 @@ const deserialize = (html: string): Descendant[] => {
 
     const element = node as HTMLElement;
     let children = Array.from(element.childNodes).flatMap(convertDOMNode);
-    
+
     if (children.length === 0) {
       children = [{ text: "" }];
     }
 
     switch (element.nodeName.toLowerCase()) {
       case "p":
-        return [{ type: "paragraph", align: element.style.textAlign || "left", children }];
+        return [
+          {
+            type: "paragraph",
+            align: element.style.textAlign || "left",
+            children,
+          },
+        ];
       case "h1":
         return [{ type: "heading-one", children }];
       case "h2":
@@ -335,76 +378,96 @@ const deserialize = (html: string): Descendant[] => {
       case "li":
         return [{ type: "list-item", children }];
       case "a":
-        return [{ type: "link", url: element.getAttribute("href") || "", children }];
+        return [
+          { type: "link", url: element.getAttribute("href") || "", children },
+        ];
       case "img":
-        return [{ type: "image", url: element.getAttribute("src") || "", children: [{ text: "" }] }];
+        return [
+          {
+            type: "image",
+            url: element.getAttribute("src") || "",
+            children: [{ text: "" }],
+          },
+        ];
       case "strong":
       case "b":
-        return children.map((child: any) => (child.text !== undefined ? { ...child, bold: true } : child));
+        return children.map((child: any) =>
+          child.text !== undefined ? { ...child, bold: true } : child,
+        );
       case "em":
       case "i":
-        return children.map((child: any) => (child.text !== undefined ? { ...child, italic: true } : child));
+        return children.map((child: any) =>
+          child.text !== undefined ? { ...child, italic: true } : child,
+        );
       default:
         return children;
     }
   };
 
   const result = Array.from(doc.body.childNodes).flatMap(convertDOMNode);
-  return result.length > 0 ? result : [{ type: "paragraph", children: [{ text: "" }] } as any];
+  return result.length > 0
+    ? result
+    : [{ type: "paragraph", children: [{ text: "" }] } as any];
 };
 
 // Serialize Slate to HTML
 const serialize = (nodes: Descendant[]): string => {
-  return nodes.map((node) => {
-    if (Text.isText(node)) {
-      let text = (node as any).text;
-      if ((node as any).bold) text = `<strong>${text}</strong>`;
-      if ((node as any).italic) text = `<em>${text}</em>`;
-      return text;
-    }
+  return nodes
+    .map((node) => {
+      if (Text.isText(node)) {
+        let text = (node as any).text;
+        if ((node as any).bold) text = `<strong>${text}</strong>`;
+        if ((node as any).italic) text = `<em>${text}</em>`;
+        return text;
+      }
 
-    const element = node as any;
-    const children = element.children ? serialize(element.children) : "";
+      const element = node as any;
+      const children = element.children ? serialize(element.children) : "";
 
-    switch (element.type) {
-      case "paragraph":
-        return `<p style="text-align: ${element.align || "left"}">${children}</p>`;
-      case "heading-one":
-        return `<h1>${children}</h1>`;
-      case "heading-two":
-        return `<h2>${children}</h2>`;
-      case "heading-three":
-        return `<h3>${children}</h3>`;
-      case "bulleted-list":
-        return `<ul>${children}</ul>`;
-      case "numbered-list":
-        return `<ol>${children}</ol>`;
-      case "list-item":
-        return `<li>${children}</li>`;
-      case "link":
-        return `<a href="${element.url}">${children}</a>`;
-      case "image":
-        return `<img src="${element.url}" />`;
-      default:
-        return children;
-    }
-  }).join("");
+      switch (element.type) {
+        case "paragraph":
+          return `<p style="text-align: ${element.align || "left"}">${children}</p>`;
+        case "heading-one":
+          return `<h1>${children}</h1>`;
+        case "heading-two":
+          return `<h2>${children}</h2>`;
+        case "heading-three":
+          return `<h3>${children}</h3>`;
+        case "bulleted-list":
+          return `<ul>${children}</ul>`;
+        case "numbered-list":
+          return `<ol>${children}</ol>`;
+        case "list-item":
+          return `<li>${children}</li>`;
+        case "link":
+          return `<a href="${element.url}">${children}</a>`;
+        case "image":
+          return `<img src="${element.url}" loading="lazy" />`;
+        default:
+          return children;
+      }
+    })
+    .join("");
 };
 
-export const RichTextEditor = ({ value, onChange, className }: RichTextEditorProps) => {
+export const RichTextEditor = ({
+  value,
+  onChange,
+  className,
+}: RichTextEditorProps) => {
   const editor = useMemo(() => withHistory(withReact(createEditor())), []);
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
   const [linkUrl, setLinkUrl] = useState("");
   const [imageDialogOpen, setImageDialogOpen] = useState(false);
 
   const initialValue = useMemo(() => deserialize(value), []);
-  
+
   const handleChange = useCallback(
     (newValue: Descendant[]) => {
       const html = serialize(newValue);
       onChange(html);
     },
-    [onChange]
+    [onChange],
   );
 
   const handleInsertLink = () => {
@@ -422,7 +485,11 @@ export const RichTextEditor = ({ value, onChange, className }: RichTextEditorPro
 
   return (
     <div className={cn("border rounded-lg", className)}>
-      <Slate editor={editor} initialValue={initialValue} onChange={handleChange}>
+      <Slate
+        editor={editor}
+        initialValue={initialValue}
+        onChange={handleChange}
+      >
         <div className="border-b p-2 flex flex-wrap gap-1 bg-muted/30">
           <ToolbarButton
             format="bold"
@@ -434,9 +501,9 @@ export const RichTextEditor = ({ value, onChange, className }: RichTextEditorPro
             icon={<Italic className="w-4 h-4" />}
             onClick={() => toggleMark(editor, "italic")}
           />
-          
+
           <div className="w-px bg-border mx-1" />
-          
+
           <ToolbarButton
             format="heading-one"
             icon={<Heading1 className="w-4 h-4" />}
@@ -461,9 +528,9 @@ export const RichTextEditor = ({ value, onChange, className }: RichTextEditorPro
             isBlock
             onClick={() => toggleBlock(editor, "paragraph")}
           />
-          
+
           <div className="w-px bg-border mx-1" />
-          
+
           <ToolbarButton
             format="bulleted-list"
             icon={<List className="w-4 h-4" />}
@@ -476,9 +543,9 @@ export const RichTextEditor = ({ value, onChange, className }: RichTextEditorPro
             isBlock
             onClick={() => toggleBlock(editor, "numbered-list")}
           />
-          
+
           <div className="w-px bg-border mx-1" />
-          
+
           <ToolbarButton
             format="left"
             icon={<AlignLeft className="w-4 h-4" />}
@@ -497,9 +564,9 @@ export const RichTextEditor = ({ value, onChange, className }: RichTextEditorPro
             isAlign
             onClick={() => toggleAlign(editor, "right")}
           />
-          
+
           <div className="w-px bg-border mx-1" />
-          
+
           <Button
             type="button"
             variant="ghost"
@@ -519,7 +586,7 @@ export const RichTextEditor = ({ value, onChange, className }: RichTextEditorPro
             <ImageIcon className="w-4 h-4" />
           </Button>
         </div>
-        
+
         <div className="p-4 min-h-[300px] max-h-[500px] overflow-y-auto">
           <Editable
             renderElement={Element}
