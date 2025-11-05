@@ -16,6 +16,7 @@ import {
   X,
   SquareChevronLeft,
   SquareChevronRight,
+  PackagePlus,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -34,9 +35,14 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
 
   const navigation = [
     { name: "Home", href: "/dashboard/home", icon: Home },
-    { name: "Projects", href: "/dashboard/projects", icon: Hammer },
-    { name: "Products", href: "/dashboard/products", icon: PackageOpen },
+    { name: "Products", href: "/dashboard/product-new", icon: PackageOpen },
+    {
+      name: "Product Add-ons",
+      href: "/dashboard/product-add-ons",
+      icon: PackagePlus,
+    },
     { name: "Files", href: "/dashboard/files", icon: Files },
+    { name: "Projects", href: "/dashboard/projects", icon: Hammer },
     { name: "Articles", href: "/dashboard/articles", icon: Newspaper },
     {
       name: "Contacts & Location",

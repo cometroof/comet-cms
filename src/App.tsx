@@ -14,6 +14,10 @@ import { ArticlesList, ArticleCreate, ArticleEdit } from "./pages/articles";
 import { NotFound } from "./pages/errors";
 import Users from "./pages/users";
 import { Products } from "./pages/product";
+import ProductListPage from "./pages/product-new";
+import ProductDetailPage from "./pages/product-new/product-detail";
+import ProfileDetailPage from "./pages/product-new/profile-detail";
+import CategoryDetailPage from "./pages/product-new/category-detail";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { ROLES } from "./pages/users/types";
 
@@ -112,7 +116,7 @@ const App = () => {
                   </ProtectedRoute>
                 }
               />
-              {/* Product Management Routes */}
+              {/* Product Management Routes (Old) */}
               <Route
                 path="/dashboard/products"
                 element={
@@ -126,6 +130,39 @@ const App = () => {
                 element={
                   <ProtectedRoute>
                     <Products />
+                  </ProtectedRoute>
+                }
+              />
+              {/* Product Management Routes (New) */}
+              <Route
+                path="/dashboard/product-new"
+                element={
+                  <ProtectedRoute>
+                    <ProductListPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/dashboard/product-new/:id"
+                element={
+                  <ProtectedRoute>
+                    <ProductDetailPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/dashboard/product-new/:id/profile/:profileId"
+                element={
+                  <ProtectedRoute>
+                    <ProfileDetailPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/dashboard/product-new/:id/profile/:profileId/category/:categoryId"
+                element={
+                  <ProtectedRoute>
+                    <CategoryDetailPage />
                   </ProtectedRoute>
                 }
               />

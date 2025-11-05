@@ -247,6 +247,7 @@ export type Database = {
           product_main_image: string | null;
           slug: string | null;
           suitables: Json | null;
+          suitables_id: Json | null;
           title: string | null;
           updated_at: string | null;
         };
@@ -280,6 +281,7 @@ export type Database = {
           product_main_image?: string | null;
           slug?: string | null;
           suitables?: Json | null;
+          suitables_id?: Json | null;
           title?: string | null;
           updated_at?: string | null;
         };
@@ -313,6 +315,7 @@ export type Database = {
           product_main_image?: string | null;
           slug?: string | null;
           suitables?: Json | null;
+          suitables_id?: Json | null;
           title?: string | null;
           updated_at?: string | null;
         };
@@ -347,6 +350,7 @@ export type Database = {
           created_at: string | null;
           id: string;
           name: string;
+          order: number | null;
           product_id: string | null;
           product_profile_id: string | null;
           subtitle: string | null;
@@ -356,6 +360,7 @@ export type Database = {
           created_at?: string | null;
           id?: string;
           name: string;
+          order?: number | null;
           product_id?: string | null;
           product_profile_id?: string | null;
           subtitle?: string | null;
@@ -365,6 +370,7 @@ export type Database = {
           created_at?: string | null;
           id?: string;
           name?: string;
+          order?: number | null;
           product_id?: string | null;
           product_profile_id?: string | null;
           subtitle?: string | null;
@@ -430,6 +436,7 @@ export type Database = {
           image: string | null;
           length: string | null;
           name: string;
+          order: number | null;
           product_category_id: string | null;
           product_id: string;
           product_profile_id: string | null;
@@ -443,6 +450,7 @@ export type Database = {
           image?: string | null;
           length?: string | null;
           name: string;
+          order?: number | null;
           product_category_id?: string | null;
           product_id: string;
           product_profile_id?: string | null;
@@ -456,6 +464,7 @@ export type Database = {
           image?: string | null;
           length?: string | null;
           name?: string;
+          order?: number | null;
           product_category_id?: string | null;
           product_id?: string;
           product_profile_id?: string | null;
@@ -560,6 +569,7 @@ export type Database = {
           id: string;
           materials: string | null;
           name: string;
+          order: number | null;
           panel_amount: number | null;
           product_id: string;
           profile_banner_url: string | null;
@@ -577,6 +587,7 @@ export type Database = {
           id?: string;
           materials?: string | null;
           name: string;
+          order?: number | null;
           panel_amount?: number | null;
           product_id: string;
           profile_banner_url?: string | null;
@@ -594,6 +605,7 @@ export type Database = {
           id?: string;
           materials?: string | null;
           name?: string;
+          order?: number | null;
           panel_amount?: number | null;
           product_id?: string;
           profile_banner_url?: string | null;
