@@ -13,11 +13,21 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { Product } from "@/pages/product/types";
 import ImageSelectorDialog from "@/components/ImageSelectorDialog";
 import FileSelectorDialog from "@/components/FileSelectorDialog/FileSelectorDialog";
-import { ImageIcon, FileText, X } from "lucide-react";
+import { ImageIcon, FileText, X, ImageUp } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 interface ProductFormDialogProps {
   product: Product | null;
@@ -185,232 +195,263 @@ const ProductFormDialog = ({
           </DialogHeader>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            {/* Name */}
-            <div className="space-y-2">
-              <Label htmlFor="name">
-                Name <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                id="name"
-                {...register("name", { required: "Name is required" })}
-                placeholder="Enter product name"
-              />
-              {errors.name && (
-                <p className="text-sm text-destructive">
-                  {errors.name.message}
-                </p>
-              )}
-            </div>
-
-            {/* Title */}
-            <div className="space-y-2">
-              <Label htmlFor="title">Title</Label>
-              <Input
-                id="title"
-                {...register("title")}
-                placeholder="Enter product title"
-              />
-            </div>
-
-            {/* Slug */}
-            <div className="space-y-2">
-              <Label htmlFor="slug">Slug</Label>
-              <Input
-                id="slug"
-                {...register("slug")}
-                placeholder="product-slug"
-              />
-            </div>
-
-            {/* Order */}
-            <div className="space-y-2">
-              <Label htmlFor="order">
-                Order <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                id="order"
-                type="number"
-                {...register("order", {
-                  required: "Order is required",
-                  valueAsNumber: true,
-                })}
-                placeholder="0"
-              />
-              {errors.order && (
-                <p className="text-sm text-destructive">
-                  {errors.order.message}
-                </p>
-              )}
-            </div>
-
-            {/* Brand Image */}
-            <div className="space-y-2">
-              <Label>Brand Image</Label>
-              <div className="flex gap-2">
-                <Input
-                  value={brandImage}
-                  onChange={(e) => setValue("brand_image", e.target.value)}
-                  placeholder="Brand image URL"
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setShowBrandImageSelector(true)}
-                >
-                  <ImageIcon className="w-4 h-4" />
-                </Button>
-              </div>
-              {brandImage && (
-                <div className="relative w-32 h-32 border rounded overflow-hidden group">
-                  <img
-                    src={brandImage}
-                    alt="Brand"
-                    className="w-full h-full object-contain"
+            {/* Basic Information Group */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Basic Information</CardTitle>
+                <CardDescription>
+                  Core product details and identification
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Name */}
+                <div className="space-y-2">
+                  <Label htmlFor="name">
+                    Name <span className="text-destructive">*</span>
+                  </Label>
+                  <Input
+                    id="name"
+                    {...register("name", { required: "Name is required" })}
+                    placeholder="Enter product name"
                   />
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    size="icon"
-                    className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100"
-                    onClick={() => setValue("brand_image", "")}
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
+                  {errors.name && (
+                    <p className="text-sm text-destructive">
+                      {errors.name.message}
+                    </p>
+                  )}
                 </div>
-              )}
-            </div>
 
-            {/* Product Main Image */}
-            <div className="space-y-2">
-              <Label>Product Main Image</Label>
-              <div className="flex gap-2">
-                <Input
-                  value={mainImage}
-                  onChange={(e) =>
-                    setValue("product_main_image", e.target.value)
-                  }
-                  placeholder="Main image URL"
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setShowMainImageSelector(true)}
-                >
-                  <ImageIcon className="w-4 h-4" />
-                </Button>
-              </div>
-              {mainImage && (
-                <div className="relative w-32 h-32 border rounded overflow-hidden group">
-                  <img
-                    src={mainImage}
-                    alt="Main"
-                    className="w-full h-full object-contain"
+                {/* Title */}
+                <div className="space-y-2">
+                  <Label htmlFor="title">Title</Label>
+                  <Input
+                    id="title"
+                    {...register("title")}
+                    placeholder="Enter product title"
                   />
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    size="icon"
-                    className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100"
-                    onClick={() => setValue("product_main_image", "")}
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
                 </div>
-              )}
-            </div>
 
-            {/* Banner Image */}
-            <div className="space-y-2">
-              <Label>Banner Image</Label>
-              <div className="flex gap-2">
-                <Input
-                  value={bannerUrl}
-                  onChange={(e) => setValue("banner_url", e.target.value)}
-                  placeholder="Banner image URL"
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setShowBannerSelector(true)}
-                >
-                  <ImageIcon className="w-4 h-4" />
-                </Button>
-              </div>
-              {bannerUrl && (
-                <div className="relative w-full h-32 border rounded overflow-hidden group">
-                  <img
-                    src={bannerUrl}
-                    alt="Banner"
-                    className="w-full h-full object-cover"
-                  />
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    size="icon"
-                    className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100"
-                    onClick={() => setValue("banner_url", "")}
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
+                {/* Slug */}
+                <div className="space-y-2">
+                  <Label htmlFor="slug">Slug</Label>
+                  {product ? (
+                    <Badge className="ml-4" variant="outline">
+                      <span className="text-primary/60">/product</span>/
+                      {product.slug}
+                    </Badge>
+                  ) : (
+                    <Input
+                      id="slug"
+                      {...register("slug")}
+                      placeholder="product-slug"
+                    />
+                  )}
                 </div>
-              )}
-            </div>
+              </CardContent>
+            </Card>
 
-            {/* Catalogue */}
-            <div className="space-y-2">
-              <Label>Catalogue (PDF)</Label>
-              <div className="flex gap-2">
-                <Input
-                  value={catalogue}
-                  onChange={(e) => setValue("catalogue", e.target.value)}
-                  placeholder="Catalogue file URL"
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setShowCatalogueSelector(true)}
-                >
-                  <FileText className="w-4 h-4" />
-                </Button>
-              </div>
-              {catalogue && (
-                <div className="flex items-center gap-2 p-2 border rounded">
-                  <FileText className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-sm truncate flex-1">{catalogue}</span>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="h-6 w-6"
-                    onClick={() => setValue("catalogue", "")}
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
+            {/* Media Group */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Media & Assets</CardTitle>
+                <CardDescription>
+                  Product images and catalogue files
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-4 gap-4">
+                  {/* Brand Image */}
+                  <div className="space-y-2 col-span-1">
+                    <Label>Brand Image</Label>
+                    <div
+                      className="relative w-32 h-32 border rounded overflow-hidden group cursor-pointer"
+                      onClick={() => setShowBrandImageSelector(true)}
+                    >
+                      {brandImage ? (
+                        <>
+                          <img
+                            src={brandImage}
+                            alt="Brand"
+                            className="size-full object-contain"
+                          />
+                          <div className="absolute left-0 top-0 size-full bg-black/40 opacity-0 flex items-center justify-center group-hover:opacity-100 pointer-events-none text-sm text-white">
+                            <ImageUp className="size-6" />
+                          </div>
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="icon"
+                            className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setValue("brand_image", "");
+                            }}
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </>
+                      ) : (
+                        <div className="size-full flex items-center justify-center bg-muted">
+                          <ImageUp className="size-8 text-muted-foreground" />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Product Main Image */}
+                  <div className="space-y-2 col-span-1">
+                    <Label>Product Main Image</Label>
+                    <div
+                      className="relative w-32 h-32 border rounded overflow-hidden group cursor-pointer"
+                      onClick={() => setShowMainImageSelector(true)}
+                    >
+                      {mainImage ? (
+                        <>
+                          <img
+                            src={mainImage}
+                            alt="Main"
+                            className="w-full h-full object-contain"
+                          />
+                          <div className="absolute left-0 top-0 size-full bg-black/40 opacity-0 flex items-center justify-center group-hover:opacity-100 pointer-events-none text-sm text-white">
+                            <ImageUp className="size-6" />
+                          </div>
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="icon"
+                            className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setValue("product_main_image", "");
+                            }}
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </>
+                      ) : (
+                        <div className="size-full flex items-center justify-center bg-muted">
+                          <ImageUp className="size-8 text-muted-foreground" />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Banner Image */}
+                  <div className="space-y-2 col-span-2">
+                    <Label>Banner Image</Label>
+                    <div
+                      className="relative w-full aspect-[2.5/1] border rounded overflow-hidden group cursor-pointer"
+                      onClick={() => setShowBannerSelector(true)}
+                    >
+                      {bannerUrl ? (
+                        <>
+                          <img
+                            src={bannerUrl}
+                            alt="Banner"
+                            className="w-full h-full object-contain"
+                          />
+                          <div className="absolute left-0 top-0 size-full bg-black/40 opacity-0 flex items-center justify-center group-hover:opacity-100 pointer-events-none text-sm text-white">
+                            <ImageUp className="size-6" />
+                          </div>
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="icon"
+                            className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setValue("banner_url", "");
+                            }}
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </>
+                      ) : (
+                        <div className="size-full flex items-center justify-center bg-muted">
+                          <ImageUp className="size-8 text-muted-foreground" />
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
-              )}
-            </div>
 
-            {/* Description English */}
-            <div className="space-y-2">
-              <Label htmlFor="description_en">Description (English)</Label>
-              <Textarea
-                id="description_en"
-                {...register("description_en")}
-                placeholder="Enter English description"
-                rows={4}
-              />
-            </div>
+                {/* Catalogue */}
+                <div className="space-y-2">
+                  <Label>Catalogue (PDF)</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      value={catalogue}
+                      onChange={(e) => setValue("catalogue", e.target.value)}
+                      placeholder="Catalogue file URL"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setShowCatalogueSelector(true)}
+                    >
+                      <FileText className="w-4 h-4" />
+                    </Button>
+                  </div>
+                  {catalogue && (
+                    <div className="flex items-center gap-2 p-2 border rounded">
+                      <FileText className="w-4 h-4 text-muted-foreground" />
+                      <span className="text-sm truncate flex-1">
+                        {catalogue}
+                      </span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6"
+                        onClick={() => setValue("catalogue", "")}
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
 
-            {/* Description Indonesian */}
-            <div className="space-y-2">
-              <Label htmlFor="description_id">Description (Indonesian)</Label>
-              <Textarea
-                id="description_id"
-                {...register("description_id")}
-                placeholder="Enter Indonesian description"
-                rows={4}
-              />
-            </div>
+            {/* Descriptions with Language Tabs */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Descriptions</CardTitle>
+                <CardDescription>
+                  Product descriptions in multiple languages
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Tabs defaultValue="en" className="w-full">
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="en">English</TabsTrigger>
+                    <TabsTrigger value="id">Indonesian</TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="en" className="space-y-4 mt-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="description_en">Description</Label>
+                      <Textarea
+                        id="description_en"
+                        {...register("description_en")}
+                        placeholder="Enter English description"
+                        rows={6}
+                      />
+                    </div>
+                  </TabsContent>
+                  <TabsContent value="id" className="space-y-4 mt-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="description_id">Deskripsi</Label>
+                      <Textarea
+                        id="description_id"
+                        {...register("description_id")}
+                        placeholder="Masukkan deskripsi bahasa Indonesia"
+                        rows={6}
+                      />
+                    </div>
+                  </TabsContent>
+                </Tabs>
+              </CardContent>
+            </Card>
 
             {/* Actions */}
             <div className="flex justify-end gap-2 pt-4">

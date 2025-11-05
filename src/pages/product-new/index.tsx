@@ -230,7 +230,6 @@ const ProductListPage = () => {
                   <TableHeader>
                     <TableRow>
                       <TableHead className="w-12"></TableHead>
-                      <TableHead>Order</TableHead>
                       <TableHead>Namesss</TableHead>
                       <TableHead>Title</TableHead>
                       <TableHead className="text-center">Profiles</TableHead>
@@ -259,9 +258,6 @@ const ProductListPage = () => {
                               >
                                 <TableCell {...provided.dragHandleProps}>
                                   <GripVertical className="w-4 h-4 text-muted-foreground cursor-grab active:cursor-grabbing" />
-                                </TableCell>
-                                <TableCell className="font-medium">
-                                  {product.order}
                                 </TableCell>
                                 <TableCell className="font-medium">
                                   {product.name}
