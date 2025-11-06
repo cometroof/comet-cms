@@ -340,11 +340,11 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                         {addons.map((addon) => (
                           <Link
                             key={addon.id}
-                            to={`/dashboard/product-add-ons/${addon.id}`}
+                            to={`/dashboard/product-add-ons/${addon.id}/edit`}
                             className={cn(
                               "block px-3 py-2 text-sm rounded-lg transition-colors",
                               location.pathname ===
-                                `/dashboard/product-add-ons/${addon.id}`
+                                `/dashboard/product-add-ons/${addon.id}/edit`
                                 ? "bg-sidebar-primary/70 text-sidebar-primary-foreground"
                                 : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-white/5",
                             )}
