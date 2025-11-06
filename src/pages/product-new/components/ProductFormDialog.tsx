@@ -26,7 +26,7 @@ import { toast } from "sonner";
 import { Product } from "@/pages/product/types";
 import ImageSelectorDialog from "@/components/ImageSelectorDialog";
 import FileSelectorDialog from "@/components/FileSelectorDialog/FileSelectorDialog";
-import { ImageIcon, FileText, X, ImageUp } from "lucide-react";
+import { ImageIcon, FileText, X, ImageUp, Plus, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 interface ProductFormDialogProps {
@@ -49,6 +49,11 @@ interface ProductFormData {
   catalogue: string;
 }
 
+interface SuitableRow {
+  en: string;
+  id: string;
+}
+
 const ProductFormDialog = ({
   product,
   isOpen,
@@ -59,6 +64,9 @@ const ProductFormDialog = ({
   const [showMainImageSelector, setShowMainImageSelector] = useState(false);
   const [showBannerSelector, setShowBannerSelector] = useState(false);
   const [showCatalogueSelector, setShowCatalogueSelector] = useState(false);
+  const [suitables, setSuitables] = useState<SuitableRow[]>([
+    { en: "", id: "" },
+  ]);
 
   const {
     register,
@@ -102,6 +110,28 @@ const ProductFormDialog = ({
         banner_url: product.banner_url || "",
         catalogue: product.catalogue || "",
       });
+
+      // Parse suitables from JSON
+      const suitablesEn = product.suitables
+        ? ((Array.isArray(product.suitables)
+            ? product.suitables
+            : []) as string[])
+        : [];
+      const suitablesId = product.suitables_id
+        ? ((Array.isArray(product.suitables_id)
+            ? product.suitables_id
+            : []) as string[])
+        : [];
+
+      const maxLength = Math.max(suitablesEn.length, suitablesId.length, 1);
+      const suitablesData: SuitableRow[] = [];
+      for (let i = 0; i < maxLength; i++) {
+        suitablesData.push({
+          en: suitablesEn[i] || "",
+          id: suitablesId[i] || "",
+        });
+      }
+      setSuitables(suitablesData);
     } else {
       reset({
         name: "",
@@ -115,11 +145,40 @@ const ProductFormDialog = ({
         banner_url: "",
         catalogue: "",
       });
+      setSuitables([{ en: "", id: "" }]);
     }
   }, [product, reset]);
 
+  const addSuitableRow = () => {
+    setSuitables([...suitables, { en: "", id: "" }]);
+  };
+
+  const removeSuitableRow = (index: number) => {
+    if (suitables.length > 1) {
+      setSuitables(suitables.filter((_, i) => i !== index));
+    }
+  };
+
+  const updateSuitableRow = (
+    index: number,
+    field: "en" | "id",
+    value: string,
+  ) => {
+    const updated = [...suitables];
+    updated[index][field] = value;
+    setSuitables(updated);
+  };
+
   const saveMutation = useMutation({
     mutationFn: async (data: ProductFormData) => {
+      // Prepare suitables data
+      const suitablesEn = suitables
+        .map((s) => s.en)
+        .filter((s) => s.trim() !== "");
+      const suitablesId = suitables
+        .map((s) => s.id)
+        .filter((s) => s.trim() !== "");
+
       if (product) {
         // Update existing product
         const { error } = await supabase
@@ -135,6 +194,8 @@ const ProductFormDialog = ({
             product_main_image: data.product_main_image || null,
             banner_url: data.banner_url || null,
             catalogue: data.catalogue || null,
+            suitables: suitablesEn.length > 0 ? suitablesEn : null,
+            suitables_id: suitablesId.length > 0 ? suitablesId : null,
             updated_at: new Date().toISOString(),
           })
           .eq("id", product.id);
@@ -153,7 +214,10 @@ const ProductFormDialog = ({
           product_main_image: data.product_main_image || null,
           banner_url: data.banner_url || null,
           catalogue: data.catalogue || null,
+          suitables: suitablesEn.length > 0 ? suitablesEn : null,
+          suitables_id: suitablesId.length > 0 ? suitablesId : null,
           is_under_product: true,
+          type: "product",
         });
 
         if (error) throw error;
@@ -450,6 +514,85 @@ const ProductFormDialog = ({
                     </div>
                   </TabsContent>
                 </Tabs>
+              </CardContent>
+            </Card>
+
+            {/* Suitables - Bilingual Side-by-side */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Suitables</CardTitle>
+                <CardDescription>
+                  List of suitable applications or use cases in both languages
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-3">
+                  {suitables.map((suitable, index) => (
+                    <div key={index} className="space-y-2">
+                      <div className="flex items-start gap-2">
+                        {/* English Input */}
+                        <div className="flex-1 space-y-1">
+                          {index === 0 && (
+                            <Label className="text-xs text-muted-foreground">
+                              English
+                            </Label>
+                          )}
+                          <Input
+                            value={suitable.en}
+                            onChange={(e) =>
+                              updateSuitableRow(index, "en", e.target.value)
+                            }
+                            placeholder="e.g., Residential buildings"
+                          />
+                        </div>
+
+                        {/* Indonesian Input */}
+                        <div className="flex-1 space-y-1">
+                          {index === 0 && (
+                            <Label className="text-xs text-muted-foreground">
+                              Indonesian
+                            </Label>
+                          )}
+                          <Input
+                            value={suitable.id}
+                            onChange={(e) =>
+                              updateSuitableRow(index, "id", e.target.value)
+                            }
+                            placeholder="e.g., Bangunan residensial"
+                          />
+                        </div>
+
+                        {/* Remove Button */}
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => removeSuitableRow(index)}
+                          disabled={suitables.length === 1}
+                          className={`${index === 0 ? "mt-5" : ""} flex-shrink-0`}
+                          title="Remove row"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                      {index < suitables.length - 1 && (
+                        <Separator className="mt-2" />
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Add Row Button */}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={addSuitableRow}
+                  className="w-full mt-2"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Suitable Item
+                </Button>
               </CardContent>
             </Card>
 

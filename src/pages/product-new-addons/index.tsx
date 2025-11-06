@@ -8,7 +8,6 @@ import {
   Plus,
   Loader2,
   Package,
-  ArrowRight,
   Edit,
   Trash2,
   GripVertical,
@@ -47,30 +46,24 @@ import {
   DropResult,
 } from "@hello-pangea/dnd";
 
-const ProductListPage = () => {
+const AddonListPage = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [productToDelete, setProductToDelete] = useState<Product | null>(null);
+  const [addonToDelete, setAddonToDelete] = useState<Product | null>(null);
 
-  // Fetch products with is_under_product = true and type = 'product'
-  const { data: products = [], isLoading } = useQuery({
-    queryKey: ["products-new"],
+  // Fetch add-ons with type = 'add-on'
+  const { data: addons = [], isLoading } = useQuery({
+    queryKey: ["addons-list"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("product")
-        .select(
-          `
-          *,
-          profiles:product_profile(count)
-        `,
-        )
-        .eq("is_under_product", true)
-        .eq("type", "product")
+        .select("*")
+        .eq("type", "add-on")
         .order("order", { ascending: true });
 
       if (error) throw error;
-      return data as (Product & { profiles: Array<{ count: number }> })[];
+      return data as Product[];
     },
   });
 
@@ -85,33 +78,34 @@ const ProductListPage = () => {
       if (errors.length > 0) throw errors[0].error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["products-new"] });
-      toast.success("Product order updated successfully");
+      queryClient.invalidateQueries({ queryKey: ["addons-list"] });
+      toast.success("Add-on order updated successfully");
     },
     onError: (error) => {
-      toast.error("Failed to update product order");
+      toast.error("Failed to update add-on order");
       console.error(error);
-      queryClient.invalidateQueries({ queryKey: ["products-new"] });
+      queryClient.invalidateQueries({ queryKey: ["addons-list"] });
     },
   });
 
   // Delete mutation
   const deleteMutation = useMutation({
-    mutationFn: async (productId: string) => {
+    mutationFn: async (addonId: string) => {
       const { error } = await supabase
         .from("product")
         .delete()
-        .eq("id", productId);
+        .eq("id", addonId);
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["products-new"] });
-      toast.success("Product deleted successfully");
+      queryClient.invalidateQueries({ queryKey: ["addons-list"] });
+      queryClient.invalidateQueries({ queryKey: ["addons-menu"] });
+      toast.success("Add-on deleted successfully");
       setDeleteDialogOpen(false);
-      setProductToDelete(null);
+      setAddonToDelete(null);
     },
     onError: (error) => {
-      toast.error("Failed to delete product");
+      toast.error("Failed to delete add-on");
       console.error(error);
     },
   });
@@ -119,7 +113,7 @@ const ProductListPage = () => {
   const handleDragEnd = (result: DropResult) => {
     if (!result.destination) return;
 
-    const items = Array.from(products);
+    const items = Array.from(addons);
     const [reorderedItem] = items.splice(result.source.index, 1);
     items.splice(result.destination.index, 0, reorderedItem);
 
@@ -130,39 +124,29 @@ const ProductListPage = () => {
     }));
 
     // Optimistically update the UI
-    queryClient.setQueryData(["products-new"], items);
+    queryClient.setQueryData(["addons-list"], items);
 
     // Save to database
     reorderMutation.mutate(updates);
   };
 
-  const handleAddProduct = () => {
-    navigate("/dashboard/product-new/create");
+  const handleAddAddon = () => {
+    navigate("/dashboard/product-add-ons/create");
   };
 
-  const handleEditProduct = (product: Product) => {
-    navigate(`/dashboard/product-new/edit/${product.id}`);
+  const handleEditAddon = (addon: Product) => {
+    navigate(`/dashboard/product-add-ons/${addon.id}/edit`);
   };
 
-  const handleViewProduct = (product: Product) => {
-    navigate(`/dashboard/product-new/${product.id}`);
-  };
-
-  const handleDeleteClick = (product: Product) => {
-    setProductToDelete(product);
+  const handleDeleteClick = (addon: Product) => {
+    setAddonToDelete(addon);
     setDeleteDialogOpen(true);
   };
 
   const handleDeleteConfirm = () => {
-    if (productToDelete) {
-      deleteMutation.mutate(productToDelete.id);
+    if (addonToDelete) {
+      deleteMutation.mutate(addonToDelete.id);
     }
-  };
-
-  const getProfilesCount = (
-    product: Product & { profiles?: Array<{ count: number }> },
-  ) => {
-    return product.profiles?.[0]?.count || 0;
   };
 
   if (isLoading) {
@@ -170,7 +154,7 @@ const ProductListPage = () => {
       <DashboardLayout>
         <div className="flex flex-col items-center justify-center min-h-[60vh]">
           <Loader2 className="w-12 h-12 animate-spin text-primary" />
-          <p className="mt-4 text-muted-foreground">Loading products...</p>
+          <p className="mt-4 text-muted-foreground">Loading add-ons...</p>
         </div>
       </DashboardLayout>
     );
@@ -182,42 +166,40 @@ const ProductListPage = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Products</h1>
+            <h1 className="text-3xl font-bold text-foreground">
+              Product Add-ons
+            </h1>
             <p className="text-muted-foreground mt-1">
-              Manage your products and their profiles. Drag to reorder.
+              Manage your product add-ons. Drag to reorder.
             </p>
           </div>
-          <Button
-            onClick={handleAddProduct}
-            className="flex items-center gap-2"
-          >
+          <Button onClick={handleAddAddon} className="flex items-center gap-2">
             <Plus size={16} />
-            Add Product
+            Add Product Add-on
           </Button>
         </div>
 
-        {/* Products List */}
-        {products.length === 0 ? (
+        {/* Add-ons List */}
+        {addons.length === 0 ? (
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-12">
               <Package className="w-16 h-16 text-muted-foreground/50 mb-4" />
-              <h3 className="text-lg font-semibold mb-2">No products yet</h3>
+              <h3 className="text-lg font-semibold mb-2">No add-ons yet</h3>
               <p className="text-muted-foreground mb-4 text-center">
-                Get started by creating your first product
+                Get started by creating your first product add-on
               </p>
-              <Button onClick={handleAddProduct}>
+              <Button onClick={handleAddAddon}>
                 <Plus size={16} className="mr-2" />
-                Add Product
+                Add Product Add-on
               </Button>
             </CardContent>
           </Card>
         ) : (
           <Card>
             <CardHeader>
-              <CardTitle>All Products</CardTitle>
+              <CardTitle>All Product Add-ons</CardTitle>
               <CardDescription>
-                {products.length} product{products.length !== 1 ? "s" : ""} in
-                total
+                {addons.length} add-on{addons.length !== 1 ? "s" : ""} in total
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -226,22 +208,21 @@ const ProductListPage = () => {
                   <TableHeader>
                     <TableRow>
                       <TableHead className="w-12"></TableHead>
-                      <TableHead>Namesss</TableHead>
-                      <TableHead>Title</TableHead>
-                      <TableHead className="text-center">Profiles</TableHead>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Description (EN)</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
-                  <Droppable droppableId="products">
+                  <Droppable droppableId="addons">
                     {(provided) => (
                       <TableBody
                         {...provided.droppableProps}
                         ref={provided.innerRef}
                       >
-                        {products.map((product, index) => (
+                        {addons.map((addon, index) => (
                           <Draggable
-                            key={product.id}
-                            draggableId={product.id}
+                            key={addon.id}
+                            draggableId={addon.id}
                             index={index}
                           >
                             {(provided, snapshot) => (
@@ -256,39 +237,26 @@ const ProductListPage = () => {
                                   <GripVertical className="w-4 h-4 text-muted-foreground cursor-grab active:cursor-grabbing" />
                                 </TableCell>
                                 <TableCell className="font-medium">
-                                  {product.name}
+                                  {addon.name}
                                 </TableCell>
-                                <TableCell className="text-muted-foreground">
-                                  {product.title || "-"}
-                                </TableCell>
-                                <TableCell className="text-center">
-                                  <span className="inline-flex items-center justify-center bg-primary/10 text-primary px-2 py-1 rounded-md text-sm font-medium">
-                                    {getProfilesCount(product)}
-                                  </span>
+                                <TableCell className="text-muted-foreground max-w-md truncate">
+                                  {addon.description_en || "-"}
                                 </TableCell>
                                 <TableCell className="text-right">
                                   <div className="flex items-center justify-end gap-2">
                                     <Button
                                       variant="ghost"
                                       size="icon"
-                                      onClick={() => handleEditProduct(product)}
-                                      title="Edit product"
+                                      onClick={() => handleEditAddon(addon)}
+                                      title="Edit add-on"
                                     >
                                       <Edit className="w-4 h-4" />
                                     </Button>
                                     <Button
                                       variant="ghost"
                                       size="icon"
-                                      onClick={() => handleViewProduct(product)}
-                                      title="Manage profiles"
-                                    >
-                                      <ArrowRight className="w-4 h-4" />
-                                    </Button>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      onClick={() => handleDeleteClick(product)}
-                                      title="Delete product"
+                                      onClick={() => handleDeleteClick(addon)}
+                                      title="Delete add-on"
                                       className="text-destructive hover:text-destructive"
                                     >
                                       <Trash2 className="w-4 h-4" />
@@ -316,9 +284,8 @@ const ProductListPage = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete "{productToDelete?.name}" and all its
-              associated profiles, categories, and items. This action cannot be
-              undone.
+              This will permanently delete "{addonToDelete?.name}". This action
+              cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -336,4 +303,4 @@ const ProductListPage = () => {
   );
 };
 
-export default ProductListPage;
+export default AddonListPage;

@@ -1,4 +1,4 @@
-import { ReactNode } from "react";
+import { ReactNode, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,11 +17,17 @@ import {
   SquareChevronLeft,
   SquareChevronRight,
   PackagePlus,
+  ChevronDown,
+  ChevronRight as ChevronRightIcon,
+  Wrench,
+  Plus,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { ROLES } from "@/pages/users/types";
 import { useAuth } from "@/contexts/AuthContext";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/lib/supabase";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -30,12 +36,78 @@ interface DashboardLayoutProps {
 const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [desktopCollapsed, setDesktopCollapsed] = useState(false);
+  const [productsExpanded, setProductsExpanded] = useState(false);
+  const [accessoriesExpanded, setAccessoriesExpanded] = useState(false);
+  const [addonsExpanded, setAddonsExpanded] = useState(false);
   const location = useLocation();
   const { user, logout } = useAuth();
+
+  // Fetch products for submenu
+  const { data: products = [] } = useQuery({
+    queryKey: ["products-menu"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("product")
+        .select("id, name, slug")
+        .eq("type", "product")
+        .order("order", { ascending: true });
+
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Fetch accessories for submenu
+  const { data: accessories = [] } = useQuery({
+    queryKey: ["accessories-menu"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("product")
+        .select("id, name, slug")
+        .eq("type", "accessories")
+        .order("order", { ascending: true });
+
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Fetch add-ons for submenu
+  const { data: addons = [] } = useQuery({
+    queryKey: ["addons-menu"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("product")
+        .select("id, name, slug")
+        .eq("type", "add-on")
+        .order("order", { ascending: true });
+
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Auto-expand menus based on current path
+  useEffect(() => {
+    if (location.pathname.includes("/dashboard/product-new/")) {
+      setProductsExpanded(true);
+    }
+    if (location.pathname.includes("/dashboard/accessories/")) {
+      setAccessoriesExpanded(true);
+    }
+    if (location.pathname.includes("/dashboard/product-add-ons/")) {
+      setAddonsExpanded(true);
+    }
+  }, [location.pathname]);
 
   const navigation = [
     { name: "Home", href: "/dashboard/home", icon: Home },
     { name: "Products", href: "/dashboard/product-new", icon: PackageOpen },
+    {
+      name: "Accessories",
+      href: "/dashboard/accessories",
+      icon: Wrench,
+    },
     {
       name: "Product Add-ons",
       href: "/dashboard/product-add-ons",
@@ -106,6 +178,200 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto">
             {navigation.map((item) => {
               const Icon = item.icon;
+              const isProductsMenu = item.name === "Products";
+              const isAccessoriesMenu = item.name === "Accessories";
+              const isAddonsMenu = item.name === "Product Add-ons";
+
+              // Products Menu with Submenu
+              if (isProductsMenu) {
+                return (
+                  <div key={item.name} className="space-y-1">
+                    {/* Products parent menu */}
+                    <button
+                      onClick={() => setProductsExpanded(!productsExpanded)}
+                      className={cn(
+                        "w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors",
+                        isActive(item.href)
+                          ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm"
+                          : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-white/5",
+                        desktopCollapsed && "lg:justify-center",
+                      )}
+                      title={desktopCollapsed ? item.name : undefined}
+                    >
+                      <Icon className="w-5 h-5 flex-shrink-0" />
+                      {!desktopCollapsed && (
+                        <>
+                          <span className="flex-1 text-left">{item.name}</span>
+                          {productsExpanded ? (
+                            <ChevronDown className="w-4 h-4" />
+                          ) : (
+                            <ChevronRightIcon className="w-4 h-4" />
+                          )}
+                        </>
+                      )}
+                    </button>
+
+                    {/* Products submenu */}
+                    {productsExpanded && !desktopCollapsed && (
+                      <div className="ml-8 space-y-1">
+                        {products.map((product) => (
+                          <Link
+                            key={product.id}
+                            to={`/dashboard/product-new/${product.id}`}
+                            className={cn(
+                              "block px-3 py-2 text-sm rounded-lg transition-colors",
+                              location.pathname ===
+                                `/dashboard/product-new/${product.id}`
+                                ? "bg-sidebar-primary/70 text-sidebar-primary-foreground"
+                                : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-white/5",
+                            )}
+                            onClick={() => setMobileOpen(false)}
+                          >
+                            {product.name}
+                          </Link>
+                        ))}
+                        {/* Add Product Button */}
+                        <Link
+                          to="/dashboard/product-new"
+                          className={cn(
+                            "flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors",
+                            "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-white/5",
+                            "border border-sidebar-foreground/20 border-dashed mt-2",
+                          )}
+                          onClick={() => setMobileOpen(false)}
+                        >
+                          <Plus className="w-4 h-4" />
+                          <span>Add Product</span>
+                        </Link>
+                      </div>
+                    )}
+                  </div>
+                );
+              }
+
+              // Accessories Menu with Submenu
+              if (isAccessoriesMenu) {
+                return (
+                  <div key={item.name} className="space-y-1">
+                    {/* Accessories parent menu */}
+                    <button
+                      onClick={() =>
+                        setAccessoriesExpanded(!accessoriesExpanded)
+                      }
+                      className={cn(
+                        "w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors",
+                        isActive(item.href)
+                          ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm"
+                          : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-white/5",
+                        desktopCollapsed && "lg:justify-center",
+                      )}
+                      title={desktopCollapsed ? item.name : undefined}
+                    >
+                      <Icon className="w-5 h-5 flex-shrink-0" />
+                      {!desktopCollapsed && (
+                        <>
+                          <span className="flex-1 text-left">{item.name}</span>
+                          {accessoriesExpanded ? (
+                            <ChevronDown className="w-4 h-4" />
+                          ) : (
+                            <ChevronRightIcon className="w-4 h-4" />
+                          )}
+                        </>
+                      )}
+                    </button>
+
+                    {/* Accessories submenu */}
+                    {accessoriesExpanded && !desktopCollapsed && (
+                      <div className="ml-8 space-y-1">
+                        {accessories.map((accessory) => (
+                          <Link
+                            key={accessory.id}
+                            to={`/dashboard/accessories/${accessory.id}`}
+                            className={cn(
+                              "block px-3 py-2 text-sm rounded-lg transition-colors",
+                              location.pathname ===
+                                `/dashboard/accessories/${accessory.id}`
+                                ? "bg-sidebar-primary/70 text-sidebar-primary-foreground"
+                                : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-white/5",
+                            )}
+                            onClick={() => setMobileOpen(false)}
+                          >
+                            {accessory.name}
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              }
+
+              // Product Add-ons Menu with Submenu
+              if (isAddonsMenu) {
+                return (
+                  <div key={item.name} className="space-y-1">
+                    {/* Add-ons parent menu */}
+                    <button
+                      onClick={() => setAddonsExpanded(!addonsExpanded)}
+                      className={cn(
+                        "w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors",
+                        isActive(item.href)
+                          ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm"
+                          : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-white/5",
+                        desktopCollapsed && "lg:justify-center",
+                      )}
+                      title={desktopCollapsed ? item.name : undefined}
+                    >
+                      <Icon className="w-5 h-5 flex-shrink-0" />
+                      {!desktopCollapsed && (
+                        <>
+                          <span className="flex-1 text-left">{item.name}</span>
+                          {addonsExpanded ? (
+                            <ChevronDown className="w-4 h-4" />
+                          ) : (
+                            <ChevronRightIcon className="w-4 h-4" />
+                          )}
+                        </>
+                      )}
+                    </button>
+
+                    {/* Add-ons submenu */}
+                    {addonsExpanded && !desktopCollapsed && (
+                      <div className="ml-8 space-y-1">
+                        {addons.map((addon) => (
+                          <Link
+                            key={addon.id}
+                            to={`/dashboard/product-add-ons/${addon.id}`}
+                            className={cn(
+                              "block px-3 py-2 text-sm rounded-lg transition-colors",
+                              location.pathname ===
+                                `/dashboard/product-add-ons/${addon.id}`
+                                ? "bg-sidebar-primary/70 text-sidebar-primary-foreground"
+                                : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-white/5",
+                            )}
+                            onClick={() => setMobileOpen(false)}
+                          >
+                            {addon.name}
+                          </Link>
+                        ))}
+                        {/* Add Product Add-on Button */}
+                        <Link
+                          to="/dashboard/product-add-ons"
+                          className={cn(
+                            "flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors",
+                            "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-white/5",
+                            "border border-sidebar-foreground/20 border-dashed mt-2",
+                          )}
+                          onClick={() => setMobileOpen(false)}
+                        >
+                          <Plus className="w-4 h-4" />
+                          <span>Add Product Add-on</span>
+                        </Link>
+                      </div>
+                    )}
+                  </div>
+                );
+              }
+
               return (
                 <Link
                   key={item.name}

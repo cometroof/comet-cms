@@ -41,7 +41,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Product, ProductProfile } from "@/pages/product/types";
-import ProfileFormDialog from "./components/ProfileFormDialog";
 import {
   DragDropContext,
   Droppable,
@@ -53,10 +52,6 @@ const ProductDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [showProfileForm, setShowProfileForm] = useState(false);
-  const [editingProfile, setEditingProfile] = useState<ProductProfile | null>(
-    null,
-  );
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [profileToDelete, setProfileToDelete] = useState<ProductProfile | null>(
     null,
@@ -169,13 +164,11 @@ const ProductDetailPage = () => {
   };
 
   const handleAddProfile = () => {
-    setEditingProfile(null);
-    setShowProfileForm(true);
+    navigate(`/dashboard/product-new/${id}/profile/create`);
   };
 
   const handleEditProfile = (profile: ProductProfile) => {
-    setEditingProfile(profile);
-    setShowProfileForm(true);
+    navigate(`/dashboard/product-new/${id}/profile/${profile.id}/edit`);
   };
 
   const handleViewProfile = (profile: ProductProfile) => {
@@ -267,31 +260,29 @@ const ProductDetailPage = () => {
           </CardHeader>
           <CardContent className="space-y-2">
             <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-sm text-muted-foreground">Name</p>
-                <p className="font-medium">{product.name}</p>
+              <div className="space-y-4">
+                <div>
+                  <p className="text-sm text-muted-foreground">Name</p>
+                  <p className="font-medium">{product.name}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Title</p>
+                  <p className="font-medium">{product.title || "-"}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Slug</p>
+                  <p className="font-medium">{product.slug || "-"}</p>
+                </div>
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Title</p>
-                <p className="font-medium">{product.title || "-"}</p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Slug</p>
-                <p className="font-medium">{product.slug || "-"}</p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Order</p>
-                <p className="font-medium">{product.order}</p>
+                <p className="text-sm text-muted-foreground">Description</p>
+                {product.description_en && (
+                  <div className="pt-2">
+                    <p className="text-sm">{product.description_en}</p>
+                  </div>
+                )}
               </div>
             </div>
-            {product.description_en && (
-              <div className="pt-2">
-                <p className="text-sm text-muted-foreground">
-                  Description (EN)
-                </p>
-                <p className="text-sm">{product.description_en}</p>
-              </div>
-            )}
           </CardContent>
         </Card>
 
@@ -327,7 +318,6 @@ const ProductDetailPage = () => {
                       <TableHead className="w-12"></TableHead>
                       <TableHead>Name</TableHead>
                       <TableHead>Materials</TableHead>
-                      <TableHead>Thickness</TableHead>
                       <TableHead className="text-center">Categories</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
@@ -360,9 +350,6 @@ const ProductDetailPage = () => {
                                 </TableCell>
                                 <TableCell className="text-muted-foreground">
                                   {profile.materials || "-"}
-                                </TableCell>
-                                <TableCell className="text-muted-foreground">
-                                  {profile.thickness || "-"}
                                 </TableCell>
                                 <TableCell className="text-center">
                                   <span className="inline-flex items-center justify-center bg-primary/10 text-primary px-2 py-1 rounded-md text-sm font-medium">
@@ -412,26 +399,6 @@ const ProductDetailPage = () => {
           </Card>
         )}
       </div>
-
-      {/* Profile Form Dialog */}
-      {showProfileForm && (
-        <ProfileFormDialog
-          productId={id!}
-          profile={editingProfile}
-          isOpen={showProfileForm}
-          onClose={() => {
-            setShowProfileForm(false);
-            setEditingProfile(null);
-          }}
-          onSuccess={() => {
-            queryClient.invalidateQueries({
-              queryKey: ["product-profiles", id],
-            });
-            setShowProfileForm(false);
-            setEditingProfile(null);
-          }}
-        />
-      )}
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

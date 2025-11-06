@@ -15,9 +15,13 @@ import { NotFound } from "./pages/errors";
 import Users from "./pages/users";
 import { Products } from "./pages/product";
 import ProductListPage from "./pages/product-new";
+import ProductFormPage from "./pages/product-new/product-form";
 import ProductDetailPage from "./pages/product-new/product-detail";
+import ProfileFormPage from "./pages/product-new/profile-form";
 import ProfileDetailPage from "./pages/product-new/profile-detail";
 import CategoryDetailPage from "./pages/product-new/category-detail";
+import AddonListPage from "./pages/product-new-addons";
+import AddonFormPage from "./pages/product-new-addons/form";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { ROLES } from "./pages/users/types";
 
@@ -143,10 +147,42 @@ const App = () => {
                 }
               />
               <Route
+                path="/dashboard/product-new/create"
+                element={
+                  <ProtectedRoute>
+                    <ProductFormPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/dashboard/product-new/edit/:id"
+                element={
+                  <ProtectedRoute>
+                    <ProductFormPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path="/dashboard/product-new/:id"
                 element={
                   <ProtectedRoute>
                     <ProductDetailPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/dashboard/product-new/:productId/profile/create"
+                element={
+                  <ProtectedRoute>
+                    <ProfileFormPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/dashboard/product-new/:productId/profile/:profileId/edit"
+                element={
+                  <ProtectedRoute>
+                    <ProfileFormPage />
                   </ProtectedRoute>
                 }
               />
@@ -163,6 +199,31 @@ const App = () => {
                 element={
                   <ProtectedRoute>
                     <CategoryDetailPage />
+                  </ProtectedRoute>
+                }
+              />
+              {/* Product Add-ons Routes */}
+              <Route
+                path="/dashboard/product-add-ons"
+                element={
+                  <ProtectedRoute>
+                    <AddonListPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/dashboard/product-add-ons/create"
+                element={
+                  <ProtectedRoute>
+                    <AddonFormPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/dashboard/product-add-ons/:id/edit"
+                element={
+                  <ProtectedRoute>
+                    <AddonFormPage />
                   </ProtectedRoute>
                 }
               />

@@ -249,6 +249,7 @@ export type Database = {
           suitables: Json | null;
           suitables_id: Json | null;
           title: string | null;
+          type: string | null;
           updated_at: string | null;
         };
         Insert: {
@@ -283,6 +284,7 @@ export type Database = {
           suitables?: Json | null;
           suitables_id?: Json | null;
           title?: string | null;
+          type?: string | null;
           updated_at?: string | null;
         };
         Update: {
@@ -317,6 +319,7 @@ export type Database = {
           suitables?: Json | null;
           suitables_id?: Json | null;
           title?: string | null;
+          type?: string | null;
           updated_at?: string | null;
         };
         Relationships: [];
@@ -580,6 +583,13 @@ export type Database = {
           tkdn_value: string | null;
           updated_at: string | null;
           weight: string | null;
+          is_premium: boolean | null;
+          description_en: string | null;
+          description_id: string | null;
+          premium_materials_en: string | null;
+          premium_materials_id: string | null;
+          premium_image_url: string | null;
+          content_image_url: string | null;
         };
         Insert: {
           created_at?: string | null;
@@ -598,6 +608,13 @@ export type Database = {
           tkdn_value?: string | null;
           updated_at?: string | null;
           weight?: string | null;
+          is_premium?: boolean | null;
+          description_en?: string | null;
+          description_id?: string | null;
+          premium_materials_en?: string | null;
+          premium_materials_id?: string | null;
+          premium_image_url?: string | null;
+          content_image_url?: string | null;
         };
         Update: {
           created_at?: string | null;
@@ -616,6 +633,13 @@ export type Database = {
           tkdn_value?: string | null;
           updated_at?: string | null;
           weight?: string | null;
+          is_premium?: boolean | null;
+          description_en?: string | null;
+          description_id?: string | null;
+          premium_materials_en?: string | null;
+          premium_materials_id?: string | null;
+          premium_image_url?: string | null;
+          content_image_url?: string | null;
         };
         Relationships: [
           {
