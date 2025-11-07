@@ -248,29 +248,24 @@ const ProductDetailPage = () => {
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-4">
-            <Button
-              onClick={handleEditProduct}
-              variant="outline"
-              className="flex items-center gap-2"
-            >
-              <Edit size={16} />
-              Edit Product
-            </Button>
-            <Button
-              onClick={handleAddProfile}
-              className="flex items-center gap-2"
-            >
-              <Plus size={16} />
-              Add Profile
-            </Button>
-          </div>
         </div>
 
         {/* Product Info Card */}
         <Card>
           <CardHeader>
-            <CardTitle>Product Information</CardTitle>
+            <CardTitle>
+              <div className="flex items-start gap-10 justify-between">
+                <div>Brand Information</div>
+                <Button
+                  onClick={handleEditProduct}
+                  variant="secondary"
+                  className="flex items-center gap-2"
+                >
+                  <Edit size={16} />
+                  Edit Brand
+                </Button>
+              </div>
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
             <div className="grid grid-cols-2 gap-4">
@@ -318,7 +313,18 @@ const ProductDetailPage = () => {
         ) : (
           <Card>
             <CardHeader>
-              <CardTitle>Profiles</CardTitle>
+              <CardTitle>
+                <div className="flex items-start justify-between gap-10">
+                  <div>Profiles</div>
+                  <Button
+                    onClick={handleAddProfile}
+                    className="flex items-center gap-2"
+                  >
+                    <Plus size={16} />
+                    Add Profile
+                  </Button>
+                </div>
+              </CardTitle>
               <CardDescription>
                 {profiles.length} profile{profiles.length !== 1 ? "s" : ""} in
                 this product

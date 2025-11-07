@@ -192,7 +192,7 @@ const ProductListPage = () => {
             className="flex items-center gap-2"
           >
             <Plus size={16} />
-            Add Product
+            Add Brand
           </Button>
         </div>
 
@@ -207,7 +207,7 @@ const ProductListPage = () => {
               </p>
               <Button onClick={handleAddProduct}>
                 <Plus size={16} className="mr-2" />
-                Add Product
+                Add Brand
               </Button>
             </CardContent>
           </Card>
@@ -226,8 +226,7 @@ const ProductListPage = () => {
                   <TableHeader>
                     <TableRow>
                       <TableHead className="w-12"></TableHead>
-                      <TableHead>Namesss</TableHead>
-                      <TableHead>Title</TableHead>
+                      <TableHead>Name</TableHead>
                       <TableHead className="text-center">Profiles</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
@@ -255,11 +254,21 @@ const ProductListPage = () => {
                                 <TableCell {...provided.dragHandleProps}>
                                   <GripVertical className="w-4 h-4 text-muted-foreground cursor-grab active:cursor-grabbing" />
                                 </TableCell>
-                                <TableCell className="font-medium">
-                                  {product.name}
-                                </TableCell>
-                                <TableCell className="text-muted-foreground">
-                                  {product.title || "-"}
+                                <TableCell className="">
+                                  <div className="flex items-center gap-4">
+                                    <img
+                                      className="w-14 h-auto block"
+                                      src={product.brand_image}
+                                    />
+                                    <div>
+                                      <div className="font-medium">
+                                        {product.name}
+                                      </div>
+                                      <div className="text-muted-foreground">
+                                        {product.title}
+                                      </div>
+                                    </div>
+                                  </div>
                                 </TableCell>
                                 <TableCell className="text-center">
                                   <span className="inline-flex items-center justify-center bg-primary/10 text-primary px-2 py-1 rounded-md text-sm font-medium">
@@ -271,18 +280,10 @@ const ProductListPage = () => {
                                     <Button
                                       variant="ghost"
                                       size="icon"
-                                      onClick={() => handleEditProduct(product)}
-                                      title="Edit product"
-                                    >
-                                      <Edit className="w-4 h-4" />
-                                    </Button>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
                                       onClick={() => handleViewProduct(product)}
                                       title="Manage profiles"
                                     >
-                                      <ArrowRight className="w-4 h-4" />
+                                      <Edit className="w-4 h-4" />
                                     </Button>
                                     <Button
                                       variant="ghost"

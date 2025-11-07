@@ -249,11 +249,11 @@ const ProductFormDialog = ({
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              {product ? "Edit Product" : "Create New Product"}
+              {product ? "Edit Brand" : "Create New Brand"}
             </DialogTitle>
             <DialogDescription>
               {product
-                ? "Update the product information below"
+                ? "Update the brand information below"
                 : "Fill in the details to create a new product"}
             </DialogDescription>
           </DialogHeader>

@@ -20,7 +20,15 @@ import { toast } from "sonner";
 import { Product } from "@/pages/product/types";
 import ImageSelectorDialog from "@/components/ImageSelectorDialog";
 import FileSelectorDialog from "@/components/FileSelectorDialog/FileSelectorDialog";
-import { ChevronLeft, FileText, X, ImageUp, Plus, Trash2, Loader2 } from "lucide-react";
+import {
+  ChevronLeft,
+  FileText,
+  X,
+  ImageUp,
+  Plus,
+  Trash2,
+  Loader2,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 interface ProductFormData {
@@ -262,12 +270,12 @@ const ProductFormPage = () => {
           </Button>
           <div>
             <h1 className="text-3xl font-bold text-foreground">
-              {isEditMode ? "Edit Product" : "Create New Product"}
+              {isEditMode ? "Edit Brand" : "Create New Brand"}
             </h1>
             <p className="text-muted-foreground mt-1">
               {isEditMode
-                ? "Update the product information below"
-                : "Fill in the details to create a new product"}
+                ? "Update the brand information below"
+                : "Fill in the details to create a new brand"}
             </p>
           </div>
         </div>
@@ -512,7 +520,10 @@ const ProductFormPage = () => {
               <div className="grid grid-cols-2 gap-6">
                 {/* English Description */}
                 <div className="space-y-2">
-                  <Label htmlFor="description_en" className="text-base font-semibold">
+                  <Label
+                    htmlFor="description_en"
+                    className="text-base font-semibold"
+                  >
                     English
                   </Label>
                   <Textarea
@@ -526,7 +537,10 @@ const ProductFormPage = () => {
 
                 {/* Indonesian Description */}
                 <div className="space-y-2">
-                  <Label htmlFor="description_id" className="text-base font-semibold">
+                  <Label
+                    htmlFor="description_id"
+                    className="text-base font-semibold"
+                  >
                     Indonesian
                   </Label>
                   <Textarea
