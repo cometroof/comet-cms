@@ -92,7 +92,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     if (location.pathname.includes("/dashboard/product-new/")) {
       setProductsExpanded(true);
     }
-    if (location.pathname.includes("/dashboard/accessories/")) {
+    if (location.pathname.includes("/dashboard/product-accessories/")) {
       setAccessoriesExpanded(true);
     }
     if (location.pathname.includes("/dashboard/product-add-ons/")) {
@@ -105,7 +105,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     { name: "Products", href: "/dashboard/product-new", icon: PackageOpen },
     {
       name: "Accessories",
-      href: "/dashboard/accessories",
+      href: "/dashboard/product-accessories",
       icon: Wrench,
     },
     {
@@ -286,11 +286,11 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                         {accessories.map((accessory) => (
                           <Link
                             key={accessory.id}
-                            to={`/dashboard/accessories/${accessory.id}`}
+                            to={`/dashboard/product-accessories/${accessory.id}`}
                             className={cn(
                               "block px-3 py-2 text-sm rounded-lg transition-colors",
                               location.pathname ===
-                                `/dashboard/accessories/${accessory.id}`
+                                `/dashboard/product-accessories/${accessory.id}`
                                 ? "bg-sidebar-primary/70 text-sidebar-primary-foreground"
                                 : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-white/5",
                             )}
@@ -299,6 +299,19 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                             {accessory.name}
                           </Link>
                         ))}
+                        {/* Add Accessory Button */}
+                        <Link
+                          to="/dashboard/product-accessories/create"
+                          className={cn(
+                            "flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors",
+                            "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-white/5",
+                            "border border-sidebar-foreground/20 border-dashed mt-2",
+                          )}
+                          onClick={() => setMobileOpen(false)}
+                        >
+                          <Plus className="w-4 h-4" />
+                          <span>Add Accessory</span>
+                        </Link>
                       </div>
                     )}
                   </div>

@@ -24,6 +24,12 @@ import AddonListPage from "./pages/product-new-addons";
 import AddonFormPage from "./pages/product-new-addons/form";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { ROLES } from "./pages/users/types";
+import ProductAccessoriesListPage from "./pages/product-new-accessories";
+import ProductAccessoriesFormPage from "./pages/product-new-accessories/product-form";
+import ProductAccessoriesDetailPage from "./pages/product-new-accessories/product-detail";
+import CategoryAccessoriesDetailPage from "./pages/product-new-accessories/category-detail";
+import ItemAccessoriesDetailPage from "./pages/product-new-accessories/item-detail";
+import DirectItemsPage from "./pages/product-new-accessories/direct-items";
 
 const queryClient = new QueryClient();
 
@@ -224,6 +230,87 @@ const App = () => {
                 element={
                   <ProtectedRoute>
                     <AddonFormPage />
+                  </ProtectedRoute>
+                }
+              />
+              {/* Product Accessories Routes */}
+              <Route
+                path="/dashboard/product-accessories"
+                element={
+                  <ProtectedRoute>
+                    <ProductAccessoriesListPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/dashboard/product-accessories/create"
+                element={
+                  <ProtectedRoute>
+                    <ProductAccessoriesFormPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/dashboard/product-accessories/edit/:id"
+                element={
+                  <ProtectedRoute>
+                    <ProductAccessoriesFormPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/dashboard/product-accessories/:id"
+                element={
+                  <ProtectedRoute>
+                    <ProductAccessoriesDetailPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/dashboard/product-accessories/:id/category/:categoryId"
+                element={
+                  <ProtectedRoute>
+                    <CategoryAccessoriesDetailPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/dashboard/product-accessories/:id/category/:categoryId/item/new"
+                element={
+                  <ProtectedRoute>
+                    <ItemAccessoriesDetailPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/dashboard/product-accessories/:id/category/:categoryId/item/:itemId"
+                element={
+                  <ProtectedRoute>
+                    <ItemAccessoriesDetailPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/dashboard/product-accessories/:id/items"
+                element={
+                  <ProtectedRoute>
+                    <DirectItemsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/dashboard/product-accessories/:id/item/new"
+                element={
+                  <ProtectedRoute>
+                    <ItemAccessoriesDetailPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/dashboard/product-accessories/:id/item/:itemId"
+                element={
+                  <ProtectedRoute>
+                    <ItemAccessoriesDetailPage />
                   </ProtectedRoute>
                 }
               />
