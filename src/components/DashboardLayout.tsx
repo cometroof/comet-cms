@@ -232,7 +232,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                         ))}
                         {/* Add Product Button */}
                         <Link
-                          to="/dashboard/product-new"
+                          to="/dashboard/product-new/create"
                           className={cn(
                             "flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors",
                             "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-white/5",
@@ -241,7 +241,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                           onClick={() => setMobileOpen(false)}
                         >
                           <Plus className="w-4 h-4" />
-                          <span>Add Product</span>
+                          <span>Add Brand</span>
                         </Link>
                       </div>
                     )}

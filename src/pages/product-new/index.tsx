@@ -170,7 +170,7 @@ const ProductListPage = () => {
       <DashboardLayout>
         <div className="flex flex-col items-center justify-center min-h-[60vh]">
           <Loader2 className="w-12 h-12 animate-spin text-primary" />
-          <p className="mt-4 text-muted-foreground">Loading products...</p>
+          <p className="mt-4 text-muted-foreground">Loading brands...</p>
         </div>
       </DashboardLayout>
     );
@@ -182,9 +182,9 @@ const ProductListPage = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Products</h1>
+            <h1 className="text-3xl font-bold text-foreground">Brands</h1>
             <p className="text-muted-foreground mt-1">
-              Manage your products and their profiles. Drag to reorder.
+              Manage your brands and their profiles. Drag to reorder.
             </p>
           </div>
           <Button
@@ -214,7 +214,7 @@ const ProductListPage = () => {
         ) : (
           <Card>
             <CardHeader>
-              <CardTitle>All Products</CardTitle>
+              <CardTitle>All Brands</CardTitle>
               <CardDescription>
                 {products.length} product{products.length !== 1 ? "s" : ""} in
                 total
