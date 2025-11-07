@@ -283,7 +283,7 @@ const ProductListPage = () => {
                                       onClick={() => handleViewProduct(product)}
                                       title="Manage profiles"
                                     >
-                                      <Edit className="w-4 h-4" />
+                                      <ArrowRight className="w-4 h-4" />
                                     </Button>
                                     <Button
                                       variant="ghost"

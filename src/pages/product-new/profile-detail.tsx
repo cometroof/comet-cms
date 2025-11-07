@@ -297,29 +297,24 @@ const ProfileDetailPage = () => {
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-4">
-            <Button
-              onClick={handleEditProfile}
-              variant="outline"
-              className="flex items-center gap-2"
-            >
-              <Edit size={16} />
-              Edit Profile
-            </Button>
-            <Button
-              onClick={handleAddCategory}
-              className="flex items-center gap-2"
-            >
-              <Plus size={16} />
-              Add Category
-            </Button>
-          </div>
         </div>
 
         {/* Profile Info Card */}
         <Card>
           <CardHeader>
-            <CardTitle>Profile Information</CardTitle>
+            <CardTitle>
+              <div className="flex items-center gap-10 justify-between">
+                <div>Profile Information</div>
+                <Button
+                  onClick={handleEditProfile}
+                  variant="secondary"
+                  className="flex items-center gap-2"
+                >
+                  <Edit size={16} />
+                  Edit Profile
+                </Button>
+              </div>
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-3 gap-4">
@@ -360,16 +355,20 @@ const ProfileDetailPage = () => {
               <p className="text-muted-foreground mb-4 text-center">
                 Create a category to organize product items
               </p>
-              <Button onClick={handleAddCategory}>
-                <Plus size={16} className="mr-2" />
-                Add Category
-              </Button>
             </CardContent>
           </Card>
         ) : (
           <Card>
             <CardHeader>
-              <CardTitle>Categories</CardTitle>
+              <CardTitle>
+                <div className="flex items-center gap-10 justify-between">
+                  <div>Categories</div>
+                  <Button onClick={handleAddCategory}>
+                    <Plus size={16} className="mr-2" />
+                    Add Category
+                  </Button>
+                </div>
+              </CardTitle>
               <CardDescription>
                 {categories.length} categor
                 {categories.length !== 1 ? "ies" : "y"} in this profile

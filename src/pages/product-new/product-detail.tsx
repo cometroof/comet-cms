@@ -378,14 +378,14 @@ const ProductDetailPage = () => {
                                 </TableCell>
                                 <TableCell className="text-right">
                                   <div className="flex items-center justify-end gap-2">
-                                    <Button
+                                    {/*<Button
                                       variant="ghost"
                                       size="icon"
                                       onClick={() => handleEditProfile(profile)}
                                       title="Edit profile"
                                     >
                                       <Edit className="w-4 h-4" />
-                                    </Button>
+                                    </Button>*/}
                                     <Button
                                       variant="ghost"
                                       size="icon"

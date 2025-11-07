@@ -374,7 +374,7 @@ const ProfileFormPage = () => {
   };
 
   const handleBackClick = () => {
-    navigate(`/dashboard/product-new/${productId}`);
+    navigate(-1);
   };
 
   if (isEditMode && profileLoading) {

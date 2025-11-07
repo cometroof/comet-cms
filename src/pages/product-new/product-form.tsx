@@ -241,7 +241,8 @@ const ProductFormPage = () => {
   };
 
   const handleBackClick = () => {
-    navigate("/dashboard/product-new");
+    // navigate("/dashboard/product-new");
+    navigate(-1);
   };
 
   if (isEditMode && productLoading) {
