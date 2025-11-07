@@ -219,6 +219,10 @@ const ProfileDetailPage = () => {
     }
   };
 
+  const handleEditProfile = () => {
+    navigate(`/dashboard/product-new/${productId}/profile/${profileId}/edit`);
+  };
+
   const getItemsCount = (
     category: ProductCategory & { items?: Array<{ count: number }> },
   ) => {
@@ -293,13 +297,23 @@ const ProfileDetailPage = () => {
               </p>
             </div>
           </div>
-          <Button
-            onClick={handleAddCategory}
-            className="flex items-center gap-2"
-          >
-            <Plus size={16} />
-            Add Category
-          </Button>
+          <div className="flex items-center gap-4">
+            <Button
+              onClick={handleEditProfile}
+              variant="outline"
+              className="flex items-center gap-2"
+            >
+              <Edit size={16} />
+              Edit Profile
+            </Button>
+            <Button
+              onClick={handleAddCategory}
+              className="flex items-center gap-2"
+            >
+              <Plus size={16} />
+              Add Category
+            </Button>
+          </div>
         </div>
 
         {/* Profile Info Card */}

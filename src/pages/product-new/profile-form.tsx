@@ -19,7 +19,12 @@ import {
 import { toast } from "sonner";
 import { ProductProfile } from "@/pages/product/types";
 import ImageSelectorDialog from "@/components/ImageSelectorDialog";
-import { ChevronLeft, X, ImageUp, Loader2 } from "lucide-react";
+import { ChevronLeft, X, ImageUp, Loader2, Plus, Trash2 } from "lucide-react";
+
+interface SizeData {
+  headers: string[];
+  rows: string[][];
+}
 
 interface ProfileFormData {
   name: string;
@@ -57,6 +62,12 @@ const ProfileFormPage = () => {
   const [showContentImageSelector, setShowContentImageSelector] =
     useState(false);
 
+  // Size table state
+  const [sizeData, setSizeData] = useState<SizeData>({
+    headers: ["anchor"],
+    rows: [],
+  });
+
   const {
     register,
     handleSubmit,
@@ -92,18 +103,92 @@ const ProfileFormPage = () => {
   const contentImage = watch("content_image_url");
   const isPremium = watch("is_premium");
 
+  // Size table management functions
+  const addColumn = () => {
+    if (sizeData.headers.length >= 8) {
+      // 1 anchor + 7 dynamic
+      toast.error("Maximum 7 size columns allowed");
+      return;
+    }
+
+    setSizeData((prev) => ({
+      headers: [...prev.headers, `Size ${prev.headers.length}`],
+      rows: prev.rows.map((row) => [...row, ""]),
+    }));
+  };
+
+  const removeColumn = (index: number) => {
+    if (index === 0) return; // Don't remove anchor column
+
+    setSizeData((prev) => ({
+      headers: prev.headers.filter((_, i) => i !== index),
+      rows: prev.rows.map((row) => row.filter((_, i) => i !== index)),
+    }));
+  };
+
+  const addRow = () => {
+    setSizeData((prev) => ({
+      ...prev,
+      rows: [...prev.rows, Array(prev.headers.length).fill("")],
+    }));
+  };
+
+  const removeRow = (index: number) => {
+    setSizeData((prev) => ({
+      ...prev,
+      rows: prev.rows.filter((_, i) => i !== index),
+    }));
+  };
+
+  const updateHeader = (index: number, value: string) => {
+    setSizeData((prev) => ({
+      ...prev,
+      headers: prev.headers.map((h, i) => (i === index ? value : h)),
+    }));
+  };
+
+  const updateCell = (rowIndex: number, colIndex: number, value: string) => {
+    setSizeData((prev) => ({
+      ...prev,
+      rows: prev.rows.map((row, i) =>
+        i === rowIndex
+          ? row.map((cell, j) => (j === colIndex ? value : cell))
+          : row,
+      ),
+    }));
+  };
+
   // Fetch profile data if editing
   const { data: profile, isLoading: profileLoading } = useQuery({
     queryKey: ["product-profile", profileId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Fetch profile data
+      const { data: profileData, error: profileError } = await supabase
         .from("product_profile")
         .select("*")
         .eq("id", profileId)
         .single();
 
-      if (error) throw error;
-      return data as ProductProfile & {
+      if (profileError) throw profileError;
+
+      // Fetch premium data if exists
+      const { data: premiumData } = await supabase
+        .from("product_premium")
+        .select("*")
+        .eq("product_profile_id", profileId)
+        .single();
+
+      // Combine profile and premium data
+      return {
+        ...profileData,
+        is_premium: !!premiumData,
+        description_en: premiumData?.description_en || "",
+        description_id: premiumData?.description_id || "",
+        premium_materials_en: premiumData?.material_fullname || "",
+        premium_materials_id: premiumData?.material_name || "",
+        premium_image_url: premiumData?.premium_image_url || "",
+        content_image_url: premiumData?.content_image_url || "",
+      } as ProductProfile & {
         is_premium?: boolean;
         description_en?: string;
         description_id?: string;
@@ -146,12 +231,25 @@ const ProfileFormPage = () => {
         premium_image_url: profile.premium_image_url || "",
         content_image_url: profile.content_image_url || "",
       });
+
+      // Load size data from profile
+      if (profile.size && typeof profile.size === "object") {
+        const sizeObj = profile.size as SizeData;
+        if (sizeObj.headers && sizeObj.rows) {
+          setSizeData(sizeObj);
+        } else {
+          setSizeData({ headers: ["anchor"], rows: [] });
+        }
+      } else {
+        setSizeData({ headers: ["anchor"], rows: [] });
+      }
     }
   }, [profile, reset]);
 
   const saveMutation = useMutation({
     mutationFn: async (data: ProfileFormData) => {
-      const payload = {
+      // Payload for product_profile table (non-premium fields only)
+      const profilePayload = {
         name: data.name,
         materials: data.materials || null,
         thickness: data.thickness || null,
@@ -162,45 +260,110 @@ const ProfileFormPage = () => {
         tkdn_value: data.tkdn_value || null,
         profile_image_url: data.profile_image_url || null,
         profile_banner_url: data.profile_banner_url || null,
-        is_premium: data.is_premium,
-        description_en: data.description_en || null,
-        description_id: data.description_id || null,
-        premium_materials_en: data.premium_materials_en || null,
-        premium_materials_id: data.premium_materials_id || null,
-        premium_image_url: data.premium_image_url || null,
-        content_image_url: data.content_image_url || null,
+        size: sizeData,
         updated_at: new Date().toISOString(),
       };
 
       if (isEditMode) {
         // Update existing profile
-        const { error } = await supabase
+        const { error: profileError } = await supabase
           .from("product_profile")
-          .update(payload)
+          .update(profilePayload)
           .eq("id", profileId);
 
-        if (error) throw error;
+        if (profileError) throw profileError;
+
+        // Handle premium data separately
+        if (data.is_premium) {
+          const premiumPayload = {
+            description_en: data.description_en || null,
+            description_id: data.description_id || null,
+            material_fullname: data.premium_materials_en || null,
+            material_name: data.premium_materials_id || null,
+            premium_image_url: data.premium_image_url || null,
+            content_image_url: data.content_image_url || null,
+            product_profile_id: profileId,
+            product_id: productId,
+            updated_at: new Date().toISOString(),
+          };
+
+          // Check if premium record exists
+          const { data: existingPremium } = await supabase
+            .from("product_premium")
+            .select("id")
+            .eq("product_profile_id", profileId)
+            .single();
+
+          if (existingPremium) {
+            // Update existing premium data
+            const { error: premiumError } = await supabase
+              .from("product_premium")
+              .update(premiumPayload)
+              .eq("product_profile_id", profileId);
+
+            if (premiumError) throw premiumError;
+          } else {
+            // Insert new premium data
+            const { error: premiumError } = await supabase
+              .from("product_premium")
+              .insert(premiumPayload);
+
+            if (premiumError) throw premiumError;
+          }
+        } else {
+          // If not premium, delete any existing premium data
+          const { error: deleteError } = await supabase
+            .from("product_premium")
+            .delete()
+            .eq("product_profile_id", profileId);
+
+          if (deleteError) throw deleteError;
+        }
       } else {
         // Create new profile
-        const { error } = await supabase.from("product_profile").insert({
-          ...payload,
-          product_id: productId,
-        });
+        const { data: newProfile, error: profileError } = await supabase
+          .from("product_profile")
+          .insert({
+            ...profilePayload,
+            product_id: productId,
+          })
+          .select("id")
+          .single();
 
-        if (error) throw error;
+        if (profileError) throw profileError;
+
+        // Create premium data if is_premium is checked
+        if (data.is_premium && newProfile) {
+          const premiumPayload = {
+            description_en: data.description_en || null,
+            description_id: data.description_id || null,
+            material_fullname: data.premium_materials_en || null,
+            material_name: data.premium_materials_id || null,
+            premium_image_url: data.premium_image_url || null,
+            content_image_url: data.content_image_url || null,
+            product_profile_id: newProfile.id,
+            product_id: productId,
+          };
+
+          const { error: premiumError } = await supabase
+            .from("product_premium")
+            .insert(premiumPayload);
+
+          if (premiumError) throw premiumError;
+        }
       }
     },
     onSuccess: () => {
       toast.success(
         isEditMode
           ? "Profile updated successfully"
-          : "Profile created successfully"
+          : "Profile created successfully",
       );
       navigate(`/dashboard/product-new/${productId}`);
     },
     onError: (error) => {
       toast.error(
-        isEditMode ? "Failed to update profile" : "Failed to create profile"
+        isEditMode ? "Failed to update profile" : "Failed to create profile",
       );
       console.error(error);
     },
@@ -537,6 +700,144 @@ const ProfileFormPage = () => {
                   />
                 </div>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Dynamic Size Information */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Size Information</CardTitle>
+              <CardDescription>
+                Dynamic size table with custom dimensions
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {sizeData.headers.length > 1 || sizeData.rows.length > 0 ? (
+                <div className="border rounded-lg overflow-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-muted">
+                      <tr>
+                        {sizeData.headers.map((header, index) => (
+                          <th key={index} className="p-2 text-left border-b">
+                            <div className="flex items-center gap-2">
+                              {index === 0 ? (
+                                <span className="font-medium">Anchor</span>
+                              ) : (
+                                <>
+                                  <Input
+                                    value={header}
+                                    onChange={(e) =>
+                                      updateHeader(index, e.target.value)
+                                    }
+                                    placeholder={`Size ${index}`}
+                                    className="h-8 text-xs"
+                                  />
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6 text-destructive hover:text-destructive"
+                                    onClick={() => removeColumn(index)}
+                                  >
+                                    <X className="w-3 h-3" />
+                                  </Button>
+                                </>
+                              )}
+                            </div>
+                          </th>
+                        ))}
+                        <th className="p-2 w-10 border-b">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6"
+                            onClick={addColumn}
+                            disabled={sizeData.headers.length >= 8}
+                            title="Add Column"
+                          >
+                            <Plus className="w-3 h-3" />
+                          </Button>
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {sizeData.rows.map((row, rowIndex) => (
+                        <tr key={rowIndex} className="border-b last:border-b-0">
+                          {row.map((cell, colIndex) => (
+                            <td key={colIndex} className="p-2">
+                              <Input
+                                value={cell}
+                                onChange={(e) =>
+                                  updateCell(rowIndex, colIndex, e.target.value)
+                                }
+                                placeholder={
+                                  colIndex === 0 ? "Row key" : "Value"
+                                }
+                                className="h-8 text-xs"
+                              />
+                            </td>
+                          ))}
+                          <td className="p-2">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6 text-destructive hover:text-destructive"
+                              onClick={() => removeRow(rowIndex)}
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </Button>
+                          </td>
+                        </tr>
+                      ))}
+                      <tr>
+                        <td colSpan={sizeData.headers.length} className="p-2">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 w-full text-xs text-muted-foreground hover:text-foreground"
+                            onClick={addRow}
+                          >
+                            <Plus className="w-3 h-3 mr-1" />
+                            Add Row
+                          </Button>
+                        </td>
+                        <td className="p-2"></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="border border-dashed rounded-lg p-8 text-center text-muted-foreground">
+                  <p className="text-sm">No size information added yet</p>
+                  <p className="text-xs mt-1">
+                    Click the plus icon to start building your size table
+                  </p>
+                  <div className="flex gap-2 justify-center mt-4">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={addColumn}
+                      disabled={sizeData.headers.length >= 8}
+                    >
+                      <Plus className="w-4 h-4 mr-1" />
+                      Add Column
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={addRow}
+                    >
+                      <Plus className="w-4 h-4 mr-1" />
+                      Add Row
+                    </Button>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 

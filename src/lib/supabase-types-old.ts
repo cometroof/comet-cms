@@ -583,6 +583,13 @@ export type Database = {
           tkdn_value: string | null;
           updated_at: string | null;
           weight: string | null;
+          is_premium: boolean | null;
+          description_en: string | null;
+          description_id: string | null;
+          premium_materials_en: string | null;
+          premium_materials_id: string | null;
+          premium_image_url: string | null;
+          content_image_url: string | null;
         };
         Insert: {
           created_at?: string | null;
@@ -601,6 +608,13 @@ export type Database = {
           tkdn_value?: string | null;
           updated_at?: string | null;
           weight?: string | null;
+          is_premium?: boolean | null;
+          description_en?: string | null;
+          description_id?: string | null;
+          premium_materials_en?: string | null;
+          premium_materials_id?: string | null;
+          premium_image_url?: string | null;
+          content_image_url?: string | null;
         };
         Update: {
           created_at?: string | null;
@@ -619,6 +633,13 @@ export type Database = {
           tkdn_value?: string | null;
           updated_at?: string | null;
           weight?: string | null;
+          is_premium?: boolean | null;
+          description_en?: string | null;
+          description_id?: string | null;
+          premium_materials_en?: string | null;
+          premium_materials_id?: string | null;
+          premium_image_url?: string | null;
+          content_image_url?: string | null;
         };
         Relationships: [
           {
