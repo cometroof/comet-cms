@@ -71,9 +71,15 @@ const AddonFormPage = () => {
   const [showBrandImageSelector, setShowBrandImageSelector] = useState(false);
   const [showBannerSelector, setShowBannerSelector] = useState(false);
   const [showCatalogueSelector, setShowCatalogueSelector] = useState(false);
-  const [showHighlightSectionImageSelector, setShowHighlightSectionImageSelector] = useState(false);
-  const [showHighlightIconSelector, setShowHighlightIconSelector] = useState(false);
-  const [suitables, setSuitables] = useState<SuitableRow[]>([{ en: "", id: "" }]);
+  const [
+    showHighlightSectionImageSelector,
+    setShowHighlightSectionImageSelector,
+  ] = useState(false);
+  const [showHighlightIconSelector, setShowHighlightIconSelector] =
+    useState(false);
+  const [suitables, setSuitables] = useState<SuitableRow[]>([
+    { en: "", id: "" },
+  ]);
 
   const {
     register,
@@ -144,25 +150,31 @@ const AddonFormPage = () => {
         catalogue: addon.catalogue || "",
         is_highlight_section: addon.is_highlight_section || false,
         highlight_section_image_url: addon.highlight_section_image_url || "",
-        highlight_section_description_en: addon.highlight_section_description_en || "",
-        highlight_section_description_id: addon.highlight_section_description_id || "",
+        highlight_section_description_en:
+          addon.highlight_section_description_en || "",
+        highlight_section_description_id:
+          addon.highlight_section_description_id || "",
         highlight_top_label_en: addon.highlight_top_label_en || "",
         highlight_top_label_id: addon.highlight_top_label_id || "",
         highlight_top_description_en: addon.highlight_top_description_en || "",
         highlight_top_description_id: addon.highlight_top_description_id || "",
         highlight_bottom_label_en: addon.highlight_bottom_label_en || "",
         highlight_bottom_label_id: addon.highlight_bottom_label_id || "",
-        highlight_bottom_description_en: addon.highlight_bottom_description_en || "",
-        highlight_bottom_description_id: addon.highlight_bottom_description_id || "",
+        highlight_bottom_description_en:
+          addon.highlight_bottom_description_en || "",
+        highlight_bottom_description_id:
+          addon.highlight_bottom_description_id || "",
         highlight_icon: addon.highlight_icon || "",
       });
 
       // Parse suitables from JSON
       const suitablesEn = addon.suitables
-        ? (Array.isArray(addon.suitables) ? addon.suitables : []) as string[]
+        ? ((Array.isArray(addon.suitables) ? addon.suitables : []) as string[])
         : [];
       const suitablesId = addon.suitables_id
-        ? (Array.isArray(addon.suitables_id) ? addon.suitables_id : []) as string[]
+        ? ((Array.isArray(addon.suitables_id)
+            ? addon.suitables_id
+            : []) as string[])
         : [];
 
       const maxLength = Math.max(suitablesEn.length, suitablesId.length, 1);
@@ -614,9 +626,7 @@ const AddonFormPage = () => {
                     <Label>Highlight Section Image</Label>
                     <div
                       className="relative w-full aspect-[2/1] border rounded overflow-hidden group cursor-pointer"
-                      onClick={() =>
-                        setShowHighlightSectionImageSelector(true)
-                      }
+                      onClick={() => setShowHighlightSectionImageSelector(true)}
                     >
                       {highlightSectionImageUrl ? (
                         <>
@@ -692,7 +702,9 @@ const AddonFormPage = () => {
               {/* Labels Side by Side */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="highlight_top_label_en">Label (English)</Label>
+                  <Label htmlFor="highlight_top_label_en">
+                    Label (English)
+                  </Label>
                   <Input
                     id="highlight_top_label_en"
                     {...register("highlight_top_label_en")}
@@ -700,7 +712,9 @@ const AddonFormPage = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="highlight_top_label_id">Label (Indonesian)</Label>
+                  <Label htmlFor="highlight_top_label_id">
+                    Label (Indonesian)
+                  </Label>
                   <Input
                     id="highlight_top_label_id"
                     {...register("highlight_top_label_id")}
@@ -807,7 +821,7 @@ const AddonFormPage = () => {
             <CardContent className="space-y-2">
               <Label>Icon Image</Label>
               <div
-                className="relative w-32 h-32 border rounded overflow-hidden group cursor-pointer"
+                className="relative size-full border rounded overflow-hidden group cursor-pointer"
                 onClick={() => setShowHighlightIconSelector(true)}
               >
                 {highlightIcon ? (
@@ -815,7 +829,7 @@ const AddonFormPage = () => {
                     <img
                       src={highlightIcon}
                       alt="Highlight Icon"
-                      className="size-full object-contain"
+                      className="size-full object-contain aspect-[3/1]"
                     />
                     <div className="absolute left-0 top-0 size-full bg-black/40 opacity-0 flex items-center justify-center group-hover:opacity-100 pointer-events-none text-sm text-white">
                       <ImageUp className="size-6" />
@@ -834,7 +848,7 @@ const AddonFormPage = () => {
                     </Button>
                   </>
                 ) : (
-                  <div className="size-full flex items-center justify-center bg-muted">
+                  <div className="size-full flex items-center justify-center bg-muted aspect-[3/1]">
                     <ImageUp className="size-8 text-muted-foreground" />
                   </div>
                 )}

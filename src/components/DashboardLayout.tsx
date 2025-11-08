@@ -223,7 +223,10 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                             className={cn(
                               "block px-3 py-2 text-sm rounded-lg transition-colors",
                               location.pathname ===
-                                `/dashboard/product-new/${product.id}`
+                                `/dashboard/product-new/${product.id}` ||
+                                location.pathname.includes(
+                                  `/dashboard/product-new/${product.id}`,
+                                )
                                 ? "bg-sidebar-primary/70 text-sidebar-primary-foreground"
                                 : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-white/5",
                             )}

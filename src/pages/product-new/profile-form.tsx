@@ -37,7 +37,13 @@ import {
 
 interface SizeData {
   headers: string[];
-  rows: string[][];
+  rows: Array<{
+    label: {
+      en: string;
+      id: string;
+    };
+    values: string[];
+  }>;
 }
 
 interface SpecificationItem {
@@ -86,9 +92,15 @@ const ProfileFormPage = () => {
 
   // Size table state
   const [sizeData, setSizeData] = useState<SizeData>({
-    headers: ["anchor"],
+    headers: [],
     rows: [],
   });
+
+  // Language state for size information
+  const [sizeLanguage, setSizeLanguage] = useState<"en" | "id">("en");
+
+  // Language state for specifications
+  const [specLanguage, setSpecLanguage] = useState<"en" | "id">("en");
 
   // Specification state
   const [specifications, setSpecifications] = useState<SpecificationItem[]>([]);
@@ -151,31 +163,40 @@ const ProfileFormPage = () => {
 
   // Size table management functions
   const addColumn = () => {
-    if (sizeData.headers.length >= 8) {
-      // 1 anchor + 7 dynamic
+    if (sizeData.headers.length >= 7) {
       toast.error("Maximum 7 size columns allowed");
       return;
     }
 
     setSizeData((prev) => ({
-      headers: [...prev.headers, `Size ${prev.headers.length}`],
-      rows: prev.rows.map((row) => [...row, ""]),
+      headers: [...prev.headers, `Size ${prev.headers.length + 1}`],
+      rows: prev.rows.map((row) => ({
+        ...row,
+        values: [...row.values, ""],
+      })),
     }));
   };
 
   const removeColumn = (index: number) => {
-    if (index === 0) return; // Don't remove anchor column
-
     setSizeData((prev) => ({
       headers: prev.headers.filter((_, i) => i !== index),
-      rows: prev.rows.map((row) => row.filter((_, i) => i !== index)),
+      rows: prev.rows.map((row) => ({
+        ...row,
+        values: row.values.filter((_, i) => i !== index),
+      })),
     }));
   };
 
   const addRow = () => {
     setSizeData((prev) => ({
       ...prev,
-      rows: [...prev.rows, Array(prev.headers.length).fill("")],
+      rows: [
+        ...prev.rows,
+        {
+          label: { en: "", id: "" },
+          values: Array(prev.headers.length).fill(""),
+        },
+      ],
     }));
   };
 
@@ -193,12 +214,24 @@ const ProfileFormPage = () => {
     }));
   };
 
+  const updateRowLabel = (index: number, lang: "en" | "id", value: string) => {
+    setSizeData((prev) => ({
+      ...prev,
+      rows: prev.rows.map((row, i) =>
+        i === index ? { ...row, label: { ...row.label, [lang]: value } } : row,
+      ),
+    }));
+  };
+
   const updateCell = (rowIndex: number, colIndex: number, value: string) => {
     setSizeData((prev) => ({
       ...prev,
       rows: prev.rows.map((row, i) =>
         i === rowIndex
-          ? row.map((cell, j) => (j === colIndex ? value : cell))
+          ? {
+              ...row,
+              values: row.values.map((v, j) => (j === colIndex ? value : v)),
+            }
           : row,
       ),
     }));
@@ -337,14 +370,29 @@ const ProfileFormPage = () => {
 
       // Load size data from profile
       if (profile.size && typeof profile.size === "object") {
-        const sizeObj = profile.size as SizeData;
-        if (sizeObj.headers && sizeObj.rows) {
-          setSizeData(sizeObj);
+        const sizeObj = profile.size as any;
+        if (sizeObj.headers && sizeObj.rows && sizeObj.rows.length > 0) {
+          // Check if rows are in old format (string[][]) or new format (bilingual)
+          const isOldFormat = Array.isArray(sizeObj.rows[0]);
+
+          if (isOldFormat) {
+            // Convert old format to new format
+            // Old: headers: ["anchor", "Size 1"], rows: [["Label", "Value"]]
+            // New: headers: ["Size 1"], rows: [{label: {en: "Label", id: "Label"}, values: ["Value"]}]
+            const newHeaders = sizeObj.headers.slice(1); // Remove anchor from headers
+            const newRows = sizeObj.rows.map((row: string[]) => ({
+              label: { en: row[0] || "", id: row[0] || "" },
+              values: row.slice(1),
+            }));
+            setSizeData({ headers: newHeaders, rows: newRows });
+          } else {
+            setSizeData(sizeObj as SizeData);
+          }
         } else {
-          setSizeData({ headers: ["anchor"], rows: [] });
+          setSizeData({ headers: [], rows: [] });
         }
       } else {
-        setSizeData({ headers: ["anchor"], rows: [] });
+        setSizeData({ headers: [], rows: [] });
       }
 
       // Load specification data from profile
@@ -583,7 +631,7 @@ const ProfileFormPage = () => {
               </div>
 
               {/* Premium Checkbox */}
-              <div className="flex items-center space-x-2">
+              {/*<div className="flex items-center space-x-2">
                 <Checkbox
                   id="is_premium"
                   checked={isPremium}
@@ -597,7 +645,7 @@ const ProfileFormPage = () => {
                 >
                   Premium Profile
                 </Label>
-              </div>
+              </div>*/}
             </CardContent>
           </Card>
 
@@ -772,101 +820,44 @@ const ProfileFormPage = () => {
           {/* Specifications */}
           <Card>
             <CardHeader>
-              <CardTitle>Specifications</CardTitle>
-              <CardDescription>Technical specifications</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Materials */}
-              <div className="space-y-2">
-                <Label htmlFor="materials">Materials</Label>
-                <Input
-                  id="materials"
-                  {...register("materials")}
-                  placeholder="e.g., Steel, Aluminum"
-                />
-              </div>
-
-              {/* Two columns layout */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="thickness">Thickness</Label>
-                  <Input
-                    id="thickness"
-                    {...register("thickness")}
-                    placeholder="e.g., 0.4mm"
-                  />
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Additional Specifications</CardTitle>
+                  <CardDescription>
+                    Add custom specifications with bilingual labels and values.
+                    Drag to reorder.
+                  </CardDescription>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="weight">Weight</Label>
-                  <Input
-                    id="weight"
-                    {...register("weight")}
-                    placeholder="e.g., 5.5 kg/m²"
-                  />
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant={specLanguage === "en" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setSpecLanguage("en")}
+                    className="h-8 px-3"
+                  >
+                    EN
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={specLanguage === "id" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setSpecLanguage("id")}
+                    className="h-8 px-3"
+                  >
+                    ID
+                  </Button>
                 </div>
               </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="size_per_panel">Size Per Panel</Label>
-                  <Input
-                    id="size_per_panel"
-                    {...register("size_per_panel")}
-                    placeholder="e.g., 1000mm x 6000mm"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="effective_size">Effective Size</Label>
-                  <Input
-                    id="effective_size"
-                    {...register("effective_size")}
-                    placeholder="e.g., 960mm"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="panel_amount">Panel Amount</Label>
-                  <Input
-                    id="panel_amount"
-                    type="number"
-                    {...register("panel_amount", { valueAsNumber: true })}
-                    placeholder="0"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="tkdn_value">TKDN Value</Label>
-                  <Input
-                    id="tkdn_value"
-                    {...register("tkdn_value")}
-                    placeholder="e.g., 40%"
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Additional Specifications */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Additional Specifications</CardTitle>
-              <CardDescription>
-                Add custom specifications with bilingual labels and values. Drag
-                to reorder.
-              </CardDescription>
             </CardHeader>
             <CardContent>
               {specifications.length > 0 ? (
                 <div className="space-y-3">
                   {/* Header Row */}
-                  <div className="grid grid-cols-[40px_1fr_1fr_1fr_40px] gap-3 pb-2 border-b">
+                  <div className="grid grid-cols-[40px_1fr_1fr_40px] gap-3 pb-2 border-b">
                     <div></div>
                     <Label className="text-xs font-medium text-muted-foreground">
-                      Label (EN)
-                    </Label>
-                    <Label className="text-xs font-medium text-muted-foreground">
-                      Label (ID)
+                      Label
                     </Label>
                     <Label className="text-xs font-medium text-muted-foreground">
                       Value
@@ -893,7 +884,7 @@ const ProfileFormPage = () => {
                                 <div
                                   ref={provided.innerRef}
                                   {...provided.draggableProps}
-                                  className={`grid grid-cols-[40px_1fr_1fr_1fr_40px] gap-3 items-center ${
+                                  className={`grid grid-cols-[40px_1fr_1fr_40px] gap-3 items-center ${
                                     snapshot.isDragging
                                       ? "bg-muted rounded-md"
                                       : ""
@@ -906,27 +897,19 @@ const ProfileFormPage = () => {
                                     <GripVertical className="w-5 h-5 text-muted-foreground" />
                                   </div>
                                   <Input
-                                    value={spec.label.en}
+                                    value={spec.label[specLanguage]}
                                     onChange={(e) =>
                                       updateSpecificationLabel(
                                         index,
-                                        "en",
+                                        specLanguage,
                                         e.target.value,
                                       )
                                     }
-                                    placeholder="e.g., Coating Type"
-                                    className="h-9 text-sm"
-                                  />
-                                  <Input
-                                    value={spec.label.id}
-                                    onChange={(e) =>
-                                      updateSpecificationLabel(
-                                        index,
-                                        "id",
-                                        e.target.value,
-                                      )
+                                    placeholder={
+                                      specLanguage === "en"
+                                        ? "e.g., Coating Type"
+                                        : "e.g., Jenis Lapisan"
                                     }
-                                    placeholder="e.g., Jenis Lapisan"
                                     className="h-9 text-sm"
                                   />
                                   <Input
@@ -994,44 +977,68 @@ const ProfileFormPage = () => {
           {/* Dynamic Size Information */}
           <Card>
             <CardHeader>
-              <CardTitle>Size Information</CardTitle>
-              <CardDescription>
-                Dynamic size table with custom dimensions. Drag rows to reorder.
-              </CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Size Information</CardTitle>
+                  <CardDescription>
+                    Dynamic size table with custom dimensions. Drag rows to
+                    reorder.
+                  </CardDescription>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant={sizeLanguage === "en" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setSizeLanguage("en")}
+                    className="h-8 px-3"
+                  >
+                    EN
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={sizeLanguage === "id" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setSizeLanguage("id")}
+                    className="h-8 px-3"
+                  >
+                    ID
+                  </Button>
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
-              {sizeData.headers.length > 1 || sizeData.rows.length > 0 ? (
+              {sizeData.headers.length > 0 || sizeData.rows.length > 0 ? (
                 <div className="border rounded-lg overflow-auto">
                   <table className="w-full text-sm">
                     <thead className="bg-muted">
                       <tr>
                         <th className="p-2 w-10 border-b"></th>
+                        <th className="p-2 text-left border-b">
+                          <span className="font-medium">
+                            {sizeLanguage === "en" ? "Label" : "Label"}
+                          </span>
+                        </th>
                         {sizeData.headers.map((header, index) => (
                           <th key={index} className="p-2 text-left border-b">
                             <div className="flex items-center gap-2">
-                              {index === 0 ? (
-                                <span className="font-medium">Anchor</span>
-                              ) : (
-                                <>
-                                  <Input
-                                    value={header}
-                                    onChange={(e) =>
-                                      updateHeader(index, e.target.value)
-                                    }
-                                    placeholder={`Size ${index}`}
-                                    className="h-8 text-xs"
-                                  />
-                                  <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-6 w-6 text-destructive hover:text-destructive"
-                                    onClick={() => removeColumn(index)}
-                                  >
-                                    <X className="w-3 h-3" />
-                                  </Button>
-                                </>
-                              )}
+                              <Input
+                                value={header}
+                                onChange={(e) =>
+                                  updateHeader(index, e.target.value)
+                                }
+                                placeholder={`Size ${index + 1}`}
+                                className="h-8 text-xs"
+                              />
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6 text-destructive hover:text-destructive"
+                                onClick={() => removeColumn(index)}
+                              >
+                                <X className="w-3 h-3" />
+                              </Button>
                             </div>
                           </th>
                         ))}
@@ -1042,7 +1049,7 @@ const ProfileFormPage = () => {
                             size="icon"
                             className="h-6 w-6"
                             onClick={addColumn}
-                            disabled={sizeData.headers.length >= 8}
+                            disabled={sizeData.headers.length >= 7}
                             title="Add Column"
                           >
                             <Plus className="w-3 h-3" />
@@ -1077,7 +1084,25 @@ const ProfileFormPage = () => {
                                     >
                                       <GripVertical className="w-4 h-4 text-muted-foreground mx-auto" />
                                     </td>
-                                    {row.map((cell, colIndex) => (
+                                    <td className="p-2">
+                                      <Input
+                                        value={row.label[sizeLanguage]}
+                                        onChange={(e) =>
+                                          updateRowLabel(
+                                            rowIndex,
+                                            sizeLanguage,
+                                            e.target.value,
+                                          )
+                                        }
+                                        placeholder={
+                                          sizeLanguage === "en"
+                                            ? "Row label"
+                                            : "Label baris"
+                                        }
+                                        className="h-8 text-xs"
+                                      />
+                                    </td>
+                                    {row.values.map((cell, colIndex) => (
                                       <td key={colIndex} className="p-2">
                                         <Input
                                           value={cell}
@@ -1088,9 +1113,7 @@ const ProfileFormPage = () => {
                                               e.target.value,
                                             )
                                           }
-                                          placeholder={
-                                            colIndex === 0 ? "Row key" : "Value"
-                                          }
+                                          placeholder="Value"
                                           className="h-8 text-xs"
                                         />
                                       </td>
@@ -1114,7 +1137,7 @@ const ProfileFormPage = () => {
                             <tr>
                               <td className="p-2"></td>
                               <td
-                                colSpan={sizeData.headers.length}
+                                colSpan={sizeData.headers.length + 1}
                                 className="p-2"
                               >
                                 <Button
@@ -1148,12 +1171,12 @@ const ProfileFormPage = () => {
                       variant="outline"
                       size="sm"
                       onClick={addColumn}
-                      disabled={sizeData.headers.length >= 8}
+                      disabled={sizeData.headers.length >= 7}
                     >
                       <Plus className="w-4 h-4 mr-1" />
-                      Add Information
+                      Add Column
                     </Button>
-                    {/*<Button
+                    <Button
                       type="button"
                       variant="outline"
                       size="sm"
@@ -1161,7 +1184,7 @@ const ProfileFormPage = () => {
                     >
                       <Plus className="w-4 h-4 mr-1" />
                       Add Row
-                    </Button>*/}
+                    </Button>
                   </div>
                 </div>
               )}

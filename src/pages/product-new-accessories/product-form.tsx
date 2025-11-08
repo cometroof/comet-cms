@@ -366,7 +366,7 @@ const ProductAccessoriesFormPage = () => {
                 <div className="space-y-2 col-span-1">
                   <Label>Brand Image</Label>
                   <div
-                    className="relative w-32 h-32 border rounded overflow-hidden group cursor-pointer"
+                    className="relative size-full border rounded overflow-hidden group cursor-pointer"
                     onClick={() => setShowBrandImageSelector(true)}
                   >
                     {brandImage ? (
@@ -404,7 +404,7 @@ const ProductAccessoriesFormPage = () => {
                 <div className="space-y-2 col-span-1">
                   <Label>Product Main Image</Label>
                   <div
-                    className="relative w-32 h-32 border rounded overflow-hidden group cursor-pointer"
+                    className="relative size-full border rounded overflow-hidden group cursor-pointer"
                     onClick={() => setShowMainImageSelector(true)}
                   >
                     {mainImage ? (
