@@ -327,8 +327,7 @@ const ProductAccessoriesFormPage = () => {
                 <Label htmlFor="slug">Slug</Label>
                 {product ? (
                   <Badge className="ml-4" variant="outline">
-                    <span className="text-primary/60">/accessories</span>/
-                    {product.slug}
+                    /{product.slug}
                   </Badge>
                 ) : (
                   <Input
@@ -340,7 +339,7 @@ const ProductAccessoriesFormPage = () => {
               </div>
 
               {/* Order */}
-              <div className="space-y-2">
+              {/*<div className="space-y-2">
                 <Label htmlFor="order">Display Order</Label>
                 <Input
                   id="order"
@@ -348,7 +347,7 @@ const ProductAccessoriesFormPage = () => {
                   {...register("order", { valueAsNumber: true })}
                   placeholder="0"
                 />
-              </div>
+              </div>*/}
             </CardContent>
           </Card>
 

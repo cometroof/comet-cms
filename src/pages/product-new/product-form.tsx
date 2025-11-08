@@ -336,7 +336,7 @@ const ProductFormPage = () => {
               </div>
 
               {/* Order */}
-              <div className="space-y-2">
+              {/*<div className="space-y-2">
                 <Label htmlFor="order">Display Order</Label>
                 <Input
                   id="order"
@@ -344,7 +344,7 @@ const ProductFormPage = () => {
                   {...register("order", { valueAsNumber: true })}
                   placeholder="0"
                 />
-              </div>
+              </div>*/}
             </CardContent>
           </Card>
 

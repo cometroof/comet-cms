@@ -30,9 +30,11 @@ import {
   Loader2,
   ArrowLeft,
 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 interface AddonFormData {
   name: string;
+  slug: string;
   description_en: string;
   description_id: string;
   order: number;
@@ -347,6 +349,21 @@ const AddonFormPage = () => {
                   <p className="text-sm text-destructive">
                     {errors.name.message}
                   </p>
+                )}
+              </div>
+              {/* Slug */}
+              <div className="space-y-2">
+                <Label htmlFor="slug">Slug</Label>
+                {isEdit ? (
+                  <Badge className="ml-4" variant="outline">
+                    /{addon.slug}
+                  </Badge>
+                ) : (
+                  <Input
+                    id="slug"
+                    {...register("slug")}
+                    placeholder="add-on-slug"
+                  />
                 )}
               </div>
             </CardContent>

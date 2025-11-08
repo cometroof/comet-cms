@@ -14,8 +14,6 @@ import {
   PackageOpen,
   Menu,
   X,
-  SquareChevronLeft,
-  SquareChevronRight,
   PackagePlus,
   ChevronDown,
   ChevronRight as ChevronRightIcon,
@@ -104,7 +102,11 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
 
   const navigation = [
     { name: "Home", href: "/dashboard/home", icon: Home },
-    { name: "Products", href: "/dashboard/product-new", icon: PackageOpen },
+    {
+      name: "Product Brand",
+      href: "/dashboard/product-new",
+      icon: PackageOpen,
+    },
     {
       name: "Accessories",
       href: "/dashboard/product-accessories",
@@ -180,9 +182,10 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto">
             {navigation.map((item) => {
               const Icon = item.icon;
-              const isProductsMenu = item.name === "Products";
-              const isAccessoriesMenu = item.name === "Accessories";
-              const isAddonsMenu = item.name === "Product Add-ons";
+              const isProductsMenu = item.href === "/dashboard/product-new";
+              const isAccessoriesMenu =
+                item.href === "/dashboard/product-accessories";
+              const isAddonsMenu = item.href === "/dashboard/product-add-ons";
 
               // Products Menu with Submenu
               if (isProductsMenu) {
