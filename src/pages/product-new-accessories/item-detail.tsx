@@ -90,11 +90,6 @@ const ItemAccessoriesDetailPage = () => {
     staleTime: 0, // Tidak cache data
   });
 
-  // ============================================================
-  // KUNCI SOLUSI: Hitung defaultValues secara langsung dari data
-  // Tidak perlu useEffect!
-  // ============================================================
-
   const getDefaultValues = (): ItemFormData => {
     if (isEditMode && item) {
       // Edit mode: gunakan data dari item
@@ -383,7 +378,7 @@ const ItemAccessoriesDetailPage = () => {
                 )}
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              {/*<div className="grid grid-cols-2 gap-4  hidden">
                 <div className="space-y-2">
                   <Label htmlFor="length">Length</Label>
                   <Input
@@ -400,7 +395,7 @@ const ItemAccessoriesDetailPage = () => {
                     placeholder="e.g., 5.5 kg/m²"
                   />
                 </div>
-              </div>
+              </div>*/}
             </CardContent>
           </Card>
 

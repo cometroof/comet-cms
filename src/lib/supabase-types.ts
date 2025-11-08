@@ -579,6 +579,7 @@ export type Database = {
           profile_image_url: string | null;
           size: Json | null;
           size_per_panel: string | null;
+          specification: Json | null;
           thickness: string | null;
           tkdn_value: string | null;
           updated_at: string | null;
@@ -597,6 +598,7 @@ export type Database = {
           profile_image_url?: string | null;
           size?: Json | null;
           size_per_panel?: string | null;
+          specification?: Json | null;
           thickness?: string | null;
           tkdn_value?: string | null;
           updated_at?: string | null;
@@ -615,6 +617,7 @@ export type Database = {
           profile_image_url?: string | null;
           size?: Json | null;
           size_per_panel?: string | null;
+          specification?: Json | null;
           thickness?: string | null;
           tkdn_value?: string | null;
           updated_at?: string | null;

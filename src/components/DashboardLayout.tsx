@@ -21,6 +21,8 @@ import {
   ChevronRight as ChevronRightIcon,
   Wrench,
   Plus,
+  Sidebar,
+  SidebarClose,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -483,9 +485,9 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
             onClick={() => setDesktopCollapsed(!desktopCollapsed)}
           >
             {desktopCollapsed ? (
-              <SquareChevronRight className="!size-6" />
+              <Sidebar className="!size-6" />
             ) : (
-              <SquareChevronLeft className="!size-6" />
+              <SidebarClose className="!size-6" />
             )}
           </Button>
         </header>

@@ -19,11 +19,33 @@ import {
 import { toast } from "sonner";
 import { ProductProfile } from "@/pages/product/types";
 import ImageSelectorDialog from "@/components/ImageSelectorDialog";
-import { ChevronLeft, X, ImageUp, Loader2, Plus, Trash2 } from "lucide-react";
+import {
+  ChevronLeft,
+  X,
+  ImageUp,
+  Loader2,
+  Plus,
+  Trash2,
+  GripVertical,
+} from "lucide-react";
+import {
+  DragDropContext,
+  Droppable,
+  Draggable,
+  DropResult,
+} from "@hello-pangea/dnd";
 
 interface SizeData {
   headers: string[];
   rows: string[][];
+}
+
+interface SpecificationItem {
+  label: {
+    en: string;
+    id: string;
+  };
+  value: string;
 }
 
 interface ProfileFormData {
@@ -68,13 +90,19 @@ const ProfileFormPage = () => {
     rows: [],
   });
 
+  // Specification state
+  const [specifications, setSpecifications] = useState<SpecificationItem[]>([]);
+
+  // Form dirty state
+  const [isFormDirty, setIsFormDirty] = useState(false);
+
   const {
     register,
     handleSubmit,
     reset,
     setValue,
     watch,
-    formState: { errors },
+    formState: { errors, isDirty },
   } = useForm<ProfileFormData>({
     defaultValues: {
       name: "",
@@ -102,6 +130,24 @@ const ProfileFormPage = () => {
   const premiumImage = watch("premium_image_url");
   const contentImage = watch("content_image_url");
   const isPremium = watch("is_premium");
+
+  // Track form dirty state - combine form dirty with specifications and size data changes
+  useEffect(() => {
+    setIsFormDirty(isDirty);
+  }, [isDirty]);
+
+  // Warn before leaving page with unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (isFormDirty) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [isFormDirty]);
 
   // Size table management functions
   const addColumn = () => {
@@ -155,6 +201,63 @@ const ProfileFormPage = () => {
           ? row.map((cell, j) => (j === colIndex ? value : cell))
           : row,
       ),
+    }));
+  };
+
+  // Specification management functions
+  const addSpecification = () => {
+    setSpecifications((prev) => [
+      ...prev,
+      { label: { en: "", id: "" }, value: "" },
+    ]);
+  };
+
+  const removeSpecification = (index: number) => {
+    setSpecifications((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const updateSpecificationLabel = (
+    index: number,
+    lang: "en" | "id",
+    value: string,
+  ) => {
+    setSpecifications((prev) =>
+      prev.map((spec, i) =>
+        i === index
+          ? { ...spec, label: { ...spec.label, [lang]: value } }
+          : spec,
+      ),
+    );
+  };
+
+  const updateSpecificationValue = (index: number, value: string) => {
+    setSpecifications((prev) =>
+      prev.map((spec, i) => (i === index ? { ...spec, value } : spec)),
+    );
+  };
+
+  // Drag and drop handler for specifications
+  const handleSpecificationDragEnd = (result: DropResult) => {
+    if (!result.destination) return;
+
+    const items = Array.from(specifications);
+    const [reorderedItem] = items.splice(result.source.index, 1);
+    items.splice(result.destination.index, 0, reorderedItem);
+
+    setSpecifications(items);
+  };
+
+  // Drag and drop handler for size information rows
+  const handleSizeRowDragEnd = (result: DropResult) => {
+    if (!result.destination) return;
+
+    const rows = Array.from(sizeData.rows);
+    const [reorderedRow] = rows.splice(result.source.index, 1);
+    rows.splice(result.destination.index, 0, reorderedRow);
+
+    setSizeData((prev) => ({
+      ...prev,
+      rows,
     }));
   };
 
@@ -243,8 +346,34 @@ const ProfileFormPage = () => {
       } else {
         setSizeData({ headers: ["anchor"], rows: [] });
       }
+
+      // Load specification data from profile
+      if (profile.specification && Array.isArray(profile.specification)) {
+        setSpecifications(profile.specification as SpecificationItem[]);
+      } else {
+        setSpecifications([]);
+      }
     }
   }, [profile, reset]);
+
+  // Mark form as dirty when specifications or size data changes
+  useEffect(() => {
+    if (profile && specifications.length > 0) {
+      const originalSpecs = profile.specification || [];
+      const hasSpecChanges =
+        JSON.stringify(specifications) !== JSON.stringify(originalSpecs);
+      if (hasSpecChanges) setIsFormDirty(true);
+    }
+  }, [specifications, profile]);
+
+  useEffect(() => {
+    if (profile && (sizeData.headers.length > 1 || sizeData.rows.length > 0)) {
+      const originalSize = profile.size || { headers: ["anchor"], rows: [] };
+      const hasSizeChanges =
+        JSON.stringify(sizeData) !== JSON.stringify(originalSize);
+      if (hasSizeChanges) setIsFormDirty(true);
+    }
+  }, [sizeData, profile]);
 
   const saveMutation = useMutation({
     mutationFn: async (data: ProfileFormData) => {
@@ -261,6 +390,7 @@ const ProfileFormPage = () => {
         profile_image_url: data.profile_image_url || null,
         profile_banner_url: data.profile_banner_url || null,
         size: sizeData,
+        specification: specifications.length > 0 ? specifications : null,
         updated_at: new Date().toISOString(),
       };
 
@@ -371,9 +501,16 @@ const ProfileFormPage = () => {
 
   const onSubmit = (data: ProfileFormData) => {
     saveMutation.mutate(data);
+    setIsFormDirty(false);
   };
 
   const handleBackClick = () => {
+    if (isFormDirty) {
+      const confirmed = window.confirm(
+        "You have unsaved changes. Are you sure you want to leave?",
+      );
+      if (!confirmed) return;
+    }
     navigate(-1);
   };
 
@@ -401,10 +538,17 @@ const ProfileFormPage = () => {
           >
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          <div>
-            <h1 className="text-3xl font-bold text-foreground">
-              {isEditMode ? "Edit Profile" : "Create New Profile"}
-            </h1>
+          <div className="flex-1">
+            <div className="flex items-center gap-2">
+              <h1 className="text-3xl font-bold text-foreground">
+                {isEditMode ? "Edit Profile" : "Create New Profile"}
+              </h1>
+              {isFormDirty && (
+                <span className="text-sm text-amber-600 dark:text-amber-500 font-medium">
+                  (Unsaved changes)
+                </span>
+              )}
+            </div>
             <p className="text-muted-foreground mt-1">
               {isEditMode
                 ? "Update the profile information below"
@@ -464,7 +608,7 @@ const ProfileFormPage = () => {
               <CardDescription>Profile images and visuals</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-4 gap-4">
                 {/* Profile Image */}
                 <div className="space-y-2">
                   <Label>Profile Image</Label>
@@ -504,10 +648,10 @@ const ProfileFormPage = () => {
                 </div>
 
                 {/* Profile Banner */}
-                <div className="space-y-2">
+                <div className="space-y-2 col-span-3">
                   <Label>Profile Banner</Label>
                   <div
-                    className="relative w-full aspect-square border rounded overflow-hidden group cursor-pointer"
+                    className="relative w-full aspect-[2.5/1] border rounded overflow-hidden group cursor-pointer"
                     onClick={() => setShowBannerSelector(true)}
                   >
                     {bannerImage ? (
@@ -703,12 +847,156 @@ const ProfileFormPage = () => {
             </CardContent>
           </Card>
 
+          {/* Additional Specifications */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Additional Specifications</CardTitle>
+              <CardDescription>
+                Add custom specifications with bilingual labels and values. Drag
+                to reorder.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {specifications.length > 0 ? (
+                <div className="space-y-3">
+                  {/* Header Row */}
+                  <div className="grid grid-cols-[40px_1fr_1fr_1fr_40px] gap-3 pb-2 border-b">
+                    <div></div>
+                    <Label className="text-xs font-medium text-muted-foreground">
+                      Label (EN)
+                    </Label>
+                    <Label className="text-xs font-medium text-muted-foreground">
+                      Label (ID)
+                    </Label>
+                    <Label className="text-xs font-medium text-muted-foreground">
+                      Value
+                    </Label>
+                    <div></div>
+                  </div>
+
+                  {/* Specification Rows with Drag and Drop */}
+                  <DragDropContext onDragEnd={handleSpecificationDragEnd}>
+                    <Droppable droppableId="specifications">
+                      {(provided) => (
+                        <div
+                          {...provided.droppableProps}
+                          ref={provided.innerRef}
+                          className="space-y-2"
+                        >
+                          {specifications.map((spec, index) => (
+                            <Draggable
+                              key={`spec-${index}`}
+                              draggableId={`spec-${index}`}
+                              index={index}
+                            >
+                              {(provided, snapshot) => (
+                                <div
+                                  ref={provided.innerRef}
+                                  {...provided.draggableProps}
+                                  className={`grid grid-cols-[40px_1fr_1fr_1fr_40px] gap-3 items-center ${
+                                    snapshot.isDragging
+                                      ? "bg-muted rounded-md"
+                                      : ""
+                                  }`}
+                                >
+                                  <div
+                                    {...provided.dragHandleProps}
+                                    className="flex items-center justify-center cursor-grab active:cursor-grabbing"
+                                  >
+                                    <GripVertical className="w-5 h-5 text-muted-foreground" />
+                                  </div>
+                                  <Input
+                                    value={spec.label.en}
+                                    onChange={(e) =>
+                                      updateSpecificationLabel(
+                                        index,
+                                        "en",
+                                        e.target.value,
+                                      )
+                                    }
+                                    placeholder="e.g., Coating Type"
+                                    className="h-9 text-sm"
+                                  />
+                                  <Input
+                                    value={spec.label.id}
+                                    onChange={(e) =>
+                                      updateSpecificationLabel(
+                                        index,
+                                        "id",
+                                        e.target.value,
+                                      )
+                                    }
+                                    placeholder="e.g., Jenis Lapisan"
+                                    className="h-9 text-sm"
+                                  />
+                                  <Input
+                                    value={spec.value}
+                                    onChange={(e) =>
+                                      updateSpecificationValue(
+                                        index,
+                                        e.target.value,
+                                      )
+                                    }
+                                    placeholder="e.g., Galvalume AZ150"
+                                    className="h-9 text-sm"
+                                  />
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-9 w-9 text-destructive hover:text-destructive"
+                                    onClick={() => removeSpecification(index)}
+                                  >
+                                    <X className="w-4 h-4" />
+                                  </Button>
+                                </div>
+                              )}
+                            </Draggable>
+                          ))}
+                          {provided.placeholder}
+                        </div>
+                      )}
+                    </Droppable>
+                  </DragDropContext>
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="w-full mt-2"
+                    onClick={addSpecification}
+                  >
+                    <Plus className="w-4 h-4 mr-1" />
+                    Add Specification
+                  </Button>
+                </div>
+              ) : (
+                <div className="border border-dashed rounded-lg p-8 text-center text-muted-foreground">
+                  <p className="text-sm">No specifications added yet</p>
+                  <p className="text-xs mt-1">
+                    Click the button below to add custom specifications
+                  </p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="mt-4"
+                    onClick={addSpecification}
+                  >
+                    <Plus className="w-4 h-4 mr-1" />
+                    Add Specification
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           {/* Dynamic Size Information */}
           <Card>
             <CardHeader>
               <CardTitle>Size Information</CardTitle>
               <CardDescription>
-                Dynamic size table with custom dimensions
+                Dynamic size table with custom dimensions. Drag rows to reorder.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -717,6 +1005,7 @@ const ProfileFormPage = () => {
                   <table className="w-full text-sm">
                     <thead className="bg-muted">
                       <tr>
+                        <th className="p-2 w-10 border-b"></th>
                         {sizeData.headers.map((header, index) => (
                           <th key={index} className="p-2 text-left border-b">
                             <div className="flex items-center gap-2">
@@ -761,52 +1050,90 @@ const ProfileFormPage = () => {
                         </th>
                       </tr>
                     </thead>
-                    <tbody>
-                      {sizeData.rows.map((row, rowIndex) => (
-                        <tr key={rowIndex} className="border-b last:border-b-0">
-                          {row.map((cell, colIndex) => (
-                            <td key={colIndex} className="p-2">
-                              <Input
-                                value={cell}
-                                onChange={(e) =>
-                                  updateCell(rowIndex, colIndex, e.target.value)
-                                }
-                                placeholder={
-                                  colIndex === 0 ? "Row key" : "Value"
-                                }
-                                className="h-8 text-xs"
-                              />
-                            </td>
-                          ))}
-                          <td className="p-2">
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              className="h-6 w-6 text-destructive hover:text-destructive"
-                              onClick={() => removeRow(rowIndex)}
-                            >
-                              <Trash2 className="w-3 h-3" />
-                            </Button>
-                          </td>
-                        </tr>
-                      ))}
-                      <tr>
-                        <td colSpan={sizeData.headers.length} className="p-2">
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="h-6 w-full text-xs text-muted-foreground hover:text-foreground"
-                            onClick={addRow}
+                    <DragDropContext onDragEnd={handleSizeRowDragEnd}>
+                      <Droppable droppableId="size-rows">
+                        {(provided) => (
+                          <tbody
+                            {...provided.droppableProps}
+                            ref={provided.innerRef}
                           >
-                            <Plus className="w-3 h-3 mr-1" />
-                            Add Row
-                          </Button>
-                        </td>
-                        <td className="p-2"></td>
-                      </tr>
-                    </tbody>
+                            {sizeData.rows.map((row, rowIndex) => (
+                              <Draggable
+                                key={`row-${rowIndex}`}
+                                draggableId={`row-${rowIndex}`}
+                                index={rowIndex}
+                              >
+                                {(provided, snapshot) => (
+                                  <tr
+                                    ref={provided.innerRef}
+                                    {...provided.draggableProps}
+                                    className={`border-b last:border-b-0 ${
+                                      snapshot.isDragging ? "bg-muted" : ""
+                                    }`}
+                                  >
+                                    <td
+                                      {...provided.dragHandleProps}
+                                      className="p-2 cursor-grab active:cursor-grabbing"
+                                    >
+                                      <GripVertical className="w-4 h-4 text-muted-foreground mx-auto" />
+                                    </td>
+                                    {row.map((cell, colIndex) => (
+                                      <td key={colIndex} className="p-2">
+                                        <Input
+                                          value={cell}
+                                          onChange={(e) =>
+                                            updateCell(
+                                              rowIndex,
+                                              colIndex,
+                                              e.target.value,
+                                            )
+                                          }
+                                          placeholder={
+                                            colIndex === 0 ? "Row key" : "Value"
+                                          }
+                                          className="h-8 text-xs"
+                                        />
+                                      </td>
+                                    ))}
+                                    <td className="p-2">
+                                      <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-6 w-6 text-destructive hover:text-destructive"
+                                        onClick={() => removeRow(rowIndex)}
+                                      >
+                                        <Trash2 className="w-3 h-3" />
+                                      </Button>
+                                    </td>
+                                  </tr>
+                                )}
+                              </Draggable>
+                            ))}
+                            {provided.placeholder}
+                            <tr>
+                              <td className="p-2"></td>
+                              <td
+                                colSpan={sizeData.headers.length}
+                                className="p-2"
+                              >
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-6 w-full text-xs text-muted-foreground hover:text-foreground"
+                                  onClick={addRow}
+                                >
+                                  <Plus className="w-3 h-3 mr-1" />
+                                  Add Row
+                                </Button>
+                              </td>
+                              <td className="p-2"></td>
+                            </tr>
+                          </tbody>
+                        )}
+                      </Droppable>
+                    </DragDropContext>
                   </table>
                 </div>
               ) : (
@@ -824,9 +1151,9 @@ const ProfileFormPage = () => {
                       disabled={sizeData.headers.length >= 8}
                     >
                       <Plus className="w-4 h-4 mr-1" />
-                      Add Column
+                      Add Information
                     </Button>
-                    <Button
+                    {/*<Button
                       type="button"
                       variant="outline"
                       size="sm"
@@ -834,7 +1161,7 @@ const ProfileFormPage = () => {
                     >
                       <Plus className="w-4 h-4 mr-1" />
                       Add Row
-                    </Button>
+                    </Button>*/}
                   </div>
                 </div>
               )}

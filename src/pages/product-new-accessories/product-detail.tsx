@@ -560,14 +560,14 @@ const ProductAccessoriesDetailPage = () => {
               <CardTitle>
                 <div className="flex items-start justify-between gap-10">
                   <div>Direct Items</div>
-                  <Button
+                  {/*<Button
                     onClick={handleViewDirectItems}
                     variant="secondary"
                     className="flex items-center gap-2"
                   >
                     <ArrowRight size={16} />
                     Manage Items
-                  </Button>
+                  </Button>*/}
                 </div>
               </CardTitle>
               <CardDescription>
