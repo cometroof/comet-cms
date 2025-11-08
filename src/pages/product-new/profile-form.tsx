@@ -1174,9 +1174,9 @@ const ProfileFormPage = () => {
                       disabled={sizeData.headers.length >= 7}
                     >
                       <Plus className="w-4 h-4 mr-1" />
-                      Add Column
+                      Add Size
                     </Button>
-                    <Button
+                    {/*<Button
                       type="button"
                       variant="outline"
                       size="sm"
@@ -1184,7 +1184,7 @@ const ProfileFormPage = () => {
                     >
                       <Plus className="w-4 h-4 mr-1" />
                       Add Row
-                    </Button>
+                    </Button>*/}
                   </div>
                 </div>
               )}
