@@ -1,17 +1,16 @@
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
-import { useCategories, useProjects } from "./hooks";
-import ProjectsTab from "./ProjectsTab";
+import { useCategories } from "./hooks";
+import CategoriesTab from "./CategoriesTab";
 
-const Projects = () => {
+const ProjectCategories = () => {
   // React Query - Fetch data for loading/error states
   const { isLoading: categoriesLoading, error: categoriesError } =
     useCategories();
-  const { isLoading: projectsLoading, error: projectsError } = useProjects();
 
   // Show loading state
-  if (categoriesLoading || projectsLoading) {
+  if (categoriesLoading) {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center h-96">
@@ -22,12 +21,12 @@ const Projects = () => {
   }
 
   // Show error state
-  if (categoriesError || projectsError) {
+  if (categoriesError) {
     return (
       <DashboardLayout>
         <div className="flex flex-col items-center justify-center h-96 space-y-4">
           <p className="text-destructive">
-            Failed to load data. Please try again.
+            Failed to load categories. Please try again.
           </p>
           <Button onClick={() => window.location.reload()}>Reload</Button>
         </div>
@@ -39,16 +38,18 @@ const Projects = () => {
     <DashboardLayout>
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Projects</h1>
+          <h1 className="text-3xl font-bold text-foreground">
+            Project Categories
+          </h1>
           <p className="text-muted-foreground mt-2">
-            Manage your projects and their details
+            Manage your project categories and their organization
           </p>
         </div>
 
-        <ProjectsTab />
+        <CategoriesTab />
       </div>
     </DashboardLayout>
   );
 };
 
-export default Projects;
+export default ProjectCategories;

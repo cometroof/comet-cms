@@ -7,7 +7,7 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { IndexDashboard, Dashboard } from "./pages/dashboard";
 import { Login } from "./pages/auth";
 import { Home } from "./pages/home";
-import { Projects } from "./pages/projects";
+import { Projects, ProjectCategories } from "./pages/projects";
 import { Files } from "./pages/files";
 import { ContactsLocation } from "./pages/contacts-location";
 import { ArticlesList, ArticleCreate, ArticleEdit } from "./pages/articles";
@@ -75,6 +75,14 @@ const App = () => {
                 element={
                   <ProtectedRoute>
                     <Projects />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/dashboard/project-categories"
+                element={
+                  <ProtectedRoute>
+                    <ProjectCategories />
                   </ProtectedRoute>
                 }
               />

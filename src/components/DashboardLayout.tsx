@@ -21,6 +21,8 @@ import {
   Plus,
   Sidebar,
   SidebarClose,
+  FolderKanban,
+  Tags,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -39,6 +41,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const [productsExpanded, setProductsExpanded] = useState(false);
   const [accessoriesExpanded, setAccessoriesExpanded] = useState(false);
   const [addonsExpanded, setAddonsExpanded] = useState(false);
+  const [projectsMenuExpanded, setProjectsMenuExpanded] = useState(false);
   const location = useLocation();
   const { user, logout } = useAuth();
 
@@ -98,6 +101,12 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     if (location.pathname.includes("/dashboard/product-add-ons/")) {
       setAddonsExpanded(true);
     }
+    if (
+      location.pathname.includes("/dashboard/projects") ||
+      location.pathname.includes("/dashboard/project-categories")
+    ) {
+      setProjectsMenuExpanded(true);
+    }
   }, [location.pathname]);
 
   const navigation = [
@@ -118,7 +127,11 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       icon: PackagePlus,
     },
     { name: "Files", href: "/dashboard/files", icon: Files },
-    { name: "Projects", href: "/dashboard/projects", icon: Hammer },
+    {
+      name: "Project & Categories",
+      href: "/dashboard/projects-menu",
+      icon: Hammer,
+    },
     { name: "Articles", href: "/dashboard/articles", icon: Newspaper },
     {
       name: "Contacts & Location",
@@ -186,6 +199,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
               const isAccessoriesMenu =
                 item.href === "/dashboard/product-accessories";
               const isAddonsMenu = item.href === "/dashboard/product-add-ons";
+              const isProjectsMenu = item.href === "/dashboard/projects-menu";
 
               // Products Menu with Submenu
               if (isProductsMenu) {
@@ -386,6 +400,79 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                         >
                           <Plus className="w-4 h-4" />
                           <span>Add Product Add-on</span>
+                        </Link>
+                      </div>
+                    )}
+                  </div>
+                );
+              }
+
+              // Project & Categories Menu with Submenu
+              if (isProjectsMenu) {
+                return (
+                  <div key={item.name} className="space-y-1">
+                    {/* Project & Categories parent menu */}
+                    <button
+                      onClick={() =>
+                        setProjectsMenuExpanded(!projectsMenuExpanded)
+                      }
+                      className={cn(
+                        "w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors",
+                        location.pathname.includes("/dashboard/projects") ||
+                          location.pathname.includes(
+                            "/dashboard/project-categories",
+                          )
+                          ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm"
+                          : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-white/5",
+                        desktopCollapsed && "lg:justify-center",
+                      )}
+                      title={desktopCollapsed ? item.name : undefined}
+                    >
+                      <Icon className="w-5 h-5 flex-shrink-0" />
+                      {!desktopCollapsed && (
+                        <>
+                          <span className="flex-1 text-left">{item.name}</span>
+                          {projectsMenuExpanded ? (
+                            <ChevronDown className="w-4 h-4" />
+                          ) : (
+                            <ChevronRightIcon className="w-4 h-4" />
+                          )}
+                        </>
+                      )}
+                    </button>
+
+                    {/* Project & Categories submenu */}
+                    {projectsMenuExpanded && !desktopCollapsed && (
+                      <div className="ml-8 space-y-1">
+                        {/* Projects submenu item */}
+                        <Link
+                          to="/dashboard/projects"
+                          className={cn(
+                            "flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors",
+                            location.pathname === "/dashboard/projects"
+                              ? "bg-sidebar-primary/70 text-sidebar-primary-foreground"
+                              : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-white/5",
+                          )}
+                          onClick={() => setMobileOpen(false)}
+                        >
+                          <FolderKanban className="w-4 h-4" />
+                          <span>Projects</span>
+                        </Link>
+
+                        {/* Categories submenu item */}
+                        <Link
+                          to="/dashboard/project-categories"
+                          className={cn(
+                            "flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors",
+                            location.pathname ===
+                              "/dashboard/project-categories"
+                              ? "bg-sidebar-primary/70 text-sidebar-primary-foreground"
+                              : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-white/5",
+                          )}
+                          onClick={() => setMobileOpen(false)}
+                        >
+                          <Tags className="w-4 h-4" />
+                          <span>Categories</span>
                         </Link>
                       </div>
                     )}

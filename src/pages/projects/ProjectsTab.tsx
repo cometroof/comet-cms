@@ -174,9 +174,7 @@ const ProjectsTab = () => {
             <TableHeader>
               <TableRow>
                 <TableHead className="w-12"></TableHead>
-                <TableHead>Name</TableHead>
-                <TableHead>Slug</TableHead>
-                <TableHead>Location</TableHead>
+                <TableHead>Name &amp; Location</TableHead>
                 <TableHead>Roof Type</TableHead>
                 <TableHead>Categories</TableHead>
                 <TableHead>Images</TableHead>
@@ -217,14 +215,7 @@ const ProjectsTab = () => {
                               </TableCell>
                               <TableCell className="font-medium">
                                 {project.name}
-                              </TableCell>
-                              <TableCell>
-                                <code className="text-xs bg-muted px-2 py-1 rounded">
-                                  {project.slug}
-                                </code>
-                              </TableCell>
-                              <TableCell>
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-2 text-muted-foreground">
                                   <span>{project.location_text}</span>
                                   {project.location_link && (
                                     <a
@@ -238,6 +229,7 @@ const ProjectsTab = () => {
                                   )}
                                 </div>
                               </TableCell>
+
                               <TableCell>{project.roof_type}</TableCell>
                               <TableCell>
                                 <div className="flex flex-wrap gap-1">
@@ -263,10 +255,9 @@ const ProjectsTab = () => {
                               <TableCell>
                                 <div className="flex items-center gap-2">
                                   <span className="text-sm text-muted-foreground">
-                                    {project.images.length} image
-                                    {project.images.length !== 1 ? "s" : ""}
+                                    {project.images.length}
                                   </span>
-                                  {project.images.some(
+                                  {/*{project.images.some(
                                     (img) => img.is_highlight,
                                   ) && (
                                     <Badge
@@ -275,7 +266,7 @@ const ProjectsTab = () => {
                                     >
                                       Highlight
                                     </Badge>
-                                  )}
+                                  )}*/}
                                 </div>
                               </TableCell>
                               <TableCell className="text-right">

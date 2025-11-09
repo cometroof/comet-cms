@@ -1,8 +1,10 @@
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2 } from "lucide-react";
 import { useCategories, useProjects } from "./hooks";
 import ProjectsTab from "./ProjectsTab";
+import CategoriesTab from "./CategoriesTab";
 
 const Projects = () => {
   // React Query - Fetch data for loading/error states
@@ -41,11 +43,24 @@ const Projects = () => {
         <div>
           <h1 className="text-3xl font-bold text-foreground">Projects</h1>
           <p className="text-muted-foreground mt-2">
-            Manage your projects and their details
+            Manage your project categories and projects
           </p>
         </div>
 
-        <ProjectsTab />
+        <Tabs defaultValue="projects" className="space-y-6">
+          <TabsList>
+            <TabsTrigger value="projects">Projects</TabsTrigger>
+            <TabsTrigger value="categories">Categories</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="projects" className="space-y-4">
+            <ProjectsTab />
+          </TabsContent>
+
+          <TabsContent value="categories" className="space-y-4">
+            <CategoriesTab />
+          </TabsContent>
+        </Tabs>
       </div>
     </DashboardLayout>
   );
