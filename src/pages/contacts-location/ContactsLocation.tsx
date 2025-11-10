@@ -17,6 +17,7 @@ const ContactsLocation = () => {
     phone: "",
     fax: "",
     email: "",
+    email_form: "",
     whatsapp_contact_service: "",
   });
 

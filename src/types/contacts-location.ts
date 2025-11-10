@@ -17,6 +17,7 @@ export interface Contacts {
   phone: string;
   fax: string;
   email: string;
+  email_form: string;
   whatsapp_contact_service: string;
   created_at?: string;
   updated_at?: string;

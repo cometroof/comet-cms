@@ -59,6 +59,7 @@ export const getContacts = async (): Promise<Contacts | null> => {
     "phone",
     "fax",
     "email",
+    "email_form",
     "whatsapp_contact_service",
   ];
 
@@ -75,10 +76,17 @@ export const getContacts = async (): Promise<Contacts | null> => {
   // Transform array of {type, value} into Contacts object
   const contacts: Partial<Contacts> = {
     id: "1", // Single record
+    head_office: "",
+    head_office_link: "",
+    phone: "",
+    fax: "",
+    email: "",
+    email_form: "",
+    whatsapp_contact_service: "",
   };
 
   data.forEach((item) => {
-    contacts[item.type as keyof Contacts] = item.value;
+    contacts[item.type as keyof Contacts] = item.value || "";
     if (item.created_at) contacts.created_at = item.created_at;
     if (item.updated_at) contacts.updated_at = item.updated_at;
   });
