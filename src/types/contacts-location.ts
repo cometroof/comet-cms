@@ -22,6 +22,22 @@ export interface Contacts {
   updated_at?: string;
 }
 
+export interface SocialMediaItem {
+  value: string; // Social media URL
+  image?: string; // Optional image URL
+}
+
+export interface SocialMedia {
+  id: string;
+  twitter?: SocialMediaItem;
+  instagram?: SocialMediaItem;
+  facebook?: SocialMediaItem;
+  youtube?: SocialMediaItem;
+  telegram?: SocialMediaItem;
+  created_at?: string;
+  updated_at?: string;
+}
+
 export interface Location {
   id: string;
   name: string;

@@ -3,10 +3,11 @@ import DashboardLayout from "@/components/DashboardLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import type { Contacts } from "@/types/contacts-location";
+import type { Contacts, SocialMedia } from "@/types/contacts-location";
 import * as contactsLocationService from "@/services/contacts-location.service";
 import { ContactsTab } from "./ContactsTab";
 import { LocationsTab } from "./LocationsTab";
+import { SocialMediaTab } from "./SocialMediaTab";
 
 const ContactsLocation = () => {
   const [contacts, setContacts] = useState<Contacts>({
@@ -17,6 +18,15 @@ const ContactsLocation = () => {
     fax: "",
     email: "",
     whatsapp_contact_service: "",
+  });
+
+  const [socialMedia, setSocialMedia] = useState<SocialMedia>({
+    id: "1",
+    twitter: { value: "", image: "" },
+    instagram: { value: "", image: "" },
+    facebook: { value: "", image: "" },
+    youtube: { value: "", image: "" },
+    telegram: { value: "", image: "" },
   });
 
   const [loading, setLoading] = useState(true);
@@ -30,9 +40,13 @@ const ContactsLocation = () => {
     setLoading(true);
     try {
       const contactsData = await contactsLocationService.getContacts();
+      const socialMediaData = await contactsLocationService.getSocialMedia();
 
       if (contactsData) {
         setContacts(contactsData);
+      }
+      if (socialMediaData) {
+        setSocialMedia(socialMediaData);
       }
     } catch (error) {
       console.error("Error loading data:", error);
@@ -68,6 +82,7 @@ const ContactsLocation = () => {
           <TabsList>
             <TabsTrigger value="contacts">Contacts</TabsTrigger>
             <TabsTrigger value="locations">Locations</TabsTrigger>
+            <TabsTrigger value="social-media">Social Media</TabsTrigger>
           </TabsList>
 
           <TabsContent value="contacts" className="space-y-6">
@@ -76,6 +91,10 @@ const ContactsLocation = () => {
 
           <TabsContent value="locations" className="space-y-6">
             <LocationsTab />
+          </TabsContent>
+
+          <TabsContent value="social-media" className="space-y-6">
+            <SocialMediaTab initialSocialMedia={socialMedia} />
           </TabsContent>
         </Tabs>
       </div>

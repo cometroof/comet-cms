@@ -2,6 +2,8 @@ import { supabase } from "@/lib/supabase";
 import type {
   ContactLocationEntry,
   Contacts,
+  SocialMedia,
+  SocialMediaItem,
   Province,
   Location,
   Area,
@@ -100,6 +102,79 @@ export const updateContacts = async (
 
   if (error) {
     console.error("Error updating contacts:", error);
+    return false;
+  }
+
+  return true;
+};
+
+/**
+ * Get all social media information
+ */
+export const getSocialMedia = async (): Promise<SocialMedia | null> => {
+  const types = ["twitter", "instagram", "facebook", "youtube", "telegram"];
+
+  const { data, error } = await supabase
+    .from(TABLE_NAME)
+    .select("*")
+    .in("type", types);
+
+  if (error) {
+    console.error("Error fetching social media:", error);
+    return null;
+  }
+
+  // Transform array of {type, value} into SocialMedia object
+  const socialMedia: Partial<SocialMedia> = {
+    id: "1", // Single record
+  };
+
+  data.forEach((item) => {
+    try {
+      // Parse the JSON value for each social media type
+      const parsedValue = JSON.parse(item.value);
+      socialMedia[item.type as keyof SocialMedia] =
+        parsedValue as SocialMediaItem;
+    } catch {
+      // If parsing fails, treat as empty object
+      socialMedia[item.type as keyof SocialMedia] = { value: "", image: "" };
+    }
+    if (item.created_at) socialMedia.created_at = item.created_at;
+    if (item.updated_at) socialMedia.updated_at = item.updated_at;
+  });
+
+  // Ensure all social media types exist with default values
+  types.forEach((type) => {
+    if (!socialMedia[type as keyof SocialMedia]) {
+      socialMedia[type as keyof SocialMedia] = {
+        value: "",
+        image: "",
+      } as SocialMediaItem;
+    }
+  });
+
+  return socialMedia as SocialMedia;
+};
+
+/**
+ * Update social media information
+ */
+export const updateSocialMedia = async (
+  socialMedia: Partial<SocialMedia>,
+): Promise<boolean> => {
+  const updates = Object.entries(socialMedia)
+    .filter(([key]) => !["id", "created_at", "updated_at"].includes(key))
+    .map(([type, value]) => ({
+      type,
+      value: JSON.stringify(value),
+    }));
+
+  const { error } = await supabase
+    .from(TABLE_NAME)
+    .upsert(updates, { onConflict: "type" });
+
+  if (error) {
+    console.error("Error updating social media:", error);
     return false;
   }
 
