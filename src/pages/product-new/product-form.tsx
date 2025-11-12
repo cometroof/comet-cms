@@ -30,6 +30,8 @@ import {
   Loader2,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { RichTextEditor } from "@/components/RichTextEditor";
 
 interface ProductFormData {
   name: string;
@@ -42,6 +44,19 @@ interface ProductFormData {
   product_main_image: string;
   banner_url: string;
   catalogue: string;
+}
+
+interface ProductPremiumData {
+  id?: string;
+  material_name: string;
+  material_fullname: string;
+  description_en: string;
+  description_id: string;
+  size_per_panel: string;
+  effective_size: string;
+  reng_distance: string;
+  premium_image_url: string;
+  content_image_url: string;
 }
 
 interface SuitableRow {
@@ -58,9 +73,23 @@ const ProductFormPage = () => {
   const [showMainImageSelector, setShowMainImageSelector] = useState(false);
   const [showBannerSelector, setShowBannerSelector] = useState(false);
   const [showCatalogueSelector, setShowCatalogueSelector] = useState(false);
+  const [showPremiumImageSelector, setShowPremiumImageSelector] =
+    useState(false);
   const [suitables, setSuitables] = useState<SuitableRow[]>([
     { en: "", id: "" },
   ]);
+  const [premiumEnabled, setPremiumEnabled] = useState(false);
+  const [premiumData, setPremiumData] = useState<ProductPremiumData>({
+    material_name: "",
+    material_fullname: "",
+    description_en: "",
+    description_id: "",
+    size_per_panel: "",
+    effective_size: "",
+    reng_distance: "",
+    premium_image_url: "",
+    content_image_url: "",
+  });
 
   const {
     register,
@@ -106,6 +135,22 @@ const ProductFormPage = () => {
     enabled: isEditMode,
   });
 
+  // Fetch product premium data if editing
+  const { data: productPremium, isLoading: premiumLoading } = useQuery({
+    queryKey: ["product-premium", id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("product_premium")
+        .select("*")
+        .eq("product_id", id)
+        .maybeSingle();
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: isEditMode,
+  });
+
   // Reset form when product data is loaded
   useEffect(() => {
     if (product) {
@@ -145,6 +190,25 @@ const ProductFormPage = () => {
       setSuitables(suitablesData);
     }
   }, [product, reset]);
+
+  // Load premium data when available
+  useEffect(() => {
+    if (productPremium) {
+      setPremiumEnabled(true);
+      setPremiumData({
+        id: productPremium.id,
+        material_name: productPremium.material_name || "",
+        material_fullname: productPremium.material_fullname || "",
+        description_en: productPremium.description_en || "",
+        description_id: productPremium.description_id || "",
+        size_per_panel: productPremium.size_per_panel || "",
+        effective_size: productPremium.effective_size || "",
+        reng_distance: productPremium.reng_distance || "",
+        premium_image_url: productPremium.premium_image_url || "",
+        content_image_url: productPremium.content_image_url || "",
+      });
+    }
+  }, [productPremium]);
 
   const addSuitableRow = () => {
     setSuitables([...suitables, { en: "", id: "" }]);
@@ -198,26 +262,103 @@ const ProductFormPage = () => {
           .eq("id", id);
 
         if (error) throw error;
+
+        // Handle product premium
+        if (premiumEnabled) {
+          // Check if premium already exists
+          if (premiumData.id) {
+            // Update existing premium
+            const { error: premiumError } = await supabase
+              .from("product_premium")
+              .update({
+                material_name: premiumData.material_name || null,
+                material_fullname: premiumData.material_fullname || null,
+                description_en: premiumData.description_en || null,
+                description_id: premiumData.description_id || null,
+                size_per_panel: premiumData.size_per_panel || null,
+                effective_size: premiumData.effective_size || null,
+                reng_distance: premiumData.reng_distance || null,
+                premium_image_url: premiumData.premium_image_url || null,
+                content_image_url: premiumData.content_image_url || null,
+                updated_at: new Date().toISOString(),
+              })
+              .eq("id", premiumData.id);
+
+            if (premiumError) throw premiumError;
+          } else {
+            // Insert new premium
+            const { error: premiumError } = await supabase
+              .from("product_premium")
+              .insert({
+                product_id: id,
+                material_name: premiumData.material_name || null,
+                material_fullname: premiumData.material_fullname || null,
+                description_en: premiumData.description_en || null,
+                description_id: premiumData.description_id || null,
+                size_per_panel: premiumData.size_per_panel || null,
+                effective_size: premiumData.effective_size || null,
+                reng_distance: premiumData.reng_distance || null,
+                premium_image_url: premiumData.premium_image_url || null,
+                content_image_url: premiumData.content_image_url || null,
+              });
+
+            if (premiumError) throw premiumError;
+          }
+        } else {
+          // Delete premium if disabled
+          if (premiumData.id) {
+            const { error: deleteError } = await supabase
+              .from("product_premium")
+              .delete()
+              .eq("id", premiumData.id);
+
+            if (deleteError) throw deleteError;
+          }
+        }
       } else {
         // Create new product
-        const { error } = await supabase.from("product").insert({
-          name: data.name,
-          title: data.title,
-          description_en: data.description_en,
-          description_id: data.description_id,
-          order: data.order,
-          slug: data.slug,
-          brand_image: data.brand_image || null,
-          product_main_image: data.product_main_image || null,
-          banner_url: data.banner_url || null,
-          catalogue: data.catalogue || null,
-          suitables: suitablesEn.length > 0 ? suitablesEn : null,
-          suitables_id: suitablesId.length > 0 ? suitablesId : null,
-          is_under_product: true,
-          type: "product",
-        });
+        const { data: newProduct, error } = await supabase
+          .from("product")
+          .insert({
+            name: data.name,
+            title: data.title,
+            description_en: data.description_en,
+            description_id: data.description_id,
+            order: data.order,
+            slug: data.slug,
+            brand_image: data.brand_image || null,
+            product_main_image: data.product_main_image || null,
+            banner_url: data.banner_url || null,
+            catalogue: data.catalogue || null,
+            suitables: suitablesEn.length > 0 ? suitablesEn : null,
+            suitables_id: suitablesId.length > 0 ? suitablesId : null,
+            is_under_product: true,
+            type: "product",
+          })
+          .select()
+          .single();
 
         if (error) throw error;
+
+        // Create premium if enabled
+        if (premiumEnabled && newProduct) {
+          const { error: premiumError } = await supabase
+            .from("product_premium")
+            .insert({
+              product_id: newProduct.id,
+              material_name: premiumData.material_name || null,
+              material_fullname: premiumData.material_fullname || null,
+              description_en: premiumData.description_en || null,
+              description_id: premiumData.description_id || null,
+              size_per_panel: premiumData.size_per_panel || null,
+              effective_size: premiumData.effective_size || null,
+              reng_distance: premiumData.reng_distance || null,
+              premium_image_url: premiumData.premium_image_url || null,
+              content_image_url: premiumData.content_image_url || null,
+            });
+
+          if (premiumError) throw premiumError;
+        }
       }
     },
     onSuccess: () => {
@@ -241,11 +382,10 @@ const ProductFormPage = () => {
   };
 
   const handleBackClick = () => {
-    // navigate("/dashboard/product-new");
     navigate(-1);
   };
 
-  if (isEditMode && productLoading) {
+  if (isEditMode && (productLoading || premiumLoading)) {
     return (
       <DashboardLayout>
         <div className="flex flex-col items-center justify-center min-h-[60vh]">
@@ -634,6 +774,240 @@ const ProductFormPage = () => {
             </CardContent>
           </Card>
 
+          {/* Product Premium */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Product Premium</CardTitle>
+                  <CardDescription>
+                    Premium product information and specifications
+                  </CardDescription>
+                </div>
+                <Switch
+                  checked={premiumEnabled}
+                  onCheckedChange={(checked) => {
+                    setPremiumEnabled(checked);
+                    if (!checked) {
+                      // Reset premium data when disabled
+                      setPremiumData({
+                        material_name: "",
+                        material_fullname: "",
+                        description_en: "",
+                        description_id: "",
+                        size_per_panel: "",
+                        effective_size: "",
+                        reng_distance: "",
+                        premium_image_url: "",
+                        content_image_url: "",
+                      });
+                    }
+                  }}
+                />
+              </div>
+            </CardHeader>
+            {premiumEnabled && (
+              <CardContent className="space-y-4">
+                {/* Material Information */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="material_name">Material Name</Label>
+                    <Input
+                      id="material_name"
+                      value={premiumData.material_name}
+                      onChange={(e) =>
+                        setPremiumData({
+                          ...premiumData,
+                          material_name: e.target.value,
+                        })
+                      }
+                      placeholder="Enter material name"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="material_fullname">
+                      Material Full Name
+                    </Label>
+                    <Input
+                      id="material_fullname"
+                      value={premiumData.material_fullname}
+                      onChange={(e) =>
+                        setPremiumData({
+                          ...premiumData,
+                          material_fullname: e.target.value,
+                        })
+                      }
+                      placeholder="Enter material full name"
+                    />
+                  </div>
+                </div>
+
+                {/* Descriptions */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="premium_description_en">
+                      Description (English)
+                    </Label>
+                    <RichTextEditor
+                      value={premiumData.description_en}
+                      onChange={(html) =>
+                        setPremiumData({
+                          ...premiumData,
+                          description_en: html,
+                        })
+                      }
+                      className="min-h-[200px]"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="premium_description_id">
+                      Description (Indonesian)
+                    </Label>
+                    <RichTextEditor
+                      value={premiumData.description_id}
+                      onChange={(html) =>
+                        setPremiumData({
+                          ...premiumData,
+                          description_id: html,
+                        })
+                      }
+                      className="min-h-[200px]"
+                    />
+                  </div>
+                </div>
+
+                {/* Specifications */}
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="size_per_panel">Size Per Panel</Label>
+                    <Input
+                      id="size_per_panel"
+                      value={premiumData.size_per_panel}
+                      onChange={(e) =>
+                        setPremiumData({
+                          ...premiumData,
+                          size_per_panel: e.target.value,
+                        })
+                      }
+                      placeholder="e.g., 1000 x 500 mm"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="effective_size">Effective Size</Label>
+                    <Input
+                      id="effective_size"
+                      value={premiumData.effective_size}
+                      onChange={(e) =>
+                        setPremiumData({
+                          ...premiumData,
+                          effective_size: e.target.value,
+                        })
+                      }
+                      placeholder="e.g., 950 x 450 mm"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="reng_distance">Reng Distance</Label>
+                    <Input
+                      id="reng_distance"
+                      value={premiumData.reng_distance}
+                      onChange={(e) =>
+                        setPremiumData({
+                          ...premiumData,
+                          reng_distance: e.target.value,
+                        })
+                      }
+                      placeholder="e.g., 600 mm"
+                    />
+                  </div>
+                </div>
+
+                {/* Images */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Premium Image</Label>
+                    <div
+                      className="relative w-full aspect-video border rounded overflow-hidden group cursor-pointer"
+                      onClick={() => setShowPremiumImageSelector(true)}
+                    >
+                      {premiumData.premium_image_url ? (
+                        <>
+                          <img
+                            src={premiumData.premium_image_url}
+                            alt="Premium"
+                            className="w-full h-full object-contain"
+                          />
+                          <div className="absolute left-0 top-0 size-full bg-black/40 opacity-0 flex items-center justify-center group-hover:opacity-100 pointer-events-none text-sm text-white">
+                            <ImageUp className="size-6" />
+                          </div>
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="icon"
+                            className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setPremiumData({
+                                ...premiumData,
+                                premium_image_url: "",
+                              });
+                            }}
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </>
+                      ) : (
+                        <div className="size-full flex items-center justify-center bg-muted">
+                          <ImageUp className="size-8 text-muted-foreground" />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/*<div className="space-y-2">
+                    <Label>Content Image</Label>
+                    <div
+                      className="relative w-full aspect-video border rounded overflow-hidden group cursor-pointer"
+                      onClick={() => setShowContentImageSelector(true)}
+                    >
+                      {premiumData.content_image_url ? (
+                        <>
+                          <img
+                            src={premiumData.content_image_url}
+                            alt="Content"
+                            className="w-full h-full object-contain"
+                          />
+                          <div className="absolute left-0 top-0 size-full bg-black/40 opacity-0 flex items-center justify-center group-hover:opacity-100 pointer-events-none text-sm text-white">
+                            <ImageUp className="size-6" />
+                          </div>
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="icon"
+                            className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setPremiumData({
+                                ...premiumData,
+                                content_image_url: "",
+                              });
+                            }}
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </>
+                      ) : (
+                        <div className="size-full flex items-center justify-center bg-muted">
+                          <ImageUp className="size-8 text-muted-foreground" />
+                        </div>
+                      )}
+                    </div>
+                  </div>*/}
+                </div>
+              </CardContent>
+            )}
+          </Card>
+
           {/* Actions */}
           <div className="flex justify-end gap-2 pb-8 sticky bottom-0 bg-background py-4 border-t">
             <Button type="button" variant="outline" onClick={handleBackClick}>
@@ -689,6 +1063,28 @@ const ProductFormPage = () => {
         multipleSelection={false}
         initialSelection={catalogue}
       />
+
+      <ImageSelectorDialog
+        open={showPremiumImageSelector}
+        onOpenChange={setShowPremiumImageSelector}
+        onSelect={(url) =>
+          setPremiumData({ ...premiumData, premium_image_url: url })
+        }
+        title="Select Premium Image"
+        multipleSelection={false}
+        initialSelection={premiumData.premium_image_url}
+      />
+
+      {/*<ImageSelectorDialog
+        open={showContentImageSelector}
+        onOpenChange={setShowContentImageSelector}
+        onSelect={(url) =>
+          setPremiumData({ ...premiumData, content_image_url: url })
+        }
+        title="Select Content Image"
+        multipleSelection={false}
+        initialSelection={premiumData.content_image_url}
+      />*/}
     </DashboardLayout>
   );
 };

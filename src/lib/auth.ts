@@ -18,6 +18,7 @@ interface User {
   role: number;
   token: string | null;
   created_at: string;
+  menu_permission: string[] | null;
 }
 
 /**
@@ -80,7 +81,7 @@ export const auth = {
     // Fetch user data based on token
     const { data, error } = await supabase
       .from("user")
-      .select("id, name, email, role, created_at")
+      .select("id, name, email, role, created_at, menu_permission")
       .eq("token", token)
       .single();
 

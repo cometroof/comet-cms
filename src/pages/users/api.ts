@@ -9,7 +9,7 @@ export const usersApi = {
   async getAll() {
     const { data, error } = await supabase
       .from("user")
-      .select("id, name, email, role, created_at")
+      .select("id, name, email, role, created_at, menu_permission")
       .order("created_at", { ascending: false });
 
     if (error) throw error;

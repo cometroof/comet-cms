@@ -20,6 +20,7 @@ import {
   AtSign,
   Calendar,
   Shield,
+  Settings,
 } from "lucide-react";
 import {
   Dialog,
@@ -54,14 +55,17 @@ import * as z from "zod";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
 import { useUsers, useCreateUser, useUpdateUser, useDeleteUser } from "./hooks";
+import { supabase } from "@/lib/supabase";
 import {
   User as UserType,
   UserFormData,
   UserUpdateFormData,
   ROLES,
+  MENU_ITEMS,
 } from "./types";
 import PasswordInput from "@/components/PasswordInput";
 import { generateSecurePassword } from "./utils";
+import { Checkbox } from "@/components/ui/checkbox";
 
 // Form schema for creating a new user
 const createUserSchema = z
@@ -138,11 +142,15 @@ const UsersTab = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [userDialogOpen, setUserDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [permissionDialogOpen, setPermissionDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<Omit<
     UserType,
     "password"
   > | null>(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [selectedMenuPermissions, setSelectedMenuPermissions] = useState<
+    string[]
+  >([]);
 
   // React Query - Fetch data
   const { data: users = [] } = useUsers();
@@ -219,6 +227,12 @@ const UsersTab = () => {
     setDeleteDialogOpen(true);
   };
 
+  const handlePermissionDialogOpen = (user: Omit<UserType, "password">) => {
+    setSelectedUser(user);
+    setSelectedMenuPermissions(user.menu_permission || []);
+    setPermissionDialogOpen(true);
+  };
+
   const handleUserDelete = async () => {
     if (!selectedUser) return;
 
@@ -242,7 +256,9 @@ const UsersTab = () => {
   const handleCreateUser = async (values: CreateUserFormValues) => {
     try {
       const { confirm_password, ...userData } = values;
-      const result = await createUser.mutateAsync({
+
+      // Use the API to create user - this will trigger the mutation and refetch
+      await createUser.mutateAsync({
         name: userData.name,
         email: userData.email,
         password: userData.password,
@@ -273,7 +289,7 @@ const UsersTab = () => {
     try {
       const { confirm_password, ...userData } = values;
 
-      // Only include fields that have values
+      // Only include fields that have values for the mutation
       const updateData: UserUpdateFormData = { id: userData.id };
       if (userData.name) updateData.name = userData.name;
       if (userData.email) updateData.email = userData.email;
@@ -299,6 +315,39 @@ const UsersTab = () => {
       toast({
         title: "Error",
         description: errorMessage,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleSavePermissions = async () => {
+    if (!selectedUser) return;
+
+    try {
+      const { error } = await supabase
+        .from("user")
+        .update({
+          menu_permission:
+            selectedMenuPermissions.length > 0 ? selectedMenuPermissions : null,
+        })
+        .eq("id", selectedUser.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Permissions updated",
+        description: `Menu permissions for ${selectedUser.name || selectedUser.email} have been updated.`,
+      });
+
+      setPermissionDialogOpen(false);
+
+      // Refresh users data
+      window.location.reload();
+    } catch (error) {
+      console.error(error);
+      toast({
+        title: "Error",
+        description: "Failed to update permissions. Please try again.",
         variant: "destructive",
       });
     }
@@ -338,7 +387,7 @@ const UsersTab = () => {
               {filteredUsers.length === 0 ? (
                 <TableRow>
                   <TableCell
-                    colSpan={4}
+                    colSpan={5}
                     className="text-center py-8 text-muted-foreground"
                   >
                     No users found
@@ -406,15 +455,27 @@ const UsersTab = () => {
                         <Button
                           variant="ghost"
                           size="sm"
+                          onClick={() => handlePermissionDialogOpen(user)}
+                          title="Menu Permissions"
+                        >
+                          <Settings className="h-4 w-4" />
+                          <span className="hidden md:inline">Menu</span>
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
                           onClick={() => handleUserEdit(user)}
+                          title="Edit User"
                         >
                           <Edit className="h-4 w-4" />
+                          <span className="hidden md:inline">Edit</span>
                         </Button>
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => handleUserDeleteOpen(user)}
-                          disabled={user.role === ROLES.SUPER_ADMIN} // Prevent deleting super admins
+                          disabled={user.role === ROLES.SUPER_ADMIN}
+                          title="Delete User"
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -437,8 +498,8 @@ const UsersTab = () => {
             </DialogTitle>
             <DialogDescription>
               {isEditing
-                ? "Update user details and permissions"
-                : "Add a new user with appropriate permissions"}
+                ? "Update user details"
+                : "Add a new user to the system"}
             </DialogDescription>
           </DialogHeader>
 
@@ -534,7 +595,6 @@ const UsersTab = () => {
                               const generatedPassword =
                                 generateSecurePassword();
                               field.onChange(generatedPassword);
-                              // Also update confirm password field
                               updateForm.setValue(
                                 "confirm_password",
                                 generatedPassword,
@@ -659,7 +719,6 @@ const UsersTab = () => {
                           onClick={() => {
                             const generatedPassword = generateSecurePassword();
                             field.onChange(generatedPassword);
-                            // Also update confirm password field
                             createForm.setValue(
                               "confirm_password",
                               generatedPassword,
@@ -712,6 +771,69 @@ const UsersTab = () => {
               </form>
             </Form>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Menu Permissions Dialog */}
+      <Dialog
+        open={permissionDialogOpen}
+        onOpenChange={setPermissionDialogOpen}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Menu Permissions</DialogTitle>
+            <DialogDescription>
+              Manage menu access for {selectedUser?.name || selectedUser?.email}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3">
+            <Label className="text-base font-semibold">Menu Access</Label>
+            <p className="text-sm text-muted-foreground">
+              Select which menu items this user can access
+            </p>
+            <div className="grid grid-cols-2 gap-3 border rounded-md p-4 max-h-[400px] overflow-y-auto">
+              {MENU_ITEMS.map((menu) => (
+                <div key={menu.value} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={`permission-${menu.value}`}
+                    checked={selectedMenuPermissions.includes(menu.value)}
+                    onCheckedChange={(checked) => {
+                      if (checked) {
+                        setSelectedMenuPermissions([
+                          ...selectedMenuPermissions,
+                          menu.value,
+                        ]);
+                      } else {
+                        setSelectedMenuPermissions(
+                          selectedMenuPermissions.filter(
+                            (p) => p !== menu.value,
+                          ),
+                        );
+                      }
+                    }}
+                  />
+                  <label
+                    htmlFor={`permission-${menu.value}`}
+                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                  >
+                    {menu.label}
+                  </label>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <DialogFooter className="pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setPermissionDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleSavePermissions}>Save Permissions</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 

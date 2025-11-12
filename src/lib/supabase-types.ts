@@ -906,6 +906,7 @@ export type Database = {
           created_at: string;
           email: string | null;
           id: number;
+          menu_permission: Json | null;
           name: string | null;
           password: string | null;
           role: number;
@@ -915,6 +916,7 @@ export type Database = {
           created_at?: string;
           email?: string | null;
           id?: number;
+          menu_permission?: Json | null;
           name?: string | null;
           password?: string | null;
           role?: number;
@@ -924,6 +926,7 @@ export type Database = {
           created_at?: string;
           email?: string | null;
           id?: number;
+          menu_permission?: Json | null;
           name?: string | null;
           password?: string | null;
           role?: number;
