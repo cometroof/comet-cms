@@ -30,6 +30,7 @@ import ProductAccessoriesDetailPage from "./pages/product-new-accessories/produc
 import CategoryAccessoriesDetailPage from "./pages/product-new-accessories/category-detail";
 import ItemAccessoriesDetailPage from "./pages/product-new-accessories/item-detail";
 import DirectItemsPage from "./pages/product-new-accessories/direct-items";
+import ProjectFormPage from "./pages/projects/ProjectFormPage";
 
 const queryClient = new QueryClient();
 
@@ -75,6 +76,22 @@ const App = () => {
                 element={
                   <ProtectedRoute>
                     <Projects />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/dashboard/projects/add"
+                element={
+                  <ProtectedRoute>
+                    <ProjectFormPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/dashboard/projects/edit/:id"
+                element={
+                  <ProtectedRoute>
+                    <ProjectFormPage />
                   </ProtectedRoute>
                 }
               />

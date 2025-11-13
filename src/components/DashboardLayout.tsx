@@ -629,7 +629,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         </header>
 
         {/* Page content */}
-        <main className="flex-1 p-4 sm:p-6">
+        <main className="flex-1 p-4 sm:p-6 max-w-7xl">
           {(() => {
             const pathSegment = location.pathname.split("/")[2];
 

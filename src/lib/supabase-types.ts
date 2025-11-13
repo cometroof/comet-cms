@@ -713,6 +713,7 @@ export type Database = {
           name: string;
           order: number | null;
           slug: string;
+          thumbnail: string | null;
           updated_at: string | null;
         };
         Insert: {
@@ -722,6 +723,7 @@ export type Database = {
           name: string;
           order?: number | null;
           slug: string;
+          thumbnail?: string | null;
           updated_at?: string | null;
         };
         Update: {
@@ -731,6 +733,7 @@ export type Database = {
           name?: string;
           order?: number | null;
           slug?: string;
+          thumbnail?: string | null;
           updated_at?: string | null;
         };
         Relationships: [];
