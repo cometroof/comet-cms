@@ -45,8 +45,6 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const location = useLocation();
   const { user, logout } = useAuth();
 
-  console.log({ user });
-
   // Fetch products for submenu
   const { data: products = [] } = useQuery({
     queryKey: ["products-menu"],
@@ -134,9 +132,9 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     { name: "Files", href: "/dashboard/files", icon: Files, keyMenu: "files" },
     {
       name: "Project & Categories",
-      href: "/dashboard/projects-menu",
+      href: "/dashboard/projects",
       icon: Hammer,
-      keyMenu: "projects-menu",
+      keyMenu: "projects",
     },
     {
       name: "Articles",
@@ -171,6 +169,8 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const isActive = (href: string) =>
     location.pathname === href ||
     (href !== "/" && location.pathname.includes(href));
+
+  console.log({ permission: user.menu_permission });
 
   // if (
   //   location.pathname !== "/dashboard" &&
@@ -233,7 +233,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                 const isAccessoriesMenu =
                   item.href === "/dashboard/product-accessories";
                 const isAddonsMenu = item.href === "/dashboard/product-add-ons";
-                const isProjectsMenu = item.href === "/dashboard/projects-menu";
+                const isProjectsMenu = item.href === "/dashboard/projects";
 
                 // Products Menu with Submenu
                 if (isProductsMenu) {
