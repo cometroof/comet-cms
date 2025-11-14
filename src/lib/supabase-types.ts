@@ -91,6 +91,7 @@ export type Database = {
           id: string;
           image: string | null;
           info: string;
+          info_id: string | null;
           is_important_info: boolean | null;
           label_name: string | null;
           label_name_id: string | null;
@@ -108,6 +109,7 @@ export type Database = {
           id?: string;
           image?: string | null;
           info: string;
+          info_id?: string | null;
           is_important_info?: boolean | null;
           label_name?: string | null;
           label_name_id?: string | null;
@@ -125,6 +127,7 @@ export type Database = {
           id?: string;
           image?: string | null;
           info?: string;
+          info_id?: string | null;
           is_important_info?: boolean | null;
           label_name?: string | null;
           label_name_id?: string | null;

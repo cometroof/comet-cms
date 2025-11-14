@@ -47,7 +47,9 @@ const CertificateFormDialog = ({
     file_url: "",
     filename: "",
     order: 0,
+    info_id: "",
   });
+  //
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -66,6 +68,7 @@ const CertificateFormDialog = ({
         file_url: certificate.file_url || "",
         filename: certificate.filename || "",
         order: certificate.order || 0,
+        info_id: certificate.info_id || "",
       });
     } else {
       setFormData({
@@ -81,6 +84,7 @@ const CertificateFormDialog = ({
         file_url: "",
         filename: "",
         order: 0,
+        info_id: "",
       });
     }
     setErrors({});
@@ -275,24 +279,45 @@ const CertificateFormDialog = ({
 
             {/* Info and Is Important Info (side by side) */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div className="space-y-2 md:col-span-3">
-                <Label htmlFor="info">Info</Label>
-                <Input
-                  id="info"
-                  value={formData.info}
-                  onChange={(e) =>
-                    setFormData({ ...formData, info: e.target.value })
-                  }
-                  placeholder="e.g., Quality Management System"
-                  maxLength={200}
-                  disabled={isSubmitting}
-                />
-                <p className="text-xs text-muted-foreground">
-                  {formData.info.length}/200
-                </p>
-                {errors.info && (
-                  <p className="text-sm text-destructive">{errors.info}</p>
-                )}
+              <div className="space-y-4 md:col-span-3">
+                <div className="space-y-2 ">
+                  <Label htmlFor="info">Info (English)</Label>
+                  <Input
+                    id="info"
+                    value={formData.info}
+                    onChange={(e) =>
+                      setFormData({ ...formData, info: e.target.value })
+                    }
+                    placeholder="e.g., Quality Management System"
+                    maxLength={200}
+                    disabled={isSubmitting}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    {formData.info.length}/200
+                  </p>
+                  {errors.info && (
+                    <p className="text-sm text-destructive">{errors.info}</p>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="info">Info (Indonesian)</Label>
+                  <Input
+                    id="info"
+                    value={formData.info_id}
+                    onChange={(e) =>
+                      setFormData({ ...formData, info_id: e.target.value })
+                    }
+                    placeholder="e.g., Sistem Kualitas Manajemen"
+                    maxLength={200}
+                    disabled={isSubmitting}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    {formData.info_id.length}/200
+                  </p>
+                  {errors.info && (
+                    <p className="text-sm text-destructive">{errors.info_id}</p>
+                  )}
+                </div>
               </div>
 
               <div className="flex items-center space-x-2 md:col-span-1">
