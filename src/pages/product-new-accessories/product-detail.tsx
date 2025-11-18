@@ -90,7 +90,7 @@ const ProductAccessoriesDetailPage = () => {
           `
           *,
           items:product_item(count)
-        `,
+        `
         )
         .eq("product_id", productId)
         .is("product_profile_id", null)
@@ -103,6 +103,7 @@ const ProductAccessoriesDetailPage = () => {
   });
 
   // Fetch product items directly (without category)
+  // Di dalam useQuery untuk directItems, tambahkan handling untuk spec_info
   const { data: directItems = [], isLoading: directItemsLoading } = useQuery({
     queryKey: ["product-accessories-direct-items", productId],
     queryFn: async () => {
@@ -115,7 +116,21 @@ const ProductAccessoriesDetailPage = () => {
         .order("order", { ascending: true, nullsFirst: false });
 
       if (error) throw error;
-      return data as ProductItem[];
+
+      // Process spec_info to ensure consistent format
+      const processedData = (data as ProductItem[]).map((item) => {
+        if (item.spec_info && typeof item.spec_info === "string") {
+          try {
+            item.spec_info = JSON.parse(item.spec_info);
+          } catch (error) {
+            console.error("Error parsing spec_info for item:", item.id, error);
+            item.spec_info = null;
+          }
+        }
+        return item;
+      });
+
+      return processedData;
     },
     enabled: !!productId,
   });
@@ -124,7 +139,7 @@ const ProductAccessoriesDetailPage = () => {
   const reorderMutation = useMutation({
     mutationFn: async (updates: { id: string; order: number }[]) => {
       const promises = updates.map(({ id, order }) =>
-        supabase.from("product_category").update({ order }).eq("id", id),
+        supabase.from("product_category").update({ order }).eq("id", id)
       );
       const results = await Promise.all(promises);
       const errors = results.filter((r) => r.error);
@@ -172,7 +187,7 @@ const ProductAccessoriesDetailPage = () => {
   const reorderDirectItemsMutation = useMutation({
     mutationFn: async (updates: { id: string; order: number }[]) => {
       const promises = updates.map(({ id, order }) =>
-        supabase.from("product_item").update({ order }).eq("id", id),
+        supabase.from("product_item").update({ order }).eq("id", id)
       );
       const results = await Promise.all(promises);
       const errors = results.filter((r) => r.error);
@@ -232,7 +247,7 @@ const ProductAccessoriesDetailPage = () => {
     // Optimistically update the UI
     queryClient.setQueryData(
       ["product-accessories-categories", productId],
-      items,
+      items
     );
 
     // Save to database
@@ -255,7 +270,7 @@ const ProductAccessoriesDetailPage = () => {
 
   const handleViewCategory = (category: ProductCategory) => {
     navigate(
-      `/dashboard/product-accessories/${productId}/category/${category.id}`,
+      `/dashboard/product-accessories/${productId}/category/${category.id}`
     );
   };
 
@@ -286,7 +301,7 @@ const ProductAccessoriesDetailPage = () => {
     // Optimistically update the UI
     queryClient.setQueryData(
       ["product-accessories-direct-items", productId],
-      itemsList,
+      itemsList
     );
 
     // Save to database
@@ -318,7 +333,7 @@ const ProductAccessoriesDetailPage = () => {
   };
 
   const getItemsCount = (
-    category: ProductCategory & { items?: Array<{ count: number }> },
+    category: ProductCategory & { items?: Array<{ count: number }> }
   ) => {
     return category.items?.[0]?.count || 0;
   };

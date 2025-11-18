@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useForm } from "react-hook-form";
+import { useForm, useFieldArray } from "react-hook-form";
 import { supabase } from "@/lib/supabase";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
@@ -32,10 +32,12 @@ interface ItemFormData {
   weight: string;
   image: string;
   product_category_id: string;
+  // field array for spec info entries (bilingual label)
+  spec_info_entries?: { label: { en: string; id: string }; value: string }[];
 }
 
 interface SpecInfoEntry {
-  key: string;
+  label: { en: string; id: string };
   value: string;
 }
 
@@ -90,7 +92,7 @@ const ItemAccessoriesDetailPage = () => {
     staleTime: 0, // Tidak cache data
   });
 
-  const getDefaultValues = (): ItemFormData => {
+  const getDefaultValues = useCallback((): ItemFormData => {
     if (isEditMode && item) {
       // Edit mode: gunakan data dari item
       return {
@@ -119,17 +121,66 @@ const ItemAccessoriesDetailPage = () => {
         product_category_id: "none",
       };
     }
-  };
+  }, [isEditMode, item, isFromCategoryPage, categoryId]);
 
-  const getDefaultSpecInfo = (): SpecInfoEntry[] => {
-    if (isEditMode && item?.spec_info && typeof item.spec_info === "object") {
-      return Object.entries(item.spec_info).map(([key, value]) => ({
-        key,
-        value: String(value),
-      }));
+  const getDefaultSpecInfo = useCallback((): SpecInfoEntry[] => {
+    if (isEditMode && item?.spec_info) {
+      try {
+        // Jika spec_info adalah string (JSON), parse dulu
+        let specData = item.spec_info;
+        if (typeof specData === "string") {
+          specData = JSON.parse(specData);
+        }
+
+        // Format baru: array of { label: { en, id }, value }
+        if (Array.isArray(specData)) {
+          // eslint-disable-next-line
+          return specData.map((entry: any) => {
+            // Jika entry sudah dalam format baru
+            if (entry && entry.label && typeof entry.label === "object") {
+              return {
+                label: {
+                  en: entry.label.en || "",
+                  id: entry.label.id || "",
+                },
+                value: String(entry.value || ""),
+              };
+            }
+
+            // Jika entry dalam format lama: { key, value }
+            if (entry && entry.key) {
+              return {
+                label: {
+                  en: entry.key || "",
+                  id: entry.key || "",
+                },
+                value: String(entry.value || ""),
+              };
+            }
+
+            // Fallback untuk entry yang tidak valid
+            return { label: { en: "", id: "" }, value: "" };
+          });
+        }
+
+        // Format legacy: object { key: value } (bukan array)
+        if (
+          typeof specData === "object" &&
+          specData !== null &&
+          !Array.isArray(specData)
+        ) {
+          return Object.entries(specData).map(([key, value]) => ({
+            label: { en: key, id: key },
+            value: String(value),
+          }));
+        }
+      } catch (error) {
+        console.error("Error parsing spec_info:", error);
+      }
     }
+
     return [];
-  };
+  }, [isEditMode, item]);
 
   // Initialize form dengan computed default values
   const {
@@ -137,27 +188,60 @@ const ItemAccessoriesDetailPage = () => {
     handleSubmit,
     setValue,
     watch,
+    control,
+    reset,
     formState: { errors },
   } = useForm<ItemFormData>({
-    // Key point: values akan selalu fresh karena dihitung dari data terbaru
-    values: getDefaultValues(),
+    defaultValues: {
+      ...getDefaultValues(),
+      spec_info_entries: getDefaultSpecInfo(),
+    },
   });
-
-  // State untuk spec info juga bisa computed
-  const [specInfo, setSpecInfo] =
-    useState<SpecInfoEntry[]>(getDefaultSpecInfo());
 
   const imageUrl = watch("image");
   const selectedCategoryId = watch("product_category_id");
 
+  const { fields, append, remove } = useFieldArray({
+    name: "spec_info_entries",
+    control,
+  });
+
+  const [specLanguage, setSpecLanguage] = useState<"en" | "id">("en");
+
+  // When item (async) loads, reset the form so spec fields are populated on first render
+  useEffect(() => {
+    const defaults = getDefaultValues();
+    const specEntries = getDefaultSpecInfo();
+    reset({ ...defaults, spec_info_entries: specEntries });
+  }, [
+    item,
+    categoryId,
+    isEditMode,
+    reset,
+    getDefaultValues,
+    getDefaultSpecInfo,
+  ]);
+
   const saveMutation = useMutation({
     mutationFn: async (data: ItemFormData) => {
-      const specInfoObject: { [key: string]: string } = {};
-      specInfo.forEach((entry) => {
-        if (entry.key.trim()) {
-          specInfoObject[entry.key.trim()] = entry.value;
-        }
-      });
+      // Process spec_info_entries untuk format baru
+      const rawSpecEntries = data.spec_info_entries || [];
+      const specInfoArray = rawSpecEntries
+        .filter((entry) => {
+          // Filter entries yang memiliki label (salah satu bahasa) dan value
+          const hasEnglishLabel = entry?.label?.en?.trim();
+          const hasIndonesianLabel = entry?.label?.id?.trim();
+          const hasValue = entry?.value?.trim();
+
+          return (hasEnglishLabel || hasIndonesianLabel) && hasValue;
+        })
+        .map((entry) => ({
+          label: {
+            en: (entry.label?.en || "").trim(),
+            id: (entry.label?.id || "").trim(),
+          },
+          value: (entry.value || "").trim(),
+        }));
 
       const categoryId =
         data.product_category_id && data.product_category_id !== "none"
@@ -173,8 +257,7 @@ const ItemAccessoriesDetailPage = () => {
             weight: data.weight || null,
             image: data.image || null,
             product_category_id: categoryId,
-            spec_info:
-              Object.keys(specInfoObject).length > 0 ? specInfoObject : null,
+            spec_info: specInfoArray.length > 0 ? specInfoArray : null,
             updated_at: new Date().toISOString(),
           })
           .eq("id", itemId);
@@ -189,8 +272,7 @@ const ItemAccessoriesDetailPage = () => {
           length: data.length || null,
           weight: data.weight || null,
           image: data.image || null,
-          spec_info:
-            Object.keys(specInfoObject).length > 0 ? specInfoObject : null,
+          spec_info: specInfoArray.length > 0 ? specInfoArray : null,
         });
 
         if (error) throw error;
@@ -198,7 +280,7 @@ const ItemAccessoriesDetailPage = () => {
     },
     onSuccess: () => {
       toast.success(
-        isEditMode ? "Item updated successfully" : "Item created successfully",
+        isEditMode ? "Item updated successfully" : "Item created successfully"
       );
 
       queryClient.invalidateQueries({
@@ -215,7 +297,7 @@ const ItemAccessoriesDetailPage = () => {
     },
     onError: (error) => {
       toast.error(
-        isEditMode ? "Failed to update item" : "Failed to create item",
+        isEditMode ? "Failed to update item" : "Failed to create item"
       );
       console.error(error);
     },
@@ -224,7 +306,7 @@ const ItemAccessoriesDetailPage = () => {
   const handleBackClick = () => {
     if (categoryId) {
       navigate(
-        `/dashboard/product-accessories/${productId}/category/${categoryId}`,
+        `/dashboard/product-accessories/${productId}/category/${categoryId}`
       );
     } else {
       navigate(`/dashboard/product-accessories/${productId}/items`);
@@ -235,23 +317,9 @@ const ItemAccessoriesDetailPage = () => {
     saveMutation.mutate(data);
   };
 
-  const addSpecInfoEntry = () => {
-    setSpecInfo([...specInfo, { key: "", value: "" }]);
-  };
-
-  const removeSpecInfoEntry = (index: number) => {
-    setSpecInfo(specInfo.filter((_, i) => i !== index));
-  };
-
-  const updateSpecInfoEntry = (
-    index: number,
-    field: "key" | "value",
-    value: string,
-  ) => {
-    const updated = [...specInfo];
-    updated[index][field] = value;
-    setSpecInfo(updated);
-  };
+  const addSpecInfoEntry = () =>
+    append({ label: { en: "", id: "" }, value: "" });
+  const removeSpecInfoEntry = (index: number) => remove(index);
 
   if (itemLoading || categoriesLoading) {
     return (
@@ -408,51 +476,106 @@ const ItemAccessoriesDetailPage = () => {
                     Add custom key-value pairs for additional specifications
                   </CardDescription>
                 </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={addSpecInfoEntry}
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Field
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={specLanguage === "en" ? "default" : "outline"}
+                    onClick={() => setSpecLanguage("en")}
+                  >
+                    EN
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={specLanguage === "id" ? "default" : "outline"}
+                    onClick={() => setSpecLanguage("id")}
+                  >
+                    ID
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={addSpecInfoEntry}
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Field
+                  </Button>
+                </div>
               </div>
             </CardHeader>
             <CardContent>
-              {specInfo.length === 0 ? (
+              {fields.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   No specification fields yet. Click "Add Field" to create one.
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {specInfo.map((entry, index) => (
-                    <div key={index} className="flex gap-2">
-                      <Input
-                        placeholder="Key (e.g., Material)"
-                        value={entry.key}
-                        onChange={(e) =>
-                          updateSpecInfoEntry(index, "key", e.target.value)
-                        }
-                        className="flex-1"
-                      />
-                      <Input
-                        placeholder="Value (e.g., Aluminum)"
-                        value={entry.value}
-                        onChange={(e) =>
-                          updateSpecInfoEntry(index, "value", e.target.value)
-                        }
-                        className="flex-1"
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => removeSpecInfoEntry(index)}
-                        className="text-destructive hover:text-destructive"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+                  {fields.map((field, index) => (
+                    <div
+                      key={field.id}
+                      className="grid grid-cols-2 gap-6 lg:gap-8"
+                    >
+                      {specLanguage === "id" ? (
+                        <div className="flex-1 space-y-1">
+                          <Label
+                            htmlFor={`spec-id-${index}`}
+                            className="text-xs"
+                          >
+                            Label (Indonesian)
+                          </Label>
+                          <Input
+                            id={`spec-id-${index}`}
+                            placeholder="e.g., Material"
+                            {...register(
+                              `spec_info_entries.${index}.label.id` as const
+                            )}
+                          />
+                        </div>
+                      ) : (
+                        <div className="flex-1 space-y-1">
+                          <Label
+                            htmlFor={`spec-en-${index}`}
+                            className="text-xs"
+                          >
+                            Label (English)
+                          </Label>
+                          <Input
+                            id={`spec-en-${index}`}
+                            placeholder="e.g., Material"
+                            {...register(
+                              `spec_info_entries.${index}.label.en` as const
+                            )}
+                          />
+                        </div>
+                      )}
+                      <div className="flex gap-2">
+                        <div className="flex-1 space-y-1">
+                          <Label
+                            htmlFor={`spec-value-${index}`}
+                            className="text-xs"
+                          >
+                            Value
+                          </Label>
+                          <Input
+                            id={`spec-value-${index}`}
+                            placeholder="e.g., Aluminum"
+                            {...register(
+                              `spec_info_entries.${index}.value` as const
+                            )}
+                          />
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => removeSpecInfoEntry(index)}
+                          className="text-destructive hover:text-destructive mt-6"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -468,8 +591,8 @@ const ItemAccessoriesDetailPage = () => {
               {saveMutation.isPending
                 ? "Saving..."
                 : isEditMode
-                  ? "Update Item"
-                  : "Create Item"}
+                ? "Update Item"
+                : "Create Item"}
             </Button>
           </div>
         </form>

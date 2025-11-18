@@ -31,6 +31,64 @@ const ItemsTable = ({
   onDelete,
   isDraggable = true,
 }: ItemsTableProps) => {
+  // Function to render spec info based on the new format
+  // eslint-disable-next-line
+  const renderSpecInfo = (specInfo: any) => {
+    if (!specInfo) return "-";
+
+    try {
+      // Jika spec_info adalah string, parse dulu
+      let specData = specInfo;
+      if (typeof specData === "string") {
+        specData = JSON.parse(specData);
+      }
+
+      // Format baru: array of { label: { en, id }, value }
+      if (Array.isArray(specData)) {
+        const validEntries = specData.filter(
+          // eslint-disable-next-line
+          (entry: any) =>
+            entry &&
+            entry.label &&
+            typeof entry.label === "object" &&
+            entry.value
+        );
+
+        if (validEntries.length === 0) return "-";
+        // eslint-disable-next-line
+        return validEntries.slice(0, 3).map((entry: any, index: number) => (
+          <div key={index} className="text-sm">
+            <span className="font-medium">
+              {entry.label.en || entry.label.id}:
+            </span>{" "}
+            {entry.value}
+          </div>
+        ));
+      }
+
+      // Format lama: object { key: value } (backward compatibility)
+      if (
+        typeof specData === "object" &&
+        specData !== null &&
+        !Array.isArray(specData)
+      ) {
+        const entries = Object.entries(specData);
+        if (entries.length === 0) return "-";
+
+        return entries.slice(0, 3).map(([key, value], index) => (
+          <div key={index} className="text-sm">
+            <span className="font-medium">{key}:</span> {String(value)}
+          </div>
+        ));
+      }
+
+      return "-";
+    } catch (error) {
+      console.error("Error rendering spec info:", error);
+      return "-";
+    }
+  };
+
   return (
     <DragDropContext onDragEnd={onDragEnd}>
       <Table>
@@ -78,19 +136,8 @@ const ItemsTable = ({
                           </div>
                         )}
                       </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {Object.entries(
-                          item.spec_info as { [key: string]: string },
-                        ).length < 1
-                          ? "-"
-                          : null}
-                        {Object.entries(
-                          item.spec_info as { [key: string]: string },
-                        ).map(([key, value], index) => (
-                          <div key={index}>
-                            <span className="font-medium">{key}</span>: {value}
-                          </div>
-                        ))}
+                      <TableCell className="text-muted-foreground max-w-md">
+                        {renderSpecInfo(item.spec_info)}
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-2">
