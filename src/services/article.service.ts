@@ -23,6 +23,11 @@ const mapDbArticleToArticle = (dbArticle: Tables<"articles">): Article => {
     updatedAt: dbArticle.updated_at,
     cover_image: dbArticle.cover_image,
     publishedDate: dbArticle.publish ? dbArticle.updated_at : undefined,
+    title_id: dbArticle.title_id || undefined,
+    content_id: dbArticle.content_id || undefined,
+    excerpt_id: dbArticle.excerpt_id || undefined,
+    metaTitle_id: dbArticle.seo_title_id || undefined,
+    metaDescription_id: dbArticle.seo_description_id || undefined,
   };
 };
 
@@ -30,7 +35,7 @@ const mapDbArticleToArticle = (dbArticle: Tables<"articles">): Article => {
  * Maps form data to database insert/update structure
  */
 const mapFormDataToDb = (
-  formData: ArticleFormData,
+  formData: ArticleFormData
 ): Omit<TablesInsert<"articles">, "id" | "created_at" | "updated_at"> => {
   return {
     title: formData.title,
@@ -41,6 +46,11 @@ const mapFormDataToDb = (
     seo_description: formData.metaDescription || null,
     publish: formData.published,
     cover_image: formData.cover_image,
+    title_id: formData.title_id || null,
+    content_id: formData.content_id || null,
+    excerpt_id: formData.excerpt_id || null,
+    seo_title_id: formData.metaTitle_id || null,
+    seo_description_id: formData.metaDescription_id || null,
   };
 };
 
@@ -83,7 +93,7 @@ export const getArticleById = async (id: string): Promise<Article | null> => {
  * Get an article by slug
  */
 export const getArticleBySlug = async (
-  slug: string,
+  slug: string
 ): Promise<Article | null> => {
   const { data, error } = await supabase
     .from(TABLE_NAME)
@@ -103,7 +113,7 @@ export const getArticleBySlug = async (
  * Create a new article
  */
 export const createArticle = async (
-  formData: ArticleFormData,
+  formData: ArticleFormData
 ): Promise<Article | null> => {
   const now = new Date().toISOString();
 
@@ -128,7 +138,7 @@ export const createArticle = async (
  */
 export const updateArticle = async (
   id: string,
-  formData: ArticleFormData,
+  formData: ArticleFormData
 ): Promise<Article | null> => {
   const { data, error } = await supabase
     .from(TABLE_NAME)
@@ -167,7 +177,7 @@ export const deleteArticle = async (id: string): Promise<boolean> => {
  */
 export const isSlugAvailable = async (
   slug: string,
-  excludeId?: string,
+  excludeId?: string
 ): Promise<boolean> => {
   let query = supabase.from(TABLE_NAME).select("id").eq("slug", slug);
 

@@ -3,13 +3,7 @@ import { Link } from "react-router-dom";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -25,7 +19,6 @@ import {
   Search,
   Edit,
   Trash2,
-  Eye,
   GripVertical,
   Calendar,
   Loader2,
@@ -39,12 +32,7 @@ import {
 } from "@hello-pangea/dnd";
 import { Article } from "./types";
 import * as articleService from "@/services/article.service";
-import {
-  useQuery,
-  useMutation,
-  useQueryClient,
-  MutationFunction,
-} from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 
 const ArticlesList = () => {
@@ -101,7 +89,7 @@ const ArticlesList = () => {
 
       // Find the article to be deleted
       const articleToDelete = (previousArticles as Article[])?.find(
-        (article) => article.id === articleId,
+        (article) => article.id === articleId
       );
 
       if (previousArticles && articleToDelete) {
@@ -109,8 +97,8 @@ const ArticlesList = () => {
         queryClient.setQueryData<Article[]>(
           ["articles"],
           (previousArticles as Article[]).filter(
-            (article) => article.id !== articleId,
-          ),
+            (article) => article.id !== articleId
+          )
         );
 
         // Optimistically update stats
@@ -363,12 +351,9 @@ const ArticlesList = () => {
                       <TableRow>
                         <TableHead className="w-12"></TableHead>
                         <TableHead>Image</TableHead>
-                        <TableHead>Title</TableHead>
-                        <TableHead>Slug</TableHead>
+                        <TableHead className="max-w-lg">Title</TableHead>
                         <TableHead>Status</TableHead>
                         <TableHead>Published</TableHead>
-                        <TableHead>Views</TableHead>
-                        <TableHead>Author</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -400,19 +385,21 @@ const ArticlesList = () => {
                                       <img
                                         src={article.cover_image}
                                         alt={article.title}
-                                        className="w-12 h-12 object-cover rounded"
+                                        className="size-20 aspect-square block object-cover rounded"
                                       />
                                     ) : (
-                                      <div className="w-12 h-12 bg-muted rounded flex items-center justify-center">
+                                      <div className="size-20 aspect-square bg-muted rounded flex items-center justify-center">
                                         <FileText className="w-6 h-6 text-muted-foreground" />
                                       </div>
                                     )}
                                   </TableCell>
-                                  <TableCell className="font-medium">
-                                    {article.title}
-                                  </TableCell>
-                                  <TableCell className="text-muted-foreground font-mono text-sm">
-                                    {article.slug}
+                                  <TableCell className="font-medium  max-w-lg">
+                                    <div className="line-clamp-2">
+                                      {article.title}
+                                    </div>
+                                    <div className="font-normal text-muted-foreground text-xs line-clamp-1 mt-2">
+                                      {article.slug}
+                                    </div>
                                   </TableCell>
                                   <TableCell>
                                     <Badge
@@ -426,7 +413,7 @@ const ArticlesList = () => {
                                       <div className="flex items-center gap-2">
                                         <Calendar className="w-4 h-4 text-muted-foreground" />
                                         {new Date(
-                                          article.publishedDate,
+                                          article.publishedDate
                                         ).toLocaleDateString()}
                                       </div>
                                     ) : (
@@ -434,15 +421,6 @@ const ArticlesList = () => {
                                         -
                                       </span>
                                     )}
-                                  </TableCell>
-                                  <TableCell>
-                                    <div className="flex items-center gap-2">
-                                      <Eye className="w-4 h-4 text-muted-foreground" />
-                                      {article.views.toLocaleString()}
-                                    </div>
-                                  </TableCell>
-                                  <TableCell className="text-muted-foreground">
-                                    {article.author}
                                   </TableCell>
                                   <TableCell className="text-right">
                                     <div className="flex justify-end gap-2">

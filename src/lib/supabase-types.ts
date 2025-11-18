@@ -42,41 +42,56 @@ export type Database = {
       articles: {
         Row: {
           content: string | null;
+          content_id: string | null;
           cover_image: string | null;
           created_at: string;
           excerpt: string | null;
+          excerpt_id: string | null;
           id: string;
           publish: boolean | null;
           seo_description: string | null;
+          seo_description_id: string | null;
           seo_title: string | null;
+          seo_title_id: string | null;
           slug: string;
           title: string;
+          title_id: string | null;
           updated_at: string;
         };
         Insert: {
           content?: string | null;
+          content_id?: string | null;
           cover_image?: string | null;
           created_at?: string;
           excerpt?: string | null;
+          excerpt_id?: string | null;
           id?: string;
           publish?: boolean | null;
           seo_description?: string | null;
+          seo_description_id?: string | null;
           seo_title?: string | null;
+          seo_title_id?: string | null;
           slug: string;
           title: string;
+          title_id?: string | null;
           updated_at?: string;
         };
         Update: {
           content?: string | null;
+          content_id?: string | null;
           cover_image?: string | null;
           created_at?: string;
           excerpt?: string | null;
+          excerpt_id?: string | null;
           id?: string;
           publish?: boolean | null;
           seo_description?: string | null;
+          seo_description_id?: string | null;
           seo_title?: string | null;
+          seo_title_id?: string | null;
           slug?: string;
           title?: string;
+          title_id?: string | null;
           updated_at?: string;
         };
         Relationships: [];
