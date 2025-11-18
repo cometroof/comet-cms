@@ -24,7 +24,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
-import { Plus, Trash2, Loader2, GripVertical, X } from "lucide-react";
+import { Plus, Trash2, Loader2, GripVertical, X, Edit } from "lucide-react";
 import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -33,10 +33,8 @@ import {
   Draggable,
   DropResult,
 } from "@hello-pangea/dnd";
-import type { Area } from "@/types/contacts-location";
+import type { Area, Location as CLLocation } from "@/types/contacts-location";
 import * as contactsLocationService from "@/services/contacts-location.service";
-
-interface LocationsTabProps {}
 
 interface LocationInput {
   id: string;
@@ -44,7 +42,7 @@ interface LocationInput {
   link: string;
 }
 
-export const LocationsTab = ({}: LocationsTabProps) => {
+export const LocationsTab = () => {
   const queryClient = useQueryClient();
   const [newLocation, setNewLocation] = useState({
     area: "",
@@ -56,8 +54,21 @@ export const LocationsTab = ({}: LocationsTabProps) => {
   const [areaDialogOpen, setAreaDialogOpen] = useState(false);
   const [selectedAreaId, setSelectedAreaId] = useState<string>("");
   const [areaLocationInputs, setAreaLocationInputs] = useState<LocationInput[]>(
-    [{ id: crypto.randomUUID(), name: "", link: "" }],
+    [{ id: crypto.randomUUID(), name: "", link: "" }]
   );
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingLocation, setEditingLocation] = useState<{
+    id: string;
+    name: string;
+    link: string;
+  }>({ id: "", name: "", link: "" });
+  const [editLoading, setEditLoading] = useState(false);
+  const [editAreaDialogOpen, setEditAreaDialogOpen] = useState(false);
+  const [editingArea, setEditingArea] = useState<{ id: string; name: string }>({
+    id: "",
+    name: "",
+  });
+  const [editAreaLoading, setEditAreaLoading] = useState(false);
   const [loadingSubmit, setLoadingSubmit] = useState<boolean>(false);
 
   // Query to fetch all areas
@@ -140,7 +151,7 @@ export const LocationsTab = ({}: LocationsTabProps) => {
       await queryClient.cancelQueries({ queryKey: ["areas"] });
       const previousAreas = queryClient.getQueryData(["areas"]);
       queryClient.setQueryData(["areas"], (old: Area[] = []) =>
-        old.map((a) => (a.id === areaId ? { ...a, locations } : a)),
+        old.map((a) => (a.id === areaId ? { ...a, locations } : a))
       );
       return { previousAreas };
     },
@@ -153,6 +164,36 @@ export const LocationsTab = ({}: LocationsTabProps) => {
       }
       console.error("Error reordering locations:", error);
       toast.error("Failed to update location order");
+    },
+  });
+
+  // Mutation to update a location
+  const updateLocationMutation = useMutation({
+    mutationFn: (params: {
+      id: string;
+      updates: { name?: string; link?: string };
+    }) => contactsLocationService.updateLocation(params.id, params.updates),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["areas"] });
+      toast.success("Location updated");
+    },
+    onError: (error) => {
+      console.error("Error updating location:", error);
+      toast.error("Failed to update location");
+    },
+  });
+
+  // Mutation to update an area
+  const updateAreaMutation = useMutation({
+    mutationFn: (params: { id: string; updates: { name?: string } }) =>
+      contactsLocationService.updateArea(params.id, params.updates),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["areas"] });
+      toast.success("Area updated");
+    },
+    onError: (error) => {
+      console.error("Error updating area:", error);
+      toast.error("Failed to update area");
     },
   });
 
@@ -192,12 +233,14 @@ export const LocationsTab = ({}: LocationsTabProps) => {
 
       if (successCount > 0) {
         toast.success(
-          `Successfully added ${successCount} location${successCount !== 1 ? "s" : ""}`,
+          `Successfully added ${successCount} location${
+            successCount !== 1 ? "s" : ""
+          }`
         );
       }
       if (failCount > 0) {
         toast.error(
-          `Failed to add ${failCount} location${failCount !== 1 ? "s" : ""}`,
+          `Failed to add ${failCount} location${failCount !== 1 ? "s" : ""}`
         );
       }
 
@@ -213,8 +256,64 @@ export const LocationsTab = ({}: LocationsTabProps) => {
     deleteLocationMutation.mutate(locationId);
   };
 
+  const openEditLocationDialog = (location: Partial<CLLocation>) => {
+    setEditingLocation({
+      id: location.id || "",
+      name: location.name || "",
+      link: location.link || "",
+    });
+    setEditDialogOpen(true);
+  };
+
+  const handleUpdateLocation = async () => {
+    if (!editingLocation.name.trim()) {
+      toast.error("Please enter location name");
+      return;
+    }
+
+    try {
+      setEditLoading(true);
+      await updateLocationMutation.mutateAsync({
+        id: editingLocation.id,
+        updates: { name: editingLocation.name, link: editingLocation.link },
+      });
+      setEditLoading(false);
+      setEditDialogOpen(false);
+      setEditingLocation({ id: "", name: "", link: "" });
+    } catch (error) {
+      setEditLoading(false);
+      console.error("Failed to update location:", error);
+    }
+  };
+
   const handleDeleteArea = (areaId: string) => {
     deleteAreaMutation.mutate(areaId);
+  };
+
+  const openEditAreaDialog = (area: Area) => {
+    setEditingArea({ id: area.id, name: area.name });
+    setEditAreaDialogOpen(true);
+  };
+
+  const handleUpdateArea = async () => {
+    if (!editingArea.name.trim()) {
+      toast.error("Please enter area name");
+      return;
+    }
+
+    try {
+      setEditAreaLoading(true);
+      await updateAreaMutation.mutateAsync({
+        id: editingArea.id,
+        updates: { name: editingArea.name },
+      });
+      setEditAreaLoading(false);
+      setEditAreaDialogOpen(false);
+      setEditingArea({ id: "", name: "" });
+    } catch (error) {
+      setEditAreaLoading(false);
+      console.error("Failed to update area:", error);
+    }
   };
 
   const handleAddLocationsToArea = async () => {
@@ -254,12 +353,14 @@ export const LocationsTab = ({}: LocationsTabProps) => {
 
       if (successCount > 0) {
         toast.success(
-          `Successfully added ${successCount} location${successCount !== 1 ? "s" : ""}`,
+          `Successfully added ${successCount} location${
+            successCount !== 1 ? "s" : ""
+          }`
         );
       }
       if (failCount > 0) {
         toast.error(
-          `Failed to add ${failCount} location${failCount !== 1 ? "s" : ""}`,
+          `Failed to add ${failCount} location${failCount !== 1 ? "s" : ""}`
         );
       }
 
@@ -291,12 +392,12 @@ export const LocationsTab = ({}: LocationsTabProps) => {
   const updateLocationInput = (
     id: string,
     field: "name" | "link",
-    value: string,
+    value: string
   ) => {
     setLocationInputs(
       locationInputs.map((input) =>
-        input.id === id ? { ...input, [field]: value } : input,
-      ),
+        input.id === id ? { ...input, [field]: value } : input
+      )
     );
   };
 
@@ -310,7 +411,7 @@ export const LocationsTab = ({}: LocationsTabProps) => {
   const removeAreaLocationInput = (id: string) => {
     if (areaLocationInputs.length > 1) {
       setAreaLocationInputs(
-        areaLocationInputs.filter((input) => input.id !== id),
+        areaLocationInputs.filter((input) => input.id !== id)
       );
     }
   };
@@ -318,12 +419,12 @@ export const LocationsTab = ({}: LocationsTabProps) => {
   const updateAreaLocationInput = (
     id: string,
     field: "name" | "link",
-    value: string,
+    value: string
   ) => {
     setAreaLocationInputs(
       areaLocationInputs.map((input) =>
-        input.id === id ? { ...input, [field]: value } : input,
-      ),
+        input.id === id ? { ...input, [field]: value } : input
+      )
     );
   };
 
@@ -431,7 +532,7 @@ export const LocationsTab = ({}: LocationsTabProps) => {
                             updateLocationInput(
                               input.id,
                               "name",
-                              e.target.value,
+                              e.target.value
                             )
                           }
                         />
@@ -443,7 +544,7 @@ export const LocationsTab = ({}: LocationsTabProps) => {
                             updateLocationInput(
                               input.id,
                               "link",
-                              e.target.value,
+                              e.target.value
                             )
                           }
                         />
@@ -531,7 +632,7 @@ export const LocationsTab = ({}: LocationsTabProps) => {
                             updateAreaLocationInput(
                               input.id,
                               "name",
-                              e.target.value,
+                              e.target.value
                             )
                           }
                         />
@@ -543,7 +644,7 @@ export const LocationsTab = ({}: LocationsTabProps) => {
                             updateAreaLocationInput(
                               input.id,
                               "link",
-                              e.target.value,
+                              e.target.value
                             )
                           }
                         />
@@ -585,6 +686,105 @@ export const LocationsTab = ({}: LocationsTabProps) => {
                   {areaLocationInputs.filter((l) => l.name.trim()).length !== 1
                     ? "s"
                     : ""}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          {/* Dialog for editing a location */}
+          <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+            <DialogContent className="sm:max-w-[500px] max-h-[80vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Edit Location</DialogTitle>
+                <DialogDescription>
+                  Update location name and link.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <Label>Name</Label>
+                  <Input
+                    placeholder="Location name"
+                    value={editingLocation.name}
+                    onChange={(e) =>
+                      setEditingLocation({
+                        ...editingLocation,
+                        name: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Link</Label>
+                  <Input
+                    type="url"
+                    placeholder="Location link (optional)"
+                    value={editingLocation.link}
+                    onChange={(e) =>
+                      setEditingLocation({
+                        ...editingLocation,
+                        link: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setEditDialogOpen(false);
+                    setEditingLocation({ id: "", name: "", link: "" });
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button onClick={handleUpdateLocation} disabled={editLoading}>
+                  {editLoading && (
+                    <Loader2 className="animate-spin size-3 mr-1" />
+                  )}
+                  Save
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          {/* Dialog for editing an area */}
+          <Dialog
+            open={editAreaDialogOpen}
+            onOpenChange={setEditAreaDialogOpen}
+          >
+            <DialogContent className="sm:max-w-[400px]">
+              <DialogHeader>
+                <DialogTitle>Edit Area</DialogTitle>
+                <DialogDescription>Update area name.</DialogDescription>
+              </DialogHeader>
+              <div className="py-2">
+                <Label>Area Name</Label>
+                <Input
+                  placeholder="Area name"
+                  value={editingArea.name}
+                  onChange={(e) =>
+                    setEditingArea({ ...editingArea, name: e.target.value })
+                  }
+                />
+              </div>
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setEditAreaDialogOpen(false);
+                    setEditingArea({ id: "", name: "" });
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button onClick={handleUpdateArea} disabled={editAreaLoading}>
+                  {editAreaLoading && (
+                    <Loader2 className="animate-spin size-3 mr-1" />
+                  )}
+                  <Edit className="w-4 h-4 mr-2" />
+                  Save
                 </Button>
               </DialogFooter>
             </DialogContent>
@@ -653,6 +853,14 @@ export const LocationsTab = ({}: LocationsTabProps) => {
                                     <Plus className="w-4 h-4 mr-1" />
                                     Add
                                   </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => openEditAreaDialog(area)}
+                                  >
+                                    <Edit className="w-4 h-4 mr-1" />
+                                    Edit
+                                  </Button>
                                   <AlertDialog>
                                     <AlertDialogTrigger asChild>
                                       <Button size="sm" variant="ghost">
@@ -690,6 +898,7 @@ export const LocationsTab = ({}: LocationsTabProps) => {
                                       </AlertDialogFooter>
                                     </AlertDialogContent>
                                   </AlertDialog>
+                                  {/* Edit button intentionally placed per-item below (inside each location entry) */}
                                 </div>
                               </div>
                             </div>
@@ -780,7 +989,7 @@ export const LocationsTab = ({}: LocationsTabProps) => {
                                                       <AlertDialogAction
                                                         onClick={() =>
                                                           handleDeleteLocation(
-                                                            location.id,
+                                                            location.id
                                                           )
                                                         }
                                                         className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
@@ -790,10 +999,23 @@ export const LocationsTab = ({}: LocationsTabProps) => {
                                                     </AlertDialogFooter>
                                                   </AlertDialogContent>
                                                 </AlertDialog>
+                                                <Button
+                                                  variant="ghost"
+                                                  size="sm"
+                                                  className="ml-2 shrink-0"
+                                                  onClick={() =>
+                                                    openEditLocationDialog(
+                                                      location as Partial<CLLocation>
+                                                    )
+                                                  }
+                                                >
+                                                  <Edit className="w-4 h-4 mr-1 text-muted-foreground" />
+                                                  Edit
+                                                </Button>
                                               </div>
                                             )}
                                           </Draggable>
-                                        ),
+                                        )
                                       )
                                     )}
                                     {provided.placeholder}

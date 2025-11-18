@@ -35,7 +35,7 @@ export const getValueByType = async (type: string): Promise<string | null> => {
  */
 export const setValueByType = async (
   type: string,
-  value: string,
+  value: string
 ): Promise<boolean> => {
   const { error } = await supabase
     .from(TABLE_NAME)
@@ -98,7 +98,7 @@ export const getContacts = async (): Promise<Contacts | null> => {
  * Update contacts information
  */
 export const updateContacts = async (
-  contacts: Partial<Contacts>,
+  contacts: Partial<Contacts>
 ): Promise<boolean> => {
   const updates = Object.entries(contacts)
     .filter(([key]) => !["id", "created_at", "updated_at"].includes(key))
@@ -168,7 +168,7 @@ export const getSocialMedia = async (): Promise<SocialMedia | null> => {
  * Update social media information
  */
 export const updateSocialMedia = async (
-  socialMedia: Partial<SocialMedia>,
+  socialMedia: Partial<SocialMedia>
 ): Promise<boolean> => {
   const updates = Object.entries(socialMedia)
     .filter(([key]) => !["id", "created_at", "updated_at"].includes(key))
@@ -213,7 +213,7 @@ export const getAllAreas = async (): Promise<Area[]> => {
       .map((area: Area) => ({
         ...area,
         locations: (area.locations || []).sort(
-          (a, b) => (a.order || 0) - (b.order || 0),
+          (a, b) => (a.order || 0) - (b.order || 0)
         ),
       }));
   } catch (error) {
@@ -255,7 +255,7 @@ export const addArea = async (areaName: string): Promise<Area | null> => {
 
   // Check if area already exists
   const existingArea = areas.find(
-    (a) => a.name.toLowerCase() === areaName.toLowerCase(),
+    (a) => a.name.toLowerCase() === areaName.toLowerCase()
   );
   if (existingArea) {
     return existingArea;
@@ -285,7 +285,7 @@ export const addArea = async (areaName: string): Promise<Area | null> => {
  */
 export const addLocation = async (
   areaName: string,
-  location: Omit<Location, "id" | "created_at" | "updated_at">,
+  location: Omit<Location, "id" | "created_at" | "updated_at">
 ): Promise<Location | null> => {
   const areas = await getAllAreas();
 
@@ -336,7 +336,7 @@ export const addLocation = async (
  */
 export const updateLocation = async (
   locationId: string,
-  updates: Partial<Location>,
+  updates: Partial<Location>
 ): Promise<boolean> => {
   const areas = await getAllAreas();
   let found = false;
@@ -360,6 +360,33 @@ export const updateLocation = async (
         locations: updatedLocations,
         updated_at: new Date().toISOString(),
       };
+    }
+    return area;
+  });
+
+  if (!found) return false;
+
+  return updateAllAreas(updatedAreas);
+};
+
+/**
+ * Update an area's properties (e.g., name)
+ */
+export const updateArea = async (
+  areaId: string,
+  updates: Partial<Area>
+): Promise<boolean> => {
+  const areas = await getAllAreas();
+  let found = false;
+
+  const updatedAreas = areas.map((area) => {
+    if (area.id === areaId) {
+      found = true;
+      return {
+        ...area,
+        ...updates,
+        updated_at: new Date().toISOString(),
+      } as Area;
     }
     return area;
   });
@@ -431,7 +458,7 @@ export const deleteAllAreas = async (): Promise<boolean> => {
  * Reorder areas
  */
 export const reorderAreas = async (
-  reorderedAreas: Area[],
+  reorderedAreas: Area[]
 ): Promise<boolean> => {
   // Update order numbers based on array position
   const areasWithUpdatedOrder = reorderedAreas.map((area, index) => ({
@@ -448,7 +475,7 @@ export const reorderAreas = async (
  */
 export const reorderLocations = async (
   areaId: string,
-  reorderedLocations: Location[],
+  reorderedLocations: Location[]
 ): Promise<boolean> => {
   const areas = await getAllAreas();
 
@@ -460,7 +487,7 @@ export const reorderLocations = async (
           ...location,
           order: index + 1,
           updated_at: new Date().toISOString(),
-        }),
+        })
       );
 
       return {
@@ -496,7 +523,7 @@ export const getAllData = async (): Promise<ContactLocationEntry[]> => {
  * Bulk upsert data (for seeding or restoration)
  */
 export const bulkUpsertData = async (
-  entries: Omit<ContactLocationEntry, "id" | "created_at" | "updated_at">[],
+  entries: Omit<ContactLocationEntry, "id" | "created_at" | "updated_at">[]
 ): Promise<boolean> => {
   const { error } = await supabase
     .from(TABLE_NAME)
@@ -515,7 +542,7 @@ export const bulkUpsertData = async (
  * Each entry should contain { area, name, link }
  */
 export const bulkAddLocations = async (
-  locations: Array<{ area: string; name: string; link?: string }>,
+  locations: Array<{ area: string; name: string; link?: string }>
 ): Promise<{ success: number; failed: number; errors: string[] }> => {
   const areas = await getAllAreas();
   const areasMap = new Map<string, Area>();
