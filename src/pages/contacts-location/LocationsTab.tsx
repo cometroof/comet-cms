@@ -960,6 +960,19 @@ export const LocationsTab = () => {
                                                     )}
                                                   </div>
                                                 </div>
+                                                <Button
+                                                  variant="ghost"
+                                                  size="sm"
+                                                  className="ml-2 shrink-0"
+                                                  onClick={() =>
+                                                    openEditLocationDialog(
+                                                      location as Partial<CLLocation>
+                                                    )
+                                                  }
+                                                >
+                                                  <Edit className="w-4 h-4 mr-1 text-muted-foreground" />
+                                                  Edit
+                                                </Button>
                                                 <AlertDialog>
                                                   <AlertDialogTrigger asChild>
                                                     <Button
@@ -999,19 +1012,6 @@ export const LocationsTab = () => {
                                                     </AlertDialogFooter>
                                                   </AlertDialogContent>
                                                 </AlertDialog>
-                                                <Button
-                                                  variant="ghost"
-                                                  size="sm"
-                                                  className="ml-2 shrink-0"
-                                                  onClick={() =>
-                                                    openEditLocationDialog(
-                                                      location as Partial<CLLocation>
-                                                    )
-                                                  }
-                                                >
-                                                  <Edit className="w-4 h-4 mr-1 text-muted-foreground" />
-                                                  Edit
-                                                </Button>
                                               </div>
                                             )}
                                           </Draggable>
