@@ -817,163 +817,6 @@ const ProfileFormPage = () => {
             </CardContent>
           </Card>
 
-          {/* Specifications */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>Additional Specifications</CardTitle>
-                  <CardDescription>
-                    Add custom specifications with bilingual labels and values.
-                    Drag to reorder.
-                  </CardDescription>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    type="button"
-                    variant={specLanguage === "en" ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setSpecLanguage("en")}
-                    className="h-8 px-3"
-                  >
-                    EN
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={specLanguage === "id" ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setSpecLanguage("id")}
-                    className="h-8 px-3"
-                  >
-                    ID
-                  </Button>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {specifications.length > 0 ? (
-                <div className="space-y-3">
-                  {/* Header Row */}
-                  <div className="grid grid-cols-[40px_1fr_1fr_40px] gap-3 pb-2 border-b">
-                    <div></div>
-                    <Label className="text-xs font-medium text-muted-foreground">
-                      Label
-                    </Label>
-                    <Label className="text-xs font-medium text-muted-foreground">
-                      Value
-                    </Label>
-                    <div></div>
-                  </div>
-
-                  {/* Specification Rows with Drag and Drop */}
-                  <DragDropContext onDragEnd={handleSpecificationDragEnd}>
-                    <Droppable droppableId="specifications">
-                      {(provided) => (
-                        <div
-                          {...provided.droppableProps}
-                          ref={provided.innerRef}
-                          className="space-y-2"
-                        >
-                          {specifications.map((spec, index) => (
-                            <Draggable
-                              key={`spec-${index}`}
-                              draggableId={`spec-${index}`}
-                              index={index}
-                            >
-                              {(provided, snapshot) => (
-                                <div
-                                  ref={provided.innerRef}
-                                  {...provided.draggableProps}
-                                  className={`grid grid-cols-[40px_1fr_1fr_40px] gap-3 items-center ${
-                                    snapshot.isDragging
-                                      ? "bg-muted rounded-md"
-                                      : ""
-                                  }`}
-                                >
-                                  <div
-                                    {...provided.dragHandleProps}
-                                    className="flex items-center justify-center cursor-grab active:cursor-grabbing"
-                                  >
-                                    <GripVertical className="w-5 h-5 text-muted-foreground" />
-                                  </div>
-                                  <Input
-                                    value={spec.label[specLanguage]}
-                                    onChange={(e) =>
-                                      updateSpecificationLabel(
-                                        index,
-                                        specLanguage,
-                                        e.target.value,
-                                      )
-                                    }
-                                    placeholder={
-                                      specLanguage === "en"
-                                        ? "e.g., Coating Type"
-                                        : "e.g., Jenis Lapisan"
-                                    }
-                                    className="h-9 text-sm"
-                                  />
-                                  <Input
-                                    value={spec.value}
-                                    onChange={(e) =>
-                                      updateSpecificationValue(
-                                        index,
-                                        e.target.value,
-                                      )
-                                    }
-                                    placeholder="e.g., Galvalume AZ150"
-                                    className="h-9 text-sm"
-                                  />
-                                  <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-9 w-9 text-destructive hover:text-destructive"
-                                    onClick={() => removeSpecification(index)}
-                                  >
-                                    <X className="w-4 h-4" />
-                                  </Button>
-                                </div>
-                              )}
-                            </Draggable>
-                          ))}
-                          {provided.placeholder}
-                        </div>
-                      )}
-                    </Droppable>
-                  </DragDropContext>
-
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="w-full mt-2"
-                    onClick={addSpecification}
-                  >
-                    <Plus className="w-4 h-4 mr-1" />
-                    Add Specification
-                  </Button>
-                </div>
-              ) : (
-                <div className="border border-dashed rounded-lg p-8 text-center text-muted-foreground">
-                  <p className="text-sm">No specifications added yet</p>
-                  <p className="text-xs mt-1">
-                    Click the button below to add custom specifications
-                  </p>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="mt-4"
-                    onClick={addSpecification}
-                  >
-                    <Plus className="w-4 h-4 mr-1" />
-                    Add Specification
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
           {/* Dynamic Size Information */}
           <Card>
             <CardHeader>
@@ -1186,6 +1029,163 @@ const ProfileFormPage = () => {
                       Add Row
                     </Button>*/}
                   </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Specifications */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Additional Specifications</CardTitle>
+                  <CardDescription>
+                    Add custom specifications with bilingual labels and values.
+                    Drag to reorder.
+                  </CardDescription>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant={specLanguage === "en" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setSpecLanguage("en")}
+                    className="h-8 px-3"
+                  >
+                    EN
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={specLanguage === "id" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setSpecLanguage("id")}
+                    className="h-8 px-3"
+                  >
+                    ID
+                  </Button>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {specifications.length > 0 ? (
+                <div className="space-y-3">
+                  {/* Header Row */}
+                  <div className="grid grid-cols-[40px_1fr_1fr_40px] gap-3 pb-2 border-b">
+                    <div></div>
+                    <Label className="text-xs font-medium text-muted-foreground">
+                      Label
+                    </Label>
+                    <Label className="text-xs font-medium text-muted-foreground">
+                      Value
+                    </Label>
+                    <div></div>
+                  </div>
+
+                  {/* Specification Rows with Drag and Drop */}
+                  <DragDropContext onDragEnd={handleSpecificationDragEnd}>
+                    <Droppable droppableId="specifications">
+                      {(provided) => (
+                        <div
+                          {...provided.droppableProps}
+                          ref={provided.innerRef}
+                          className="space-y-2"
+                        >
+                          {specifications.map((spec, index) => (
+                            <Draggable
+                              key={`spec-${index}`}
+                              draggableId={`spec-${index}`}
+                              index={index}
+                            >
+                              {(provided, snapshot) => (
+                                <div
+                                  ref={provided.innerRef}
+                                  {...provided.draggableProps}
+                                  className={`grid grid-cols-[40px_1fr_1fr_40px] gap-3 items-center ${
+                                    snapshot.isDragging
+                                      ? "bg-muted rounded-md"
+                                      : ""
+                                  }`}
+                                >
+                                  <div
+                                    {...provided.dragHandleProps}
+                                    className="flex items-center justify-center cursor-grab active:cursor-grabbing"
+                                  >
+                                    <GripVertical className="w-5 h-5 text-muted-foreground" />
+                                  </div>
+                                  <Input
+                                    value={spec.label[specLanguage]}
+                                    onChange={(e) =>
+                                      updateSpecificationLabel(
+                                        index,
+                                        specLanguage,
+                                        e.target.value,
+                                      )
+                                    }
+                                    placeholder={
+                                      specLanguage === "en"
+                                        ? "e.g., Coating Type"
+                                        : "e.g., Jenis Lapisan"
+                                    }
+                                    className="h-9 text-sm"
+                                  />
+                                  <Input
+                                    value={spec.value}
+                                    onChange={(e) =>
+                                      updateSpecificationValue(
+                                        index,
+                                        e.target.value,
+                                      )
+                                    }
+                                    placeholder="e.g., Galvalume AZ150"
+                                    className="h-9 text-sm"
+                                  />
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-9 w-9 text-destructive hover:text-destructive"
+                                    onClick={() => removeSpecification(index)}
+                                  >
+                                    <X className="w-4 h-4" />
+                                  </Button>
+                                </div>
+                              )}
+                            </Draggable>
+                          ))}
+                          {provided.placeholder}
+                        </div>
+                      )}
+                    </Droppable>
+                  </DragDropContext>
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="w-full mt-2"
+                    onClick={addSpecification}
+                  >
+                    <Plus className="w-4 h-4 mr-1" />
+                    Add Specification
+                  </Button>
+                </div>
+              ) : (
+                <div className="border border-dashed rounded-lg p-8 text-center text-muted-foreground">
+                  <p className="text-sm">No specifications added yet</p>
+                  <p className="text-xs mt-1">
+                    Click the button below to add custom specifications
+                  </p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="mt-4"
+                    onClick={addSpecification}
+                  >
+                    <Plus className="w-4 h-4 mr-1" />
+                    Add Specification
+                  </Button>
                 </div>
               )}
             </CardContent>

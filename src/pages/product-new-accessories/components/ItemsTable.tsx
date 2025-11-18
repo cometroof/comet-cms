@@ -39,8 +39,7 @@ const ItemsTable = ({
             {isDraggable && <TableHead className="w-12"></TableHead>}
             <TableHead>Name</TableHead>
             <TableHead>Image</TableHead>
-            <TableHead>Length</TableHead>
-            <TableHead>Weight</TableHead>
+            <TableHead>Specification</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -80,10 +79,18 @@ const ItemsTable = ({
                         )}
                       </TableCell>
                       <TableCell className="text-muted-foreground">
-                        {item.length || "-"}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {item.weight || "-"}
+                        {Object.entries(
+                          item.spec_info as { [key: string]: string },
+                        ).length < 1
+                          ? "-"
+                          : null}
+                        {Object.entries(
+                          item.spec_info as { [key: string]: string },
+                        ).map(([key, value], index) => (
+                          <div key={index}>
+                            <span className="font-medium">{key}</span>: {value}
+                          </div>
+                        ))}
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-2">

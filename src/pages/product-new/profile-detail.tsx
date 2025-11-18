@@ -229,6 +229,20 @@ const ProfileDetailPage = () => {
     return category.items?.[0]?.count || 0;
   };
 
+  interface SizeForm {
+    rows?: { label: { en: string; id: string }; values: string[] }[];
+    headers?: string[];
+  }
+
+  const sizeForm = (profile?.size || {}) as SizeForm;
+
+  interface SpecForm {
+    label?: { en: string; id: string };
+    value?: string;
+  }
+
+  const specForms = (profile?.specification || []) as SpecForm[];
+
   if (profileLoading || categoriesLoading) {
     return (
       <DashboardLayout>
@@ -317,7 +331,43 @@ const ProfileDetailPage = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid lg:grid-cols-2 gap-20 lg:gap-32">
+              <div>
+                <div className="font-medium">Profile Size</div>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Available Size</TableHead>
+                      {sizeForm.headers.map((header, index) => (
+                        <TableHead key={index}>{header}</TableHead>
+                      ))}
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {sizeForm.rows.map((row, index) => (
+                      <TableRow key={index}>
+                        <TableHead>{row.label.en}</TableHead>
+                        {row.values.map((value, index) => (
+                          <TableCell key={index}>{value}</TableCell>
+                        ))}
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+              <div>
+                <div className="font-medium">Profile Spesification</div>
+                <Table>
+                  {specForms.map((spec, index) => (
+                    <TableRow key={index}>
+                      <TableHead>{spec.label.en}</TableHead>
+                      <TableCell>{spec.value}</TableCell>
+                    </TableRow>
+                  ))}
+                </Table>
+              </div>
+            </div>
+            {/*<div className="grid grid-cols-3 gap-4 mt-10">
               <div>
                 <p className="text-sm text-muted-foreground">Materials</p>
                 <p className="font-medium">{profile.materials || "-"}</p>
@@ -342,7 +392,7 @@ const ProfileDetailPage = () => {
                 <p className="text-sm text-muted-foreground">Panel Amount</p>
                 <p className="font-medium">{profile.panel_amount || "-"}</p>
               </div>
-            </div>
+            </div>*/}
           </CardContent>
         </Card>
 
@@ -355,6 +405,10 @@ const ProfileDetailPage = () => {
               <p className="text-muted-foreground mb-4 text-center">
                 Create a category to organize product items
               </p>
+              <Button onClick={handleAddCategory}>
+                <Plus size={16} className="mr-2" />
+                Add Category
+              </Button>
             </CardContent>
           </Card>
         ) : (
