@@ -65,6 +65,7 @@ interface ProfileFormData {
   tkdn_value: string;
   profile_image_url: string;
   profile_banner_url: string;
+  profile_main_image_url: string;
   is_premium: boolean;
   description_en: string;
   description_id: string;
@@ -89,6 +90,7 @@ const ProfileFormPage = () => {
     useState(false);
   const [showContentImageSelector, setShowContentImageSelector] =
     useState(false);
+  const [showMainImageSelector, setShowMainImageSelector] = useState(false);
 
   // Size table state
   const [sizeData, setSizeData] = useState<SizeData>({
@@ -127,6 +129,7 @@ const ProfileFormPage = () => {
       tkdn_value: "",
       profile_image_url: "",
       profile_banner_url: "",
+      profile_main_image_url: "",
       is_premium: false,
       description_en: "",
       description_id: "",
@@ -139,6 +142,7 @@ const ProfileFormPage = () => {
 
   const profileImage = watch("profile_image_url");
   const bannerImage = watch("profile_banner_url");
+  const profileMainImage = watch("profile_main_image_url");
   const premiumImage = watch("premium_image_url");
   const contentImage = watch("content_image_url");
   const isPremium = watch("is_premium");
@@ -358,6 +362,7 @@ const ProfileFormPage = () => {
         panel_amount: profile.panel_amount || 0,
         tkdn_value: profile.tkdn_value || "",
         profile_image_url: profile.profile_image_url || "",
+        profile_main_image_url: profile.profile_main_image_url || "",
         profile_banner_url: profile.profile_banner_url || "",
         is_premium: profile.is_premium || false,
         description_en: descriptionEn,
@@ -370,6 +375,7 @@ const ProfileFormPage = () => {
 
       // Load size data from profile
       if (profile.size && typeof profile.size === "object") {
+        // eslint-disable-next-line
         const sizeObj = profile.size as any;
         if (sizeObj.headers && sizeObj.rows && sizeObj.rows.length > 0) {
           // Check if rows are in old format (string[][]) or new format (bilingual)
@@ -397,7 +403,9 @@ const ProfileFormPage = () => {
 
       // Load specification data from profile
       if (profile.specification && Array.isArray(profile.specification)) {
-        setSpecifications(profile.specification as SpecificationItem[]);
+        setSpecifications(
+          profile.specification as unknown as SpecificationItem[],
+        );
       } else {
         setSpecifications([]);
       }
@@ -436,9 +444,11 @@ const ProfileFormPage = () => {
         panel_amount: data.panel_amount,
         tkdn_value: data.tkdn_value || null,
         profile_image_url: data.profile_image_url || null,
-        profile_banner_url: data.profile_banner_url || null,
-        size: sizeData,
-        specification: specifications.length > 0 ? specifications : null,
+        profile_main_image_url: data.profile_main_image_url || null,
+        profile_banner_url: data.profile_banner_url || null, // eslint-disable-next-line
+        size: sizeData as any, // eslint-disable-next-line
+        specification:
+          specifications.length > 0 ? specifications : (null as any),
         updated_at: new Date().toISOString(),
       };
 
@@ -695,8 +705,46 @@ const ProfileFormPage = () => {
                   </div>
                 </div>
 
+                {/* Profile Main Image */}
+                <div className="space-y-2">
+                  <Label>Profile Main Image</Label>
+                  <div
+                    className="relative w-full aspect-square border rounded overflow-hidden group cursor-pointer"
+                    onClick={() => setShowMainImageSelector(true)}
+                  >
+                    {profileMainImage ? (
+                      <>
+                        <img
+                          src={profileMainImage}
+                          alt="Profile Main"
+                          className="w-full h-full object-contain"
+                        />
+                        <div className="absolute left-0 top-0 size-full bg-black/40 opacity-0 flex items-center justify-center group-hover:opacity-100 pointer-events-none text-sm text-white">
+                          <ImageUp className="size-6" />
+                        </div>
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="icon"
+                          className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setValue("profile_main_image_url", "");
+                          }}
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </>
+                    ) : (
+                      <div className="size-full flex items-center justify-center bg-muted">
+                        <ImageUp className="size-8 text-muted-foreground" />
+                      </div>
+                    )}
+                  </div>
+                </div>
+
                 {/* Profile Banner */}
-                <div className="space-y-2 col-span-3">
+                <div className="space-y-2 col-span-2">
                   <Label>Profile Banner</Label>
                   <div
                     className="relative w-full aspect-[2.5/1] border rounded overflow-hidden group cursor-pointer"
@@ -1312,6 +1360,7 @@ const ProfileFormPage = () => {
         onSelect={(url) => setValue("profile_image_url", url)}
         title="Select Profile Image"
         multipleSelection={false}
+        multiple={false}
         initialSelection={profileImage}
       />
 
@@ -1321,6 +1370,7 @@ const ProfileFormPage = () => {
         onSelect={(url) => setValue("profile_banner_url", url)}
         title="Select Profile Banner"
         multipleSelection={false}
+        multiple={false}
         initialSelection={bannerImage}
       />
 
@@ -1330,6 +1380,7 @@ const ProfileFormPage = () => {
         onSelect={(url) => setValue("premium_image_url", url)}
         title="Select Premium Brand Image"
         multipleSelection={false}
+        multiple={false}
         initialSelection={premiumImage}
       />
 
@@ -1339,7 +1390,18 @@ const ProfileFormPage = () => {
         onSelect={(url) => setValue("content_image_url", url)}
         title="Select Content Image"
         multipleSelection={false}
+        multiple={false}
         initialSelection={contentImage}
+      />
+
+      <ImageSelectorDialog
+        open={showMainImageSelector}
+        onOpenChange={setShowMainImageSelector}
+        onSelect={(url) => setValue("profile_main_image_url", url)}
+        title="Select Profile Main Image"
+        multipleSelection={false}
+        multiple={false}
+        initialSelection={profileMainImage}
       />
     </DashboardLayout>
   );

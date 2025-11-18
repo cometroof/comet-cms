@@ -580,6 +580,7 @@ export type Database = {
           product_id: string;
           profile_banner_url: string | null;
           profile_image_url: string | null;
+          profile_main_image_url: string | null;
           size: Json | null;
           size_per_panel: string | null;
           specification: Json | null;
@@ -599,6 +600,7 @@ export type Database = {
           product_id: string;
           profile_banner_url?: string | null;
           profile_image_url?: string | null;
+          profile_main_image_url?: string | null;
           size?: Json | null;
           size_per_panel?: string | null;
           specification?: Json | null;
@@ -618,6 +620,7 @@ export type Database = {
           product_id?: string;
           profile_banner_url?: string | null;
           profile_image_url?: string | null;
+          profile_main_image_url?: string | null;
           size?: Json | null;
           size_per_panel?: string | null;
           specification?: Json | null;

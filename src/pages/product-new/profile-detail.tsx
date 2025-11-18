@@ -338,16 +338,16 @@ const ProfileDetailPage = () => {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Available Size</TableHead>
-                      {sizeForm.headers.map((header, index) => (
+                      {sizeForm?.headers?.map((header, index) => (
                         <TableHead key={index}>{header}</TableHead>
                       ))}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {sizeForm.rows.map((row, index) => (
+                    {sizeForm?.rows?.map((row, index) => (
                       <TableRow key={index}>
                         <TableHead>{row.label.en}</TableHead>
-                        {row.values.map((value, index) => (
+                        {row?.values?.map((value, index) => (
                           <TableCell key={index}>{value}</TableCell>
                         ))}
                       </TableRow>
@@ -358,7 +358,7 @@ const ProfileDetailPage = () => {
               <div>
                 <div className="font-medium">Profile Spesification</div>
                 <Table>
-                  {specForms.map((spec, index) => (
+                  {specForms?.map((spec, index) => (
                     <TableRow key={index}>
                       <TableHead>{spec.label.en}</TableHead>
                       <TableCell>{spec.value}</TableCell>
