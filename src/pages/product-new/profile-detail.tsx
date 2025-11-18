@@ -109,7 +109,7 @@ const ProfileDetailPage = () => {
           `
           *,
           items:product_item(count)
-        `,
+        `
         )
         .eq("product_profile_id", profileId)
         .order("order", { ascending: true, nullsFirst: false });
@@ -124,7 +124,7 @@ const ProfileDetailPage = () => {
   const reorderMutation = useMutation({
     mutationFn: async (updates: { id: string; order: number }[]) => {
       const promises = updates.map(({ id, order }) =>
-        supabase.from("product_category").update({ order }).eq("id", id),
+        supabase.from("product_category").update({ order }).eq("id", id)
       );
       const results = await Promise.all(promises);
       const errors = results.filter((r) => r.error);
@@ -204,7 +204,7 @@ const ProfileDetailPage = () => {
 
   const handleViewCategory = (category: ProductCategory) => {
     navigate(
-      `/dashboard/product-new/${productId}/profile/${profileId}/category/${category.id}`,
+      `/dashboard/product-new/${productId}/profile/${profileId}/category/${category.id}`
     );
   };
 
@@ -224,7 +224,7 @@ const ProfileDetailPage = () => {
   };
 
   const getItemsCount = (
-    category: ProductCategory & { items?: Array<{ count: number }> },
+    category: ProductCategory & { items?: Array<{ count: number }> }
   ) => {
     return category.items?.[0]?.count || 0;
   };
@@ -527,7 +527,7 @@ const ProfileDetailPage = () => {
       {/* Category Form Dialog */}
       {showCategoryForm && (
         <CategoryFormDialog
-          productId={productId!}
+          // productId={productId!}
           profileId={profileId!}
           category={editingCategory}
           isOpen={showCategoryForm}

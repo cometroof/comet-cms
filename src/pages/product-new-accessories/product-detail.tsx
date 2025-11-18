@@ -338,6 +338,10 @@ const ProductAccessoriesDetailPage = () => {
     return category.items?.[0]?.count || 0;
   };
 
+  const handleAddItem = () => {
+    navigate(`/dashboard/product-accessories/${productId}/item/new`);
+  };
+
   if (productLoading || categoriesLoading || directItemsLoading) {
     return (
       <DashboardLayout>
@@ -575,6 +579,14 @@ const ProductAccessoriesDetailPage = () => {
               <CardTitle>
                 <div className="flex items-start justify-between gap-10">
                   <div>Direct Items</div>
+
+                  <Button
+                    onClick={handleAddItem}
+                    className="flex items-center gap-2"
+                  >
+                    <Plus size={16} />
+                    Add Item
+                  </Button>
                   {/*<Button
                     onClick={handleViewDirectItems}
                     variant="secondary"

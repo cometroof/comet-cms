@@ -36,6 +36,7 @@ import { RichTextEditor } from "@/components/RichTextEditor";
 interface ProductFormData {
   name: string;
   title: string;
+  title_id: string;
   description_en: string;
   description_id: string;
   order: number;
@@ -102,6 +103,7 @@ const ProductFormPage = () => {
     defaultValues: {
       name: "",
       title: "",
+      title_id: "",
       description_en: "",
       description_id: "",
       order: 0,
@@ -157,6 +159,7 @@ const ProductFormPage = () => {
       reset({
         name: product.name,
         title: product.title || "",
+        title_id: product.title_id || "",
         description_en: product.description_en || "",
         description_id: product.description_id || "",
         order: product.order,
@@ -223,7 +226,7 @@ const ProductFormPage = () => {
   const updateSuitableRow = (
     index: number,
     field: "en" | "id",
-    value: string,
+    value: string
   ) => {
     const updated = [...suitables];
     updated[index][field] = value;
@@ -247,6 +250,7 @@ const ProductFormPage = () => {
           .update({
             name: data.name,
             title: data.title,
+            title_id: data.title_id,
             description_en: data.description_en,
             description_id: data.description_id,
             order: data.order,
@@ -322,6 +326,7 @@ const ProductFormPage = () => {
           .insert({
             name: data.name,
             title: data.title,
+            title_id: data.title_id,
             description_en: data.description_en,
             description_id: data.description_id,
             order: data.order,
@@ -365,13 +370,13 @@ const ProductFormPage = () => {
       toast.success(
         isEditMode
           ? "Product updated successfully"
-          : "Product created successfully",
+          : "Product created successfully"
       );
       navigate("/dashboard/product-new");
     },
     onError: (error) => {
       toast.error(
-        isEditMode ? "Failed to update product" : "Failed to create product",
+        isEditMode ? "Failed to update product" : "Failed to create product"
       );
       console.error(error);
     },
@@ -448,14 +453,26 @@ const ProductFormPage = () => {
                 )}
               </div>
 
-              {/* Title */}
-              <div className="space-y-2">
-                <Label htmlFor="title">Title</Label>
-                <Input
-                  id="title"
-                  {...register("title")}
-                  placeholder="Enter product title"
-                />
+              <div className="grid grid-cols-2 gap-6 lg:gap-8">
+                {/* Title */}
+                <div className="space-y-2">
+                  <Label htmlFor="title">Title</Label>
+                  <Input
+                    id="title"
+                    {...register("title")}
+                    placeholder="Enter product title"
+                  />
+                </div>
+
+                {/* Title (Indonesian) */}
+                <div className="space-y-2">
+                  <Label htmlFor="title_id">Title (Indonesian)</Label>
+                  <Input
+                    id="title_id"
+                    {...register("title_id")}
+                    placeholder="Masukkan judul produk"
+                  />
+                </div>
               </div>
 
               {/* Slug */}
@@ -1017,8 +1034,8 @@ const ProductFormPage = () => {
               {saveMutation.isPending
                 ? "Saving..."
                 : isEditMode
-                  ? "Update Product"
-                  : "Create Product"}
+                ? "Update Product"
+                : "Create Product"}
             </Button>
           </div>
         </form>

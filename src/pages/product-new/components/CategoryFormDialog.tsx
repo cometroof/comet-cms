@@ -17,7 +17,7 @@ import { toast } from "sonner";
 import { ProductCategory } from "@/pages/product/types";
 
 interface CategoryFormDialogProps {
-  productId: string;
+  productId?: string;
   profileId: string;
   category: ProductCategory | null;
   isOpen: boolean;
@@ -95,13 +95,13 @@ const CategoryFormDialog = ({
       toast.success(
         category
           ? "Category updated successfully"
-          : "Category created successfully",
+          : "Category created successfully"
       );
       onSuccess();
     },
     onError: (error) => {
       toast.error(
-        category ? "Failed to update category" : "Failed to create category",
+        category ? "Failed to update category" : "Failed to create category"
       );
       console.error(error);
     },
@@ -161,8 +161,8 @@ const CategoryFormDialog = ({
               {saveMutation.isPending
                 ? "Saving..."
                 : category
-                  ? "Update Category"
-                  : "Create Category"}
+                ? "Update Category"
+                : "Create Category"}
             </Button>
           </div>
         </form>
