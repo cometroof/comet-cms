@@ -260,6 +260,8 @@ export type Database = {
           is_highlight_section: boolean | null;
           is_profile_highlight: boolean | null;
           is_under_product: boolean;
+          meta_desc_en: string | null;
+          meta_desc_id: string | null;
           name: string;
           order: number;
           product_main_image: string | null;
@@ -296,6 +298,8 @@ export type Database = {
           is_highlight_section?: boolean | null;
           is_profile_highlight?: boolean | null;
           is_under_product?: boolean;
+          meta_desc_en?: string | null;
+          meta_desc_id?: string | null;
           name: string;
           order?: number;
           product_main_image?: string | null;
@@ -332,6 +336,8 @@ export type Database = {
           is_highlight_section?: boolean | null;
           is_profile_highlight?: boolean | null;
           is_under_product?: boolean;
+          meta_desc_en?: string | null;
+          meta_desc_id?: string | null;
           name?: string;
           order?: number;
           product_main_image?: string | null;
@@ -735,6 +741,7 @@ export type Database = {
           deleted_at: string | null;
           id: string;
           name: string;
+          name_id: string | null;
           order: number | null;
           slug: string;
           thumbnail: string | null;
@@ -745,6 +752,7 @@ export type Database = {
           deleted_at?: string | null;
           id?: string;
           name: string;
+          name_id?: string | null;
           order?: number | null;
           slug: string;
           thumbnail?: string | null;
@@ -755,6 +763,7 @@ export type Database = {
           deleted_at?: string | null;
           id?: string;
           name?: string;
+          name_id?: string | null;
           order?: number | null;
           slug?: string;
           thumbnail?: string | null;
@@ -844,6 +853,7 @@ export type Database = {
           location_link: string;
           location_text: string;
           name: string;
+          name_id: string | null;
           order: number;
           roof_type: string;
           slug: string | null;
@@ -856,6 +866,7 @@ export type Database = {
           location_link: string;
           location_text: string;
           name: string;
+          name_id?: string | null;
           order?: number;
           roof_type: string;
           slug?: string | null;
@@ -868,6 +879,7 @@ export type Database = {
           location_link?: string;
           location_text?: string;
           name?: string;
+          name_id?: string | null;
           order?: number;
           roof_type?: string;
           slug?: string | null;

@@ -19,6 +19,10 @@ import ImageSelectorDialog from "./ImageSelectorDialog";
 
 // Zod schema for validation
 const categoryFormSchema = z.object({
+  name_id: z
+    .string()
+    .min(1, "Category name ID is required")
+    .max(200, "Category name ID must be less than 200 characters"),
   name: z
     .string()
     .min(1, "Category name is required")
@@ -28,7 +32,7 @@ const categoryFormSchema = z.object({
     .min(1, "Slug is required")
     .regex(
       /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
-      "Slug must be URL-friendly (lowercase letters, numbers, and hyphens)",
+      "Slug must be URL-friendly (lowercase letters, numbers, and hyphens)"
     ),
 });
 
@@ -37,6 +41,7 @@ type CategoryFormValues = z.infer<typeof categoryFormSchema>;
 interface Category {
   id: string;
   name: string;
+  name_id?: string;
   slug: string;
   thumbnail: string | null;
   deleted_at: string | null;
@@ -76,6 +81,7 @@ const CategoryFormDialog = ({
     defaultValues: {
       name: "",
       slug: "",
+      name_id: "",
     },
     mode: "onChange",
   });
@@ -102,6 +108,7 @@ const CategoryFormDialog = ({
       if (category) {
         setValue("name", category.name);
         setValue("slug", category.slug);
+        setValue("name_id", category.name_id || "");
         setThumbnail(category.thumbnail);
       } else {
         reset();
@@ -135,6 +142,7 @@ const CategoryFormDialog = ({
       const categoryData: Category = {
         id: category?.id || "",
         name: data.name.trim(),
+        name_id: data.name_id.trim(),
         slug: data.slug.trim(),
         thumbnail: thumbnail,
         deleted_at: null,
@@ -146,14 +154,18 @@ const CategoryFormDialog = ({
 
       toast({
         title: category ? "Category updated" : "Category created",
-        description: `Category "${data.name}" has been ${category ? "updated" : "created"} successfully.`,
+        description: `Category "${data.name}" has been ${
+          category ? "updated" : "created"
+        } successfully.`,
       });
 
       onOpenChange(false);
     } catch (error) {
       toast({
         title: "Error",
-        description: `Failed to ${category ? "update" : "create"} category. Please try again.`,
+        description: `Failed to ${
+          category ? "update" : "create"
+        } category. Please try again.`,
         variant: "destructive",
       });
       console.error("Error saving category:", error);
@@ -173,6 +185,11 @@ const CategoryFormDialog = ({
     setValue("name", value, { shouldValidate: true });
   };
 
+  const handleNameIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setValue("name_id", value, { shouldValidate: true });
+  };
+
   const isFormValid = !errors.name && !errors.slug && nameValue && slugValue;
 
   return (
@@ -187,28 +204,54 @@ const CategoryFormDialog = ({
             </DialogHeader>
 
             <div className="space-y-6 py-4">
-              {/* Name Field */}
-              <div className="space-y-2">
-                <Label htmlFor="name">
-                  Name <span className="text-destructive">*</span>
-                </Label>
-                <Input
-                  id="name"
-                  {...register("name")}
-                  onChange={handleNameChange}
-                  placeholder="Enter category name"
-                  maxLength={200}
-                  disabled={isSubmitting}
-                />
-                <div className="flex justify-between">
-                  <p className="text-xs text-muted-foreground">
-                    {nameValue?.length || 0}/200 characters
-                  </p>
-                  {errors.name && (
-                    <p className="text-xs text-destructive">
-                      {errors.name.message}
+              <div className="grid lg:grid-cols-2 gap-8 w-full">
+                {/* Name Field */}
+                <div className="space-y-2">
+                  <Label htmlFor="name">
+                    Name <span className="text-destructive">*</span>
+                  </Label>
+                  <Input
+                    id="name"
+                    {...register("name")}
+                    onChange={handleNameChange}
+                    placeholder="Enter category name"
+                    maxLength={200}
+                    disabled={isSubmitting}
+                  />
+                  <div className="flex justify-between">
+                    <p className="text-xs text-muted-foreground">
+                      {nameValue?.length || 0}/200 characters
                     </p>
-                  )}
+                    {errors.name && (
+                      <p className="text-xs text-destructive">
+                        {errors.name.message}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                {/* Name ID Field */}
+                <div className="space-y-2">
+                  <Label htmlFor="name">
+                    Name (ID) <span className="text-destructive">*</span>
+                  </Label>
+                  <Input
+                    id="name_id"
+                    {...register("name_id")}
+                    onChange={handleNameIdChange}
+                    placeholder="Enter category name"
+                    maxLength={200}
+                    disabled={isSubmitting}
+                  />
+                  <div className="flex justify-between">
+                    <p className="text-xs text-muted-foreground">
+                      {nameValue?.length || 0}/200 characters
+                    </p>
+                    {errors.name_id && (
+                      <p className="text-xs text-destructive">
+                        {errors.name_id.message}
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
 
