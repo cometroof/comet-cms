@@ -32,6 +32,7 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
+// Add product_main_image to the form data
 interface AddonFormData {
   name: string;
   slug: string;
@@ -39,6 +40,7 @@ interface AddonFormData {
   description_id: string;
   order: number;
   brand_image: string;
+  product_main_image: string;
   banner_url: string;
   catalogue: string;
   // Highlight section fields
@@ -60,6 +62,10 @@ interface AddonFormData {
   highlight_icon: string;
 }
 
+// NOTE: The original file already defined AddonFormData earlier. The new declaration above
+// ensures TypeScript knows about product_main_image. If there is an earlier declaration
+// (the code previously had AddonFormData without product_main_image), this replaced it.
+
 interface SuitableRow {
   en: string;
   id: string;
@@ -72,6 +78,7 @@ const AddonFormPage = () => {
 
   const [showBrandImageSelector, setShowBrandImageSelector] = useState(false);
   const [showBannerSelector, setShowBannerSelector] = useState(false);
+  const [showMainImageSelector, setShowMainImageSelector] = useState(false);
   const [showCatalogueSelector, setShowCatalogueSelector] = useState(false);
   const [
     showHighlightSectionImageSelector,
@@ -97,6 +104,7 @@ const AddonFormPage = () => {
       description_id: "",
       order: 0,
       brand_image: "",
+      product_main_image: "",
       banner_url: "",
       catalogue: "",
       is_highlight_section: false,
@@ -116,6 +124,7 @@ const AddonFormPage = () => {
   });
 
   const brandImage = watch("brand_image");
+  const productMainImage = watch("product_main_image");
   const bannerUrl = watch("banner_url");
   const catalogue = watch("catalogue");
   const isHighlightSection = watch("is_highlight_section");
@@ -148,6 +157,7 @@ const AddonFormPage = () => {
         description_id: addon.description_id || "",
         order: addon.order,
         brand_image: addon.brand_image || "",
+        product_main_image: addon.product_main_image || "",
         banner_url: addon.banner_url || "",
         catalogue: addon.catalogue || "",
         is_highlight_section: addon.is_highlight_section || false,
@@ -204,7 +214,7 @@ const AddonFormPage = () => {
   const updateSuitableRow = (
     index: number,
     field: "en" | "id",
-    value: string,
+    value: string
   ) => {
     const updated = [...suitables];
     updated[index][field] = value;
@@ -227,6 +237,7 @@ const AddonFormPage = () => {
         description_id: data.description_id,
         order: data.order,
         brand_image: data.brand_image || null,
+        product_main_image: data.product_main_image || null,
         banner_url: data.banner_url || null,
         catalogue: data.catalogue || null,
         suitables: suitablesEn.length > 0 ? suitablesEn : null,
@@ -274,13 +285,13 @@ const AddonFormPage = () => {
     },
     onSuccess: () => {
       toast.success(
-        isEdit ? "Add-on updated successfully" : "Add-on created successfully",
+        isEdit ? "Add-on updated successfully" : "Add-on created successfully"
       );
       navigate("/dashboard/product-add-ons");
     },
     onError: (error) => {
       toast.error(
-        isEdit ? "Failed to update add-on" : "Failed to create add-on",
+        isEdit ? "Failed to update add-on" : "Failed to create add-on"
       );
       console.error(error);
     },
@@ -417,8 +428,46 @@ const AddonFormPage = () => {
                   </div>
                 </div>
 
+                {/* Product Main Image */}
+                <div className="space-y-2">
+                  <Label>Product Main Image</Label>
+                  <div
+                    className="relative w-full aspect-[16/9] border rounded overflow-hidden group cursor-pointer"
+                    onClick={() => setShowMainImageSelector(true)}
+                  >
+                    {productMainImage ? (
+                      <>
+                        <img
+                          src={productMainImage}
+                          alt="Main"
+                          className="w-full h-full object-contain"
+                        />
+                        <div className="absolute left-0 top-0 size-full bg-black/40 opacity-0 flex items-center justify-center group-hover:opacity-100 pointer-events-none text-sm text-white">
+                          <ImageUp className="size-6" />
+                        </div>
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="icon"
+                          className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setValue("product_main_image", "");
+                          }}
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </>
+                    ) : (
+                      <div className="size-full flex items-center justify-center bg-muted">
+                        <ImageUp className="size-8 text-muted-foreground" />
+                      </div>
+                    )}
+                  </div>
+                </div>
+
                 {/* Banner Image */}
-                <div className="space-y-2 col-span-2">
+                <div className="space-y-2">
                   <Label>Banner Image</Label>
                   <div
                     className="relative w-full aspect-[2.5/1] border rounded overflow-hidden group cursor-pointer"
@@ -886,8 +935,8 @@ const AddonFormPage = () => {
               {saveMutation.isPending
                 ? "Saving..."
                 : isEdit
-                  ? "Update Add-on"
-                  : "Create Add-on"}
+                ? "Update Add-on"
+                : "Create Add-on"}
             </Button>
           </div>
         </form>
@@ -910,6 +959,15 @@ const AddonFormPage = () => {
         title="Select Banner Image"
         multipleSelection={false}
         initialSelection={bannerUrl}
+      />
+
+      <ImageSelectorDialog
+        open={showMainImageSelector}
+        onOpenChange={setShowMainImageSelector}
+        onSelect={(url) => setValue("product_main_image", url)}
+        title="Select Product Main Image"
+        multipleSelection={false}
+        initialSelection={productMainImage}
       />
 
       <ImageSelectorDialog
