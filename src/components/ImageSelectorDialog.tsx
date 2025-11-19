@@ -41,6 +41,8 @@ type ImageSelectorDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSelect: (imageUrl: string) => void; // Changed from string | string[]
+  // Called when user finishes selection (Done). Provides the final array of selected URLs.
+  onDone?: (imageUrls: string[]) => void;
   title?: string;
   multiple?: boolean;
   multipleSelection?: boolean;
@@ -51,6 +53,7 @@ const ImageSelectorDialog = ({
   open,
   onOpenChange,
   onSelect,
+  onDone,
   title = "Select Image",
   multiple = true,
   multipleSelection = true,
@@ -134,13 +137,13 @@ const ImageSelectorDialog = ({
     onSuccess: (result, key) => {
       if (result.success) {
         queryClient.setQueryData(["r2Images"], (oldData: LibraryImage[] = []) =>
-          oldData.filter((image) => image.Key !== key),
+          oldData.filter((image) => image.Key !== key)
         );
 
         const deletedImage = libraryImages.find((img) => img.Key === key);
         if (deletedImage && selectedUrls.includes(deletedImage.url)) {
           const newSelection = selectedUrls.filter(
-            (url) => url !== deletedImage.url,
+            (url) => url !== deletedImage.url
           );
           setSelectedUrls(newSelection);
         }
@@ -198,7 +201,7 @@ const ImageSelectorDialog = ({
         setPreviewUrls((prevUrls) => [...prevUrls, ...urls]);
       }
     },
-    [toast, multiple],
+    [toast, multiple]
   );
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -296,6 +299,15 @@ const ImageSelectorDialog = ({
     if (multipleSelection && selectedUrls.length > 0) {
       selectedUrls.forEach((url) => onSelect(url));
     }
+    // notify parent with final selection array if provided
+    if (onDone && typeof onDone === "function") {
+      try {
+        onDone(selectedUrls);
+      } catch (e) {
+        console.error("onDone callback error:", e);
+      }
+    }
+
     onOpenChange(false);
   };
 
@@ -345,7 +357,7 @@ const ImageSelectorDialog = ({
                     className="absolute top-0 right-0 h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity"
                     onClick={() => {
                       const newSelection = selectedUrls.filter(
-                        (_, i) => i !== index,
+                        (_, i) => i !== index
                       );
                       setSelectedUrls(newSelection);
                     }}
@@ -382,7 +394,7 @@ const ImageSelectorDialog = ({
                   isDragActive
                     ? "border-primary bg-primary/5"
                     : "border-muted-foreground/25 hover:border-primary/50",
-                  isUploading && "opacity-50 cursor-not-allowed",
+                  isUploading && "opacity-50 cursor-not-allowed"
                 )}
               >
                 <input {...getInputProps()} disabled={isUploading} />
@@ -566,7 +578,7 @@ const ImageSelectorDialog = ({
                                   "w-full relative group overflow-hidden rounded-lg border-2 transition-all",
                                   isSelected
                                     ? "border-primary"
-                                    : "border-transparent hover:border-primary/50",
+                                    : "border-transparent hover:border-primary/50"
                                 )}
                               >
                                 <img
@@ -584,7 +596,7 @@ const ImageSelectorDialog = ({
                                     isSelected
                                       ? "opacity-100"
                                       : "opacity-0 group-hover:opacity-100",
-                                    "transition-opacity",
+                                    "transition-opacity"
                                   )}
                                 >
                                   <span className="text-white text-sm font-medium flex items-center">

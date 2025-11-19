@@ -15,7 +15,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { ProductItem } from "@/pages/product/types";
 import ImageSelectorDialog from "@/components/ImageSelectorDialog";
-import { ImageIcon, X } from "lucide-react";
+import { ImageIcon, ImagePlus, X, Star } from "lucide-react";
 
 interface ItemFormDialogProps {
   productId: string;
@@ -62,6 +62,24 @@ const ItemFormDialog = ({
   });
 
   const imageUrl = watch("image");
+
+  // Helper to treat image field as an array joined by ",,,"
+  const parseImages = (value: string | undefined | null) => {
+    if (!value) return [] as string[];
+    return value
+      .split(",,,")
+      .map((s) => s.trim())
+      .filter(Boolean);
+  };
+
+  const images = parseImages(imageUrl);
+
+  const setThumbnail = (url: string) => {
+    const current = parseImages(imageUrl);
+    if (current.length === 0) return;
+    const next = [url, ...current.filter((u) => u !== url)];
+    setValue("image", next.join(",,,"));
+  };
 
   // Reset form when item changes
   useEffect(() => {
@@ -115,7 +133,7 @@ const ItemFormDialog = ({
     },
     onSuccess: () => {
       toast.success(
-        item ? "Item updated successfully" : "Item created successfully",
+        item ? "Item updated successfully" : "Item created successfully"
       );
       onSuccess();
     },
@@ -167,32 +185,75 @@ const ItemFormDialog = ({
                 <Input
                   value={imageUrl}
                   onChange={(e) => setValue("image", e.target.value)}
-                  placeholder="Item image URL"
+                  placeholder="Item image URL or multiple URLs joined by ,,,"
+                  className="hidden"
                 />
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => setShowImageSelector(true)}
                 >
-                  <ImageIcon className="w-4 h-4" />
+                  <ImagePlus className="w-4 h-4" />
                 </Button>
               </div>
-              {imageUrl && (
-                <div className="relative w-full h-48 border rounded overflow-hidden group">
-                  <img
-                    src={imageUrl}
-                    alt="Item preview"
-                    className="w-full h-full object-contain"
-                  />
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    size="icon"
-                    className="absolute top-2 right-2 h-8 w-8 opacity-0 group-hover:opacity-100"
-                    onClick={() => setValue("image", "")}
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
+
+              {/* Previews: support multiple images separated by ",,," */}
+              {images.length > 0 && (
+                <div className="space-y-2">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-48 overflow-y-auto">
+                    {images.map((url, idx) => (
+                      <div
+                        key={idx}
+                        className="relative group w-full h-48 border rounded overflow-hidden"
+                      >
+                        <img
+                          src={url}
+                          alt={`Item preview ${idx + 1}`}
+                          className="w-full h-full object-contain"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src =
+                              "/placeholder.svg";
+                          }}
+                        />
+                        <div className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className={images[0] === url ? "text-primary" : ""}
+                            onClick={() => setThumbnail(url)}
+                            aria-label={
+                              images[0] === url
+                                ? "Thumbnail"
+                                : "Set as thumbnail"
+                            }
+                          >
+                            <Star
+                              className={`w-4 h-4 ${
+                                idx === 0 ? "fill-primary" : ""
+                              }`}
+                            />
+                          </Button>
+                        </div>
+                        <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="icon"
+                            onClick={() => {
+                              // remove this image from the joined string
+                              const newImgs = images.filter(
+                                (_, i) => i !== idx
+                              );
+                              setValue("image", newImgs.join(",,,"));
+                            }}
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
@@ -226,8 +287,8 @@ const ItemFormDialog = ({
                 {saveMutation.isPending
                   ? "Saving..."
                   : item
-                    ? "Update Item"
-                    : "Create Item"}
+                  ? "Update Item"
+                  : "Create Item"}
               </Button>
             </div>
           </form>
@@ -238,10 +299,15 @@ const ItemFormDialog = ({
       <ImageSelectorDialog
         open={showImageSelector}
         onOpenChange={setShowImageSelector}
-        onSelect={(url) => setValue("image", url)}
+        // ignore per-url onSelect (we'll commit final selection via onDone)
+        onSelect={() => {
+          // no-op to avoid duplicate toggles; final commit will be handled in onDone
+        }}
+        // when user finishes selection in dialog, commit the array using our delimiter
+        onDone={(urls) => setValue("image", urls.join(",,,"))}
         title="Select Item Image"
-        multipleSelection={false}
-        initialSelection={imageUrl}
+        multipleSelection={true}
+        initialSelection={images}
       />
     </>
   );

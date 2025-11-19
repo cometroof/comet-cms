@@ -138,7 +138,7 @@ const CategoryDetailPage = () => {
   const reorderMutation = useMutation({
     mutationFn: async (updates: { id: string; order: number }[]) => {
       const promises = updates.map(({ id, order }) =>
-        supabase.from("product_item").update({ order }).eq("id", id),
+        supabase.from("product_item").update({ order }).eq("id", id)
       );
       const results = await Promise.all(promises);
       const errors = results.filter((r) => r.error);
@@ -372,62 +372,66 @@ const CategoryDetailPage = () => {
                             draggableId={item.id}
                             index={index}
                           >
-                            {(provided, snapshot) => (
-                              <TableRow
-                                ref={provided.innerRef}
-                                {...provided.draggableProps}
-                                className={
-                                  snapshot.isDragging ? "bg-muted/50" : ""
-                                }
-                              >
-                                <TableCell {...provided.dragHandleProps}>
-                                  <GripVertical className="w-4 h-4 text-muted-foreground cursor-grab active:cursor-grabbing" />
-                                </TableCell>
-                                <TableCell className="font-medium">
-                                  {item.name}
-                                </TableCell>
-                                <TableCell>
-                                  {item.image ? (
-                                    <img
-                                      src={item.image}
-                                      alt={item.name}
-                                      className="w-12 h-12 object-cover rounded"
-                                    />
-                                  ) : (
-                                    <div className="w-12 h-12 bg-muted rounded flex items-center justify-center">
-                                      <Package className="w-6 h-6 text-muted-foreground" />
+                            {(provided, snapshot) => {
+                              const images =
+                                item.image.split(",,,").filter(Boolean) || [];
+                              return (
+                                <TableRow
+                                  ref={provided.innerRef}
+                                  {...provided.draggableProps}
+                                  className={
+                                    snapshot.isDragging ? "bg-muted/50" : ""
+                                  }
+                                >
+                                  <TableCell {...provided.dragHandleProps}>
+                                    <GripVertical className="w-4 h-4 text-muted-foreground cursor-grab active:cursor-grabbing" />
+                                  </TableCell>
+                                  <TableCell className="font-medium">
+                                    {item.name}
+                                  </TableCell>
+                                  <TableCell>
+                                    {images.length > 0 ? (
+                                      <img
+                                        src={images[0]}
+                                        alt={item.name}
+                                        className="w-12 h-12 object-cover rounded"
+                                      />
+                                    ) : (
+                                      <div className="w-12 h-12 bg-muted rounded flex items-center justify-center">
+                                        <Package className="w-6 h-6 text-muted-foreground" />
+                                      </div>
+                                    )}
+                                  </TableCell>
+                                  <TableCell className="text-muted-foreground">
+                                    {item.length || "-"}
+                                  </TableCell>
+                                  <TableCell className="text-muted-foreground">
+                                    {item.weight || "-"}
+                                  </TableCell>
+                                  <TableCell className="text-right">
+                                    <div className="flex items-center justify-end gap-2">
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => handleEditItem(item)}
+                                        title="Edit item"
+                                      >
+                                        <Edit className="w-4 h-4" />
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => handleDeleteClick(item)}
+                                        title="Delete item"
+                                        className="text-destructive hover:text-destructive"
+                                      >
+                                        <Trash2 className="w-4 h-4" />
+                                      </Button>
                                     </div>
-                                  )}
-                                </TableCell>
-                                <TableCell className="text-muted-foreground">
-                                  {item.length || "-"}
-                                </TableCell>
-                                <TableCell className="text-muted-foreground">
-                                  {item.weight || "-"}
-                                </TableCell>
-                                <TableCell className="text-right">
-                                  <div className="flex items-center justify-end gap-2">
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      onClick={() => handleEditItem(item)}
-                                      title="Edit item"
-                                    >
-                                      <Edit className="w-4 h-4" />
-                                    </Button>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      onClick={() => handleDeleteClick(item)}
-                                      title="Delete item"
-                                      className="text-destructive hover:text-destructive"
-                                    >
-                                      <Trash2 className="w-4 h-4" />
-                                    </Button>
-                                  </div>
-                                </TableCell>
-                              </TableRow>
-                            )}
+                                  </TableCell>
+                                </TableRow>
+                              );
+                            }}
                           </Draggable>
                         ))}
                         {provided.placeholder}
