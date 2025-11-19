@@ -27,6 +27,7 @@ import {
   Plus,
   Trash2,
   GripVertical,
+  BookMarked,
 } from "lucide-react";
 import {
   DragDropContext,
@@ -450,9 +451,9 @@ const ProfileFormPage = () => {
         profile_image_url: data.profile_image_url || null,
         profile_main_image_url: data.profile_main_image_url || null,
         profile_banner_url: data.profile_banner_url || null, // eslint-disable-next-line
-        size: sizeData as any, // eslint-disable-next-line
-        // eslint-disable-next-line
+        size: sizeData as any,
         specification:
+          // eslint-disable-next-line
           specifications.length > 0 ? specifications : (null as any),
         updated_at: new Date().toISOString(),
       };
@@ -635,7 +636,9 @@ const ProfileFormPage = () => {
                     variant="outline"
                     size="sm"
                     onClick={() => setOpenCertificates(true)}
+                    className="border-primary text-primary hover:bg-primary/10"
                   >
+                    <BookMarked className="!size-4 mr-1" />
                     Certificates & Badges
                   </Button>
                 </div>

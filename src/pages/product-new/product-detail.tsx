@@ -54,7 +54,7 @@ const ProductDetailPage = () => {
   const queryClient = useQueryClient();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [profileToDelete, setProfileToDelete] = useState<ProductProfile | null>(
-    null,
+    null
   );
 
   // Fetch product details
@@ -84,7 +84,7 @@ const ProductDetailPage = () => {
           `
           *,
           categories:product_category(count)
-        `,
+        `
         )
         .eq("product_id", id)
         .order("order", { ascending: true, nullsFirst: false });
@@ -101,7 +101,7 @@ const ProductDetailPage = () => {
   const reorderMutation = useMutation({
     mutationFn: async (updates: { id: string; order: number }[]) => {
       const promises = updates.map(({ id, order }) =>
-        supabase.from("product_profile").update({ order }).eq("id", id),
+        supabase.from("product_profile").update({ order }).eq("id", id)
       );
       const results = await Promise.all(promises);
       const errors = results.filter((r) => r.error);
@@ -191,7 +191,7 @@ const ProductDetailPage = () => {
   };
 
   const getCategoriesCount = (
-    profile: ProductProfile & { categories?: Array<{ count: number }> },
+    profile: ProductProfile & { categories?: Array<{ count: number }> }
   ) => {
     return profile.categories?.[0]?.count || 0;
   };
@@ -337,8 +337,7 @@ const ProductDetailPage = () => {
                     <TableRow>
                       <TableHead className="w-12"></TableHead>
                       <TableHead>Name</TableHead>
-                      <TableHead>Materials</TableHead>
-                      <TableHead className="text-center">Categories</TableHead>
+                      <TableHead className="text-right">Categories</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -368,10 +367,7 @@ const ProductDetailPage = () => {
                                 <TableCell className="font-medium">
                                   {profile.name}
                                 </TableCell>
-                                <TableCell className="text-muted-foreground">
-                                  {profile.materials || "-"}
-                                </TableCell>
-                                <TableCell className="text-center">
+                                <TableCell className="text-right">
                                   <span className="inline-flex items-center justify-center bg-primary/10 text-primary px-2 py-1 rounded-md text-sm font-medium">
                                     {getCategoriesCount(profile)}
                                   </span>
