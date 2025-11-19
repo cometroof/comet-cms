@@ -46,6 +46,7 @@ import {
   ProductItem,
 } from "@/pages/product/types";
 import ItemFormDialog from "./components/ItemFormDialog";
+import CategoryFormDialog from "./components/CategoryFormDialog";
 import {
   DragDropContext,
   Droppable,
@@ -67,6 +68,9 @@ const CategoryDetailPage = () => {
   const queryClient = useQueryClient();
   const [showItemForm, setShowItemForm] = useState(false);
   const [editingItem, setEditingItem] = useState<ProductItem | null>(null);
+  const [showCategoryForm, setShowCategoryForm] = useState(false);
+  const [editingCategory, setEditingCategory] =
+    useState<ProductCategory | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<ProductItem | null>(null);
 
@@ -211,6 +215,11 @@ const CategoryDetailPage = () => {
     setShowItemForm(true);
   };
 
+  const handleEditCategory = () => {
+    setEditingCategory(category || null);
+    setShowCategoryForm(true);
+  };
+
   const handleEditItem = (item: ProductItem) => {
     setEditingItem(item);
     setShowItemForm(true);
@@ -302,17 +311,23 @@ const CategoryDetailPage = () => {
               </p>
             </div>
           </div>
-          <Button onClick={handleAddItem} className="flex items-center gap-2">
-            <Plus size={16} />
-            Add Item
-          </Button>
         </div>
 
         {/* Category Info Card */}
         {category.subtitle && (
           <Card>
             <CardHeader>
-              <CardTitle>Category Information</CardTitle>
+              <div className="flex flex-col lg:flex-row justify-between gap-10">
+                <CardTitle>Category Information</CardTitle>
+                <Button
+                  onClick={handleEditCategory}
+                  variant="secondary"
+                  className="flex items-center gap-2"
+                >
+                  <Edit size={16} />
+                  Edit Category
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               <div>
@@ -332,20 +347,27 @@ const CategoryDetailPage = () => {
               <p className="text-muted-foreground mb-4 text-center">
                 Create an item to add products to this category
               </p>
-              <Button onClick={handleAddItem}>
-                <Plus size={16} className="mr-2" />
-                Add Item
-              </Button>
             </CardContent>
           </Card>
         ) : (
           <Card>
             <CardHeader>
-              <CardTitle>Items</CardTitle>
-              <CardDescription>
-                {items.length} item{items.length !== 1 ? "s" : ""} in this
-                category
-              </CardDescription>
+              <div className="flex flex-col lg:flex-row justify-between gap-10">
+                <div>
+                  <CardTitle>Items</CardTitle>
+                  <CardDescription>
+                    {items.length} item{items.length !== 1 ? "s" : ""} in this
+                    category
+                  </CardDescription>
+                </div>
+                <Button
+                  onClick={handleAddItem}
+                  className="flex items-center gap-2"
+                >
+                  <Plus size={16} />
+                  Add Item
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               <DragDropContext onDragEnd={handleDragEnd}>
@@ -463,6 +485,29 @@ const CategoryDetailPage = () => {
             });
             setShowItemForm(false);
             setEditingItem(null);
+          }}
+        />
+      )}
+
+      {/* Category Form Dialog (edit current category) */}
+      {showCategoryForm && (
+        <CategoryFormDialog
+          profileId={profileId!}
+          category={editingCategory}
+          isOpen={showCategoryForm}
+          onClose={() => {
+            setShowCategoryForm(false);
+            setEditingCategory(null);
+          }}
+          onSuccess={() => {
+            queryClient.invalidateQueries({
+              queryKey: ["product-category", categoryId],
+            });
+            queryClient.invalidateQueries({
+              queryKey: ["profile-categories", profileId],
+            });
+            setShowCategoryForm(false);
+            setEditingCategory(null);
           }}
         />
       )}
