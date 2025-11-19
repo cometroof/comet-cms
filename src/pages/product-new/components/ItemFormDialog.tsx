@@ -259,7 +259,7 @@ const ItemFormDialog = ({
             </div>
 
             {/* Length and Weight */}
-            <div className="grid grid-cols-2 gap-4">
+            {/* <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="length">Length</Label>
                 <Input
@@ -276,7 +276,7 @@ const ItemFormDialog = ({
                   placeholder="e.g., 5.5 kg/m²"
                 />
               </div>
-            </div>
+            </div> */}
 
             {/* Actions */}
             <div className="flex justify-end gap-2 pt-4">

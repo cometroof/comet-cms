@@ -34,6 +34,7 @@ import {
   Draggable,
   DropResult,
 } from "@hello-pangea/dnd";
+import CertificatesBadgesProfileDialog from "@/components/CertificatesBadgesProfileDialog";
 
 interface SizeData {
   headers: string[];
@@ -109,6 +110,9 @@ const ProfileFormPage = () => {
 
   // Form dirty state
   const [isFormDirty, setIsFormDirty] = useState(false);
+
+  // Certificates & Badges state
+  const [openCertificates, setOpenCertificates] = useState<boolean>(false);
 
   const {
     register,
@@ -222,7 +226,7 @@ const ProfileFormPage = () => {
     setSizeData((prev) => ({
       ...prev,
       rows: prev.rows.map((row, i) =>
-        i === index ? { ...row, label: { ...row.label, [lang]: value } } : row,
+        i === index ? { ...row, label: { ...row.label, [lang]: value } } : row
       ),
     }));
   };
@@ -236,7 +240,7 @@ const ProfileFormPage = () => {
               ...row,
               values: row.values.map((v, j) => (j === colIndex ? value : v)),
             }
-          : row,
+          : row
       ),
     }));
   };
@@ -256,20 +260,20 @@ const ProfileFormPage = () => {
   const updateSpecificationLabel = (
     index: number,
     lang: "en" | "id",
-    value: string,
+    value: string
   ) => {
     setSpecifications((prev) =>
       prev.map((spec, i) =>
         i === index
           ? { ...spec, label: { ...spec.label, [lang]: value } }
-          : spec,
-      ),
+          : spec
+      )
     );
   };
 
   const updateSpecificationValue = (index: number, value: string) => {
     setSpecifications((prev) =>
-      prev.map((spec, i) => (i === index ? { ...spec, value } : spec)),
+      prev.map((spec, i) => (i === index ? { ...spec, value } : spec))
     );
   };
 
@@ -404,7 +408,7 @@ const ProfileFormPage = () => {
       // Load specification data from profile
       if (profile.specification && Array.isArray(profile.specification)) {
         setSpecifications(
-          profile.specification as unknown as SpecificationItem[],
+          profile.specification as unknown as SpecificationItem[]
         );
       } else {
         setSpecifications([]);
@@ -447,6 +451,7 @@ const ProfileFormPage = () => {
         profile_main_image_url: data.profile_main_image_url || null,
         profile_banner_url: data.profile_banner_url || null, // eslint-disable-next-line
         size: sizeData as any, // eslint-disable-next-line
+        // eslint-disable-next-line
         specification:
           specifications.length > 0 ? specifications : (null as any),
         updated_at: new Date().toISOString(),
@@ -545,13 +550,13 @@ const ProfileFormPage = () => {
       toast.success(
         isEditMode
           ? "Profile updated successfully"
-          : "Profile created successfully",
+          : "Profile created successfully"
       );
       navigate(`/dashboard/product-new/${productId}`);
     },
     onError: (error) => {
       toast.error(
-        isEditMode ? "Failed to update profile" : "Failed to create profile",
+        isEditMode ? "Failed to update profile" : "Failed to create profile"
       );
       console.error(error);
     },
@@ -565,7 +570,7 @@ const ProfileFormPage = () => {
   const handleBackClick = () => {
     if (isFormDirty) {
       const confirmed = window.confirm(
-        "You have unsaved changes. Are you sure you want to leave?",
+        "You have unsaved changes. Are you sure you want to leave?"
       );
       if (!confirmed) return;
     }
@@ -619,8 +624,27 @@ const ProfileFormPage = () => {
           {/* Basic Information */}
           <Card>
             <CardHeader>
-              <CardTitle>Basic Information</CardTitle>
-              <CardDescription>Core profile details</CardDescription>
+              <div className="flex items-start justify-between gap-10">
+                <div>
+                  <CardTitle>Basic Information</CardTitle>
+                  <CardDescription>Core profile details</CardDescription>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setOpenCertificates(true)}
+                  >
+                    Certificates & Badges
+                  </Button>
+                </div>
+                <CertificatesBadgesProfileDialog
+                  isOpen={openCertificates}
+                  onClose={() => setOpenCertificates(false)}
+                  profileId={profile?.id}
+                />
+              </div>
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Name */}
@@ -982,7 +1006,7 @@ const ProfileFormPage = () => {
                                           updateRowLabel(
                                             rowIndex,
                                             sizeLanguage,
-                                            e.target.value,
+                                            e.target.value
                                           )
                                         }
                                         placeholder={
@@ -1001,7 +1025,7 @@ const ProfileFormPage = () => {
                                             updateCell(
                                               rowIndex,
                                               colIndex,
-                                              e.target.value,
+                                              e.target.value
                                             )
                                           }
                                           placeholder="Value"
@@ -1167,7 +1191,7 @@ const ProfileFormPage = () => {
                                       updateSpecificationLabel(
                                         index,
                                         specLanguage,
-                                        e.target.value,
+                                        e.target.value
                                       )
                                     }
                                     placeholder={
@@ -1182,7 +1206,7 @@ const ProfileFormPage = () => {
                                     onChange={(e) =>
                                       updateSpecificationValue(
                                         index,
-                                        e.target.value,
+                                        e.target.value
                                       )
                                     }
                                     placeholder="e.g., Galvalume AZ150"
@@ -1346,8 +1370,8 @@ const ProfileFormPage = () => {
               {saveMutation.isPending
                 ? "Saving..."
                 : isEditMode
-                  ? "Update Profile"
-                  : "Create Profile"}
+                ? "Update Profile"
+                : "Create Profile"}
             </Button>
           </div>
         </form>

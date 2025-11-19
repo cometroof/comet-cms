@@ -471,7 +471,7 @@ const ItemAccessoriesDetailPage = () => {
             <CardHeader>
               <div className="flex items-start justify-between">
                 <div>
-                  <CardTitle>Specification Information</CardTitle>
+                  <CardTitle>Specification Informationxxx</CardTitle>
                   <CardDescription>
                     Add custom key-value pairs for additional specifications
                   </CardDescription>
