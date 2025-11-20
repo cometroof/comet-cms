@@ -1,5 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,22 +18,24 @@ import { ArticleFormData, Article } from "./types";
 import * as articleService from "@/services/article.service";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
-// Default empty article used as a fallback
-const emptyArticle: Article = {
-  id: "",
-  title: "",
-  slug: "",
-  content: "",
-  excerpt: "",
-  metaTitle: "",
-  metaDescription: "",
-  status: "draft",
-  views: 0,
-  author: "",
-  createdAt: new Date().toISOString(),
-  updatedAt: new Date().toISOString(),
-  cover_image: null,
-};
+// Zod schema untuk validasi form - SESUAIKAN DENGAN ArticleFormData
+const articleFormSchema = z.object({
+  title: z.string().min(1, "Title is required"),
+  title_id: z.string().default(""),
+  slug: z.string().min(1, "Slug is required"),
+  content: z.string().min(1, "Content is required"),
+  content_id: z.string().default(""),
+  excerpt: z.string().default(""),
+  excerpt_id: z.string().default(""),
+  seoTitle: z.string().default(""), // GUNAKAN seoTitle BUKAN metaTitle
+  seoTitle_id: z.string().default(""),
+  seoDescription: z.string().default(""), // GUNAKAN seoDescription BUKAN metaDescription
+  seoDescription_id: z.string().default(""),
+  published: z.boolean().default(false),
+  cover_image: z.string().nullable().default(null),
+});
+
+type ArticleFormValues = z.infer<typeof articleFormSchema>;
 
 type Language = "en" | "id";
 
@@ -41,21 +46,38 @@ const ArticleEdit = () => {
   const [imageSelectorOpen, setImageSelectorOpen] = useState(false);
   const [currentLang, setCurrentLang] = useState<Language>("en");
 
-  const [formData, setFormData] = useState<ArticleFormData>({
-    title: "",
-    title_id: "",
-    slug: "",
-    content: "",
-    content_id: "",
-    excerpt: "",
-    excerpt_id: "",
-    metaTitle: "",
-    metaTitle_id: "",
-    metaDescription: "",
-    metaDescription_id: "",
-    published: false,
-    cover_image: null,
+  // React Hook Form
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    formState: { errors, isSubmitting },
+    reset,
+    trigger,
+  } = useForm<ArticleFormValues>({
+    resolver: zodResolver(articleFormSchema),
+    defaultValues: {
+      title: "",
+      title_id: "",
+      slug: "",
+      content: "",
+      content_id: "",
+      excerpt: "",
+      excerpt_id: "",
+      seoTitle: "",
+      seoTitle_id: "",
+      seoDescription: "",
+      seoDescription_id: "",
+      published: false,
+      cover_image: null,
+    },
   });
+
+  // Watch form values
+  const formValues = watch();
+  const published = watch("published");
+  const cover_image = watch("cover_image");
 
   const queryClient = useQueryClient();
 
@@ -69,7 +91,7 @@ const ArticleEdit = () => {
   // Handle article data when it changes
   useEffect(() => {
     if (article) {
-      setFormData({
+      reset({
         title: article.title,
         title_id: article.title_id || "",
         slug: article.slug,
@@ -77,11 +99,11 @@ const ArticleEdit = () => {
         content_id: article.content_id || "",
         excerpt: article.excerpt || "",
         excerpt_id: article.excerpt_id || "",
-        metaTitle: article.metaTitle || "",
-        metaTitle_id: article.metaTitle_id || "",
-        metaDescription: article.metaDescription || "",
-        metaDescription_id: article.metaDescription_id || "",
-        published: article.status === "published",
+        seoTitle: article.seo_title || "", // MAP ke seoTitle
+        seoTitle_id: article.seo_title_id || "",
+        seoDescription: article.seo_description || "", // MAP ke seoDescription
+        seoDescription_id: article.seo_description_id || "",
+        published: article.publish || false,
         cover_image: article.cover_image,
       });
     } else if (article === null && !isLoadingArticle) {
@@ -92,7 +114,26 @@ const ArticleEdit = () => {
       });
       navigate("/dashboard/articles");
     }
-  }, [article, isLoadingArticle, navigate, toast]);
+  }, [article, isLoadingArticle, navigate, toast, reset]);
+
+  // Fungsi untuk convert ArticleFormValues ke ArticleFormData
+  const convertToArticleFormData = (
+    values: ArticleFormValues
+  ): ArticleFormData => ({
+    title: values.title,
+    title_id: values.title_id,
+    slug: values.slug,
+    content: values.content,
+    content_id: values.content_id,
+    excerpt: values.excerpt,
+    excerpt_id: values.excerpt_id,
+    seoTitle: values.seoTitle,
+    seoTitle_id: values.seoTitle_id,
+    seoDescription: values.seoDescription,
+    seoDescription_id: values.seoDescription_id,
+    published: values.published,
+    cover_image: values.cover_image,
+  });
 
   const updateMutation = useMutation({
     mutationFn: (data: { id: string; formData: ArticleFormData }) =>
@@ -115,7 +156,7 @@ const ArticleEdit = () => {
       }>(["articlesStats"]);
 
       if (previousArticles && article) {
-        const wasPublished = article.status === "published";
+        const wasPublished = article.publish;
         const willBePublished = updateData.formData.published;
 
         queryClient.setQueryData<Article[]>(
@@ -131,15 +172,12 @@ const ArticleEdit = () => {
                   content_id: updateData.formData.content_id,
                   excerpt: updateData.formData.excerpt,
                   excerpt_id: updateData.formData.excerpt_id,
-                  metaTitle: updateData.formData.metaTitle,
-                  metaTitle_id: updateData.formData.metaTitle_id,
-                  metaDescription: updateData.formData.metaDescription,
-                  metaDescription_id: updateData.formData.metaDescription_id,
-                  status: updateData.formData.published ? "published" : "draft",
-                  updatedAt: new Date().toISOString(),
-                  publishedDate: updateData.formData.published
-                    ? new Date().toISOString()
-                    : undefined,
+                  seo_title: updateData.formData.seoTitle, // GUNAKAN seo_title
+                  seo_title_id: updateData.formData.seoTitle_id,
+                  seo_description: updateData.formData.seoDescription, // GUNAKAN seo_description
+                  seo_description_id: updateData.formData.seoDescription_id,
+                  publish: updateData.formData.published,
+                  updated_at: new Date().toISOString(),
                 }
               : a
           )
@@ -152,17 +190,14 @@ const ArticleEdit = () => {
           slug: updateData.formData.slug,
           content: updateData.formData.content,
           content_id: updateData.formData.content_id,
-          excerpt: updateData.formData.excerpt || "",
-          excerpt_id: updateData.formData.excerpt_id || "",
-          metaTitle: updateData.formData.metaTitle || "",
-          metaTitle_id: updateData.formData.metaTitle_id || "",
-          metaDescription: updateData.formData.metaDescription || "",
-          metaDescription_id: updateData.formData.metaDescription_id || "",
-          status: updateData.formData.published ? "published" : "draft",
-          updatedAt: new Date().toISOString(),
-          publishedDate: updateData.formData.published
-            ? new Date().toISOString()
-            : undefined,
+          excerpt: updateData.formData.excerpt,
+          excerpt_id: updateData.formData.excerpt_id,
+          seo_title: updateData.formData.seoTitle,
+          seo_title_id: updateData.formData.seoTitle_id,
+          seo_description: updateData.formData.seoDescription,
+          seo_description_id: updateData.formData.seoDescription_id,
+          publish: updateData.formData.published,
+          updated_at: new Date().toISOString(),
         });
 
         if (previousStats && wasPublished !== willBePublished) {
@@ -187,24 +222,23 @@ const ArticleEdit = () => {
     onSuccess: () => {
       toast({
         title: "Article Updated",
-        description: `Article "${formData.title}" has been ${
-          formData.published ? "published" : "saved as draft"
+        description: `Article "${formValues.title}" has been ${
+          formValues.published ? "published" : "saved as draft"
         }`,
       });
       navigate("/dashboard/articles");
     },
     onError: (error, _, context) => {
-      if (context?.previousArticles) {
+      if (context && context?.previousArticles) {
         queryClient.setQueryData(["articles"], context.previousArticles);
       }
-      if (context?.previousArticle) {
+      if (context && context?.previousArticle) {
         queryClient.setQueryData(["article", id], context.previousArticle);
       }
-      if (context?.previousStats) {
+      if (context && context?.previousStats) {
         queryClient.setQueryData(["articlesStats"], context.previousStats);
       }
 
-      console.error("Error updating article:", error);
       toast({
         title: "Error",
         description: "Failed to update article. Please try again.",
@@ -244,7 +278,7 @@ const ArticleEdit = () => {
         );
 
         if (previousStats) {
-          const isPublished = articleToDelete.status === "published";
+          const isPublished = articleToDelete.publish;
           queryClient.setQueryData<{
             total: number;
             published: number;
@@ -292,7 +326,7 @@ const ArticleEdit = () => {
     },
   });
 
-  const isLoading = updateMutation.isPending;
+  const isLoading = updateMutation.isPending || isSubmitting;
   const isDeleting = deleteMutation.isPending;
 
   // Auto-generate slug from title
@@ -307,23 +341,16 @@ const ArticleEdit = () => {
 
   const handleTitleChange = (value: string) => {
     if (currentLang === "en") {
-      setFormData((prev) => ({
-        ...prev,
-        title: value,
-        slug: generateSlug(value),
-      }));
+      setValue("title", value, { shouldValidate: true });
+      setValue("slug", generateSlug(value), { shouldValidate: true });
     } else {
-      setFormData((prev) => ({
-        ...prev,
-        title_id: value,
-      }));
+      setValue("title_id", value, { shouldValidate: true });
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const onSubmit = async (data: ArticleFormValues) => {
     if (!id) return;
-
+    const formData = convertToArticleFormData(data);
     updateMutation.mutate({ id, formData });
   };
 
@@ -341,29 +368,35 @@ const ArticleEdit = () => {
     deleteMutation.mutate(id);
   };
 
-  const handleSaveDraft = () => {
-    setFormData((prev) => ({ ...prev, published: false }));
-    handleSubmit({ preventDefault: () => {} } as React.FormEvent);
+  const handleSaveDraft = async () => {
+    setValue("published", false, { shouldValidate: true });
+    const isValid = await trigger(["title", "content"]);
+    if (isValid) {
+      handleSubmit(onSubmit)();
+    }
   };
 
-  const handlePublish = () => {
-    setFormData((prev) => ({ ...prev, published: true }));
-    handleSubmit({ preventDefault: () => {} } as React.FormEvent);
+  const handlePublish = async () => {
+    setValue("published", true, { shouldValidate: true });
+    const isValid = await trigger(["title", "content", "slug"]);
+    if (isValid) {
+      handleSubmit(onSubmit)();
+    }
   };
 
   // Get current field values based on selected language
   const getCurrentTitle = () =>
-    currentLang === "en" ? formData.title : formData.title_id;
+    currentLang === "en" ? formValues.title : formValues.title_id;
   const getCurrentExcerpt = () =>
-    currentLang === "en" ? formData.excerpt : formData.excerpt_id;
+    currentLang === "en" ? formValues.excerpt : formValues.excerpt_id;
   const getCurrentContent = () =>
-    currentLang === "en" ? formData.content : formData.content_id;
-  const getCurrentMetaTitle = () =>
-    currentLang === "en" ? formData.metaTitle : formData.metaTitle_id;
-  const getCurrentMetaDescription = () =>
+    currentLang === "en" ? formValues.content : formValues.content_id;
+  const getCurrentSeoTitle = () =>
+    currentLang === "en" ? formValues.seoTitle : formValues.seoTitle_id;
+  const getCurrentSeoDescription = () =>
     currentLang === "en"
-      ? formData.metaDescription
-      : formData.metaDescription_id;
+      ? formValues.seoDescription
+      : formValues.seoDescription_id;
 
   return (
     <DashboardLayout>
@@ -402,7 +435,7 @@ const ArticleEdit = () => {
         </div>
 
         <form
-          onSubmit={handleSubmit}
+          onSubmit={handleSubmit(onSubmit)}
           className="grid grid-cols-1 lg:grid-cols-3 gap-6"
         >
           {/* Main Content */}
@@ -427,6 +460,11 @@ const ArticleEdit = () => {
                     }
                     required
                   />
+                  {errors.title && (
+                    <p className="text-sm text-destructive">
+                      {errors.title.message}
+                    </p>
+                  )}
                 </div>
 
                 {currentLang === "en" && (
@@ -434,16 +472,15 @@ const ArticleEdit = () => {
                     <Label htmlFor="slug">Slug *</Label>
                     <Input
                       id="slug"
-                      value={formData.slug}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          slug: e.target.value,
-                        }))
-                      }
+                      {...register("slug")}
                       placeholder="article-url-slug"
                       required
                     />
+                    {errors.slug && (
+                      <p className="text-sm text-destructive">
+                        {errors.slug.message}
+                      </p>
+                    )}
                     <p className="text-sm text-muted-foreground">
                       URL-friendly version of the title
                     </p>
@@ -456,7 +493,7 @@ const ArticleEdit = () => {
                     <div className="flex items-center gap-2">
                       <Input
                         id="cover_image"
-                        value={formData.cover_image || ""}
+                        value={cover_image || ""}
                         readOnly
                         placeholder="Select a cover image..."
                         className="flex-1"
@@ -469,10 +506,10 @@ const ArticleEdit = () => {
                         Select Image
                       </Button>
                     </div>
-                    {formData.cover_image && (
+                    {cover_image && (
                       <div className="mt-2">
                         <img
-                          src={formData.cover_image}
+                          src={cover_image}
                           alt="Cover preview"
                           className="max-h-40 rounded-md object-cover"
                         />
@@ -489,11 +526,10 @@ const ArticleEdit = () => {
                     id="excerpt"
                     value={getCurrentExcerpt()}
                     onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        [currentLang === "en" ? "excerpt" : "excerpt_id"]:
-                          e.target.value,
-                      }))
+                      setValue(
+                        currentLang === "en" ? "excerpt" : "excerpt_id",
+                        e.target.value
+                      )
                     }
                     placeholder={
                       currentLang === "en"
@@ -508,25 +544,34 @@ const ArticleEdit = () => {
                   <Label htmlFor="content">
                     Content * ({currentLang.toUpperCase()})
                   </Label>
-                  {!isLoadingArticle && (
-                    <RichTextEditor
-                      value={getCurrentContent()}
-                      onChange={(value) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          [currentLang === "en" ? "content" : "content_id"]:
-                            value,
-                        }))
-                      }
-                      className="min-h-[300px]"
-                      key={`article-editor-${id}-${currentLang}`}
-                    />
-                  )}
+                  {!isLoadingArticle &&
+                    (formValues.content || formValues.content_id) && (
+                      <>
+                        <RichTextEditor
+                          value={formValues.content}
+                          onChange={(value) => setValue("content", value)}
+                          key={`editor-en-${id}`}
+                          className={currentLang === "en" ? "" : "hidden"}
+                        />
+
+                        <RichTextEditor
+                          value={formValues.content_id}
+                          onChange={(value) => setValue("content_id", value)}
+                          key={`editor-id-${id}`}
+                          className={currentLang === "id" ? "" : "hidden"}
+                        />
+                      </>
+                    )}
                   {isLoadingArticle && (
                     <div className="flex justify-center items-center border rounded-lg min-h-[300px] bg-muted/20">
                       <Loader2 className="h-8 w-8 animate-spin text-primary mr-2" />
                       <p>Loading content...</p>
                     </div>
+                  )}
+                  {errors.content && (
+                    <p className="text-sm text-destructive">
+                      {errors.content.message}
+                    </p>
                   )}
                   <p className="text-sm text-muted-foreground">
                     Format your article with the rich text editor
@@ -544,18 +589,17 @@ const ArticleEdit = () => {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="metaTitle">
-                    Meta Title ({currentLang.toUpperCase()})
+                  <Label htmlFor="seoTitle">
+                    SEO Title ({currentLang.toUpperCase()})
                   </Label>
                   <Input
-                    id="metaTitle"
-                    value={getCurrentMetaTitle()}
+                    id="seoTitle"
+                    value={getCurrentSeoTitle()}
                     onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        [currentLang === "en" ? "metaTitle" : "metaTitle_id"]:
-                          e.target.value,
-                      }))
+                      setValue(
+                        currentLang === "en" ? "seoTitle" : "seoTitle_id",
+                        e.target.value
+                      )
                     }
                     placeholder={
                       currentLang === "en"
@@ -565,24 +609,24 @@ const ArticleEdit = () => {
                     maxLength={60}
                   />
                   <p className="text-sm text-muted-foreground">
-                    {getCurrentMetaTitle().length}/60 characters
+                    {getCurrentSeoTitle().length}/60 characters
                   </p>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="metaDescription">
-                    Meta Description ({currentLang.toUpperCase()})
+                  <Label htmlFor="seoDescription">
+                    SEO Description ({currentLang.toUpperCase()})
                   </Label>
                   <Textarea
-                    id="metaDescription"
-                    value={getCurrentMetaDescription()}
+                    id="seoDescription"
+                    value={getCurrentSeoDescription()}
                     onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        [currentLang === "en"
-                          ? "metaDescription"
-                          : "metaDescription_id"]: e.target.value,
-                      }))
+                      setValue(
+                        currentLang === "en"
+                          ? "seoDescription"
+                          : "seoDescription_id",
+                        e.target.value
+                      )
                     }
                     placeholder={
                       currentLang === "en"
@@ -593,7 +637,7 @@ const ArticleEdit = () => {
                     maxLength={160}
                   />
                   <p className="text-sm text-muted-foreground">
-                    {getCurrentMetaDescription().length}/160 characters
+                    {getCurrentSeoDescription().length}/160 characters
                   </p>
                 </div>
               </CardContent>
@@ -648,20 +692,27 @@ const ArticleEdit = () => {
                 <CardTitle>Publish Settings</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="published" className="text-sm font-medium">
+                <div className="flex items-center justify-between gap-8">
+                  <Label
+                    htmlFor="published"
+                    className={`text-sm font-medium ${
+                      published ? "text-primary" : ""
+                    }`}
+                  >
                     Published
                   </Label>
                   <Switch
                     id="published"
-                    checked={formData.published}
-                    onCheckedChange={(checked) =>
-                      setFormData((prev) => ({ ...prev, published: checked }))
-                    }
+                    checked={published}
+                    onCheckedChange={(checked) => {
+                      setValue("published", checked, { shouldValidate: true });
+                    }}
                   />
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  Toggle to publish or unpublish the article
+                  {published
+                    ? "Article is published and visible to public"
+                    : "Article is saved as draft and not visible to public"}
                 </p>
               </CardContent>
             </Card>
@@ -675,10 +726,8 @@ const ArticleEdit = () => {
                 <div>
                   <p className="text-sm font-medium text-foreground">Created</p>
                   <p className="text-sm text-muted-foreground">
-                    {(article as Article)?.createdAt
-                      ? new Date(
-                          (article as Article).createdAt
-                        ).toLocaleDateString()
+                    {article?.created_at
+                      ? new Date(article.created_at).toLocaleDateString()
                       : "-"}
                   </p>
                 </div>
@@ -687,11 +736,17 @@ const ArticleEdit = () => {
                     Last Updated
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    {(article as Article)?.updatedAt
-                      ? new Date(
-                          (article as Article).updatedAt
-                        ).toLocaleDateString()
+                    {article?.updated_at
+                      ? new Date(article.updated_at).toLocaleDateString()
                       : "-"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-foreground">
+                    Publication Status
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {article?.publish ? "Published" : "Draft"}
                   </p>
                 </div>
               </CardContent>
@@ -704,9 +759,9 @@ const ArticleEdit = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {formData.cover_image && (
+                  {cover_image && (
                     <img
-                      src={formData.cover_image}
+                      src={cover_image}
                       alt={getCurrentTitle()}
                       className="w-full h-32 object-cover rounded-md"
                     />
@@ -716,7 +771,7 @@ const ArticleEdit = () => {
                       {getCurrentTitle() || "Article Title"}
                     </h3>
                     <p className="text-sm text-muted-foreground mt-1">
-                      /{formData.slug || "article-slug"}
+                      /{formValues.slug || "article-slug"}
                     </p>
                   </div>
                   <p className="text-sm text-muted-foreground line-clamp-3">
@@ -736,13 +791,13 @@ const ArticleEdit = () => {
               <Button
                 type="button"
                 onClick={handlePublish}
-                disabled={isLoading || !formData.title || !formData.content}
+                disabled={isLoading || !formValues.title || !formValues.content}
                 className="w-full gap-2"
               >
                 {isLoading ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    Updating...
+                    Publishing...
                   </>
                 ) : (
                   <>
@@ -755,7 +810,7 @@ const ArticleEdit = () => {
                 type="button"
                 variant="outline"
                 onClick={handleSaveDraft}
-                disabled={isLoading || !formData.title}
+                disabled={isLoading || !formValues.title}
                 className="w-full gap-2"
               >
                 {isLoading ? (
@@ -779,7 +834,7 @@ const ArticleEdit = () => {
         open={imageSelectorOpen}
         onOpenChange={setImageSelectorOpen}
         onSelect={(imageUrl) => {
-          setFormData((prev) => ({ ...prev, cover_image: imageUrl }));
+          setValue("cover_image", imageUrl);
           setImageSelectorOpen(false);
         }}
         title="Select Cover Image"

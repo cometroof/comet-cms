@@ -19,17 +19,11 @@ import {
   Search,
   Edit,
   Trash2,
-  GripVertical,
   Calendar,
   Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
-import {
-  DragDropContext,
-  Droppable,
-  Draggable,
-  DropResult,
-} from "@hello-pangea/dnd";
+import { DropResult } from "@hello-pangea/dnd";
 import { Article } from "./types";
 import * as articleService from "@/services/article.service";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -69,8 +63,7 @@ const ArticlesList = () => {
     const matchesSearch =
       article.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       article.slug.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus =
-      statusFilter === "all" || article.status === statusFilter;
+    const matchesStatus = statusFilter === "all" || article.publish === false;
     return matchesSearch && matchesStatus;
   });
 
@@ -110,11 +103,11 @@ const ArticlesList = () => {
         queryClient.setQueryData(["articlesStats"], {
           total: currentStats.total - 1,
           published:
-            articleToDelete.status === "published"
+            articleToDelete.publish === true
               ? currentStats.published - 1
               : currentStats.published,
           drafts:
-            articleToDelete.status === "draft"
+            articleToDelete.publish === false
               ? currentStats.drafts - 1
               : currentStats.drafts,
         });
@@ -203,8 +196,8 @@ const ArticlesList = () => {
     reorderMutation.mutate(items);
   };
 
-  const getStatusColor = (status: string) => {
-    return status === "published"
+  const getStatusColor = (status: boolean) => {
+    return status
       ? "bg-success/10 text-success hover:bg-success/20"
       : "bg-warning/10 text-warning hover:bg-warning/20";
   };
@@ -278,7 +271,7 @@ const ArticlesList = () => {
               <p className="text-sm text-muted-foreground">Drafts</p>
             </CardContent>
           </Card>
-          <Card>
+          {/* <Card>
             <CardContent className="p-4">
               <div className="text-2xl font-bold text-foreground">
                 {((articles as Article[]) || [])
@@ -287,7 +280,7 @@ const ArticlesList = () => {
               </div>
               <p className="text-sm text-muted-foreground">Total Views</p>
             </CardContent>
-          </Card>
+          </Card> */}
         </div>
 
         {/* Filters and Search */}
@@ -345,111 +338,77 @@ const ArticlesList = () => {
                     : "No articles have been created yet"}
                 </div>
               ) : (
-                <DragDropContext onDragEnd={onDragEnd}>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-12"></TableHead>
-                        <TableHead>Image</TableHead>
-                        <TableHead className="max-w-lg">Title</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Published</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <Droppable droppableId="articles">
-                      {(provided) => (
-                        <TableBody
-                          ref={provided.innerRef}
-                          {...provided.droppableProps}
-                        >
-                          {filteredArticles.map((article, index) => (
-                            <Draggable
-                              key={article.id}
-                              draggableId={article.id.toString()}
-                              index={index}
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Image</TableHead>
+                      <TableHead className="max-w-lg">Title</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Created</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredArticles.map((article, index) => (
+                      <TableRow key={article.id}>
+                        <TableCell>
+                          {article.cover_image ? (
+                            <img
+                              src={article.cover_image}
+                              alt={article.title}
+                              className="size-20 aspect-square block object-cover rounded"
+                            />
+                          ) : (
+                            <div className="size-20 aspect-square bg-muted rounded flex items-center justify-center">
+                              <FileText className="w-6 h-6 text-muted-foreground" />
+                            </div>
+                          )}
+                        </TableCell>
+                        <TableCell className="font-medium  max-w-lg">
+                          <div className="line-clamp-2">{article.title}</div>
+                          <div className="font-normal text-muted-foreground text-xs line-clamp-1 mt-2">
+                            {article.slug}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge className={getStatusColor(article.publish)}>
+                            {article.publish ? "Published" : "Draft"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {article.created_at ? (
+                            <div className="flex items-center gap-2">
+                              <Calendar className="w-4 h-4 text-muted-foreground" />
+                              {new Date(
+                                article.created_at
+                              ).toLocaleDateString()}
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground">-</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-2">
+                            <Button variant="ghost" size="sm" asChild>
+                              <Link
+                                to={`/dashboard/articles/edit/${article.id}`}
+                              >
+                                <Edit className="w-4 h-4" />
+                              </Link>
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDelete(article.id)}
                             >
-                              {(provided, snapshot) => (
-                                <TableRow
-                                  ref={provided.innerRef}
-                                  {...provided.draggableProps}
-                                  className={
-                                    snapshot.isDragging ? "bg-muted" : ""
-                                  }
-                                >
-                                  <TableCell {...provided.dragHandleProps}>
-                                    <GripVertical className="h-5 w-5 text-muted-foreground cursor-grab active:cursor-grabbing" />
-                                  </TableCell>
-                                  <TableCell>
-                                    {article.cover_image ? (
-                                      <img
-                                        src={article.cover_image}
-                                        alt={article.title}
-                                        className="size-20 aspect-square block object-cover rounded"
-                                      />
-                                    ) : (
-                                      <div className="size-20 aspect-square bg-muted rounded flex items-center justify-center">
-                                        <FileText className="w-6 h-6 text-muted-foreground" />
-                                      </div>
-                                    )}
-                                  </TableCell>
-                                  <TableCell className="font-medium  max-w-lg">
-                                    <div className="line-clamp-2">
-                                      {article.title}
-                                    </div>
-                                    <div className="font-normal text-muted-foreground text-xs line-clamp-1 mt-2">
-                                      {article.slug}
-                                    </div>
-                                  </TableCell>
-                                  <TableCell>
-                                    <Badge
-                                      className={getStatusColor(article.status)}
-                                    >
-                                      {article.status}
-                                    </Badge>
-                                  </TableCell>
-                                  <TableCell>
-                                    {article.publishedDate ? (
-                                      <div className="flex items-center gap-2">
-                                        <Calendar className="w-4 h-4 text-muted-foreground" />
-                                        {new Date(
-                                          article.publishedDate
-                                        ).toLocaleDateString()}
-                                      </div>
-                                    ) : (
-                                      <span className="text-muted-foreground">
-                                        -
-                                      </span>
-                                    )}
-                                  </TableCell>
-                                  <TableCell className="text-right">
-                                    <div className="flex justify-end gap-2">
-                                      <Button variant="ghost" size="sm" asChild>
-                                        <Link
-                                          to={`/dashboard/articles/edit/${article.id}`}
-                                        >
-                                          <Edit className="w-4 h-4" />
-                                        </Link>
-                                      </Button>
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => handleDelete(article.id)}
-                                      >
-                                        <Trash2 className="w-4 h-4" />
-                                      </Button>
-                                    </div>
-                                  </TableCell>
-                                </TableRow>
-                              )}
-                            </Draggable>
-                          ))}
-                          {provided.placeholder}
-                        </TableBody>
-                      )}
-                    </Droppable>
-                  </Table>
-                </DragDropContext>
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               )}
             </div>
           </CardContent>

@@ -59,7 +59,7 @@ interface RichTextEditorProps {
 // Helper functions
 const isBlockActive = (
   editor: BaseEditor & ReactEditor,
-  format: string,
+  format: string
 ): boolean => {
   const { selection } = editor;
   if (!selection) return false;
@@ -71,7 +71,7 @@ const isBlockActive = (
         !Editor.isEditor(n) &&
         SlateElement.isElement(n) &&
         (n as any).type === format,
-    }),
+    })
   );
 
   return !!match;
@@ -79,7 +79,7 @@ const isBlockActive = (
 
 const isMarkActive = (
   editor: BaseEditor & ReactEditor,
-  format: string,
+  format: string
 ): boolean => {
   const marks = Editor.marks(editor);
   return marks ? (marks as any)[format] === true : false;
@@ -87,7 +87,7 @@ const isMarkActive = (
 
 const toggleBlock = (
   editor: BaseEditor & ReactEditor,
-  format: string,
+  format: string
 ): void => {
   const isActive = isBlockActive(editor, format);
   const isList = format === "bulleted-list" || format === "numbered-list";
@@ -191,7 +191,7 @@ const Image = (props: RenderElementProps) => {
           src={(element as any).url}
           className={cn(
             "block max-w-full max-h-80 rounded",
-            selected && focused && "ring-2 ring-primary",
+            selected && focused && "ring-2 ring-primary"
           )}
           alt=""
           loading="lazy"
@@ -310,7 +310,7 @@ const ToolbarButton = ({
           !Editor.isEditor(n) &&
           SlateElement.isElement(n) &&
           (n as any).align === format,
-      }),
+      })
     );
     isActive = !!match;
   } else if (isBlock) {
@@ -393,12 +393,12 @@ const deserialize = (html: string): Descendant[] => {
       case "strong":
       case "b":
         return children.map((child: any) =>
-          child.text !== undefined ? { ...child, bold: true } : child,
+          child.text !== undefined ? { ...child, bold: true } : child
         );
       case "em":
       case "i":
         return children.map((child: any) =>
-          child.text !== undefined ? { ...child, italic: true } : child,
+          child.text !== undefined ? { ...child, italic: true } : child
         );
       default:
         return children;
@@ -427,7 +427,9 @@ const serialize = (nodes: Descendant[]): string => {
 
       switch (element.type) {
         case "paragraph":
-          return `<p style="text-align: ${element.align || "left"}">${children}</p>`;
+          return `<p style="text-align: ${
+            element.align || "left"
+          }">${children}</p>`;
         case "heading-one":
           return `<h1>${children}</h1>`;
         case "heading-two":
@@ -461,14 +463,14 @@ export const RichTextEditor = ({
   const [linkUrl, setLinkUrl] = useState("");
   const [imageDialogOpen, setImageDialogOpen] = useState(false);
 
-  const initialValue = useMemo(() => deserialize(value), []);
+  const initialValue = useMemo(() => deserialize(value), [value]);
 
   const handleChange = useCallback(
     (newValue: Descendant[]) => {
       const html = serialize(newValue);
       onChange(html);
     },
-    [onChange],
+    [onChange]
   );
 
   const handleInsertLink = () => {

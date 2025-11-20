@@ -11,23 +11,20 @@ const mapDbArticleToArticle = (dbArticle: Tables<"articles">): Article => {
   return {
     id: dbArticle.id,
     title: dbArticle.title,
+    title_id: dbArticle.title_id,
     slug: dbArticle.slug,
-    content: dbArticle.content || "",
-    excerpt: dbArticle.excerpt || "",
-    metaTitle: dbArticle.seo_title || "",
-    metaDescription: dbArticle.seo_description || "",
-    status: dbArticle.publish ? "published" : "draft",
-    views: 0, // Views aren't currently tracked in the database
-    author: "Admin", // Author info isn't currently in the database schema
-    createdAt: dbArticle.created_at,
-    updatedAt: dbArticle.updated_at,
+    content: dbArticle.content,
+    content_id: dbArticle.content_id,
+    excerpt: dbArticle.excerpt,
+    excerpt_id: dbArticle.excerpt_id,
+    seo_title: dbArticle.seo_title,
+    seo_title_id: dbArticle.seo_title_id,
+    seo_description: dbArticle.seo_description,
+    seo_description_id: dbArticle.seo_description_id,
+    publish: dbArticle.publish,
+    created_at: dbArticle.created_at,
+    updated_at: dbArticle.updated_at,
     cover_image: dbArticle.cover_image,
-    publishedDate: dbArticle.publish ? dbArticle.updated_at : undefined,
-    title_id: dbArticle.title_id || undefined,
-    content_id: dbArticle.content_id || undefined,
-    excerpt_id: dbArticle.excerpt_id || undefined,
-    metaTitle_id: dbArticle.seo_title_id || undefined,
-    metaDescription_id: dbArticle.seo_description_id || undefined,
   };
 };
 
@@ -39,18 +36,18 @@ const mapFormDataToDb = (
 ): Omit<TablesInsert<"articles">, "id" | "created_at" | "updated_at"> => {
   return {
     title: formData.title,
+    title_id: formData.title_id || null,
     slug: formData.slug,
     content: formData.content,
+    content_id: formData.content_id || null,
     excerpt: formData.excerpt || null,
-    seo_title: formData.metaTitle || null,
-    seo_description: formData.metaDescription || null,
+    excerpt_id: formData.excerpt_id || null,
+    seo_title: formData.seoTitle || null,
+    seo_title_id: formData.seoTitle_id || null,
+    seo_description: formData.seoDescription || null,
+    seo_description_id: formData.seoDescription_id || null,
     publish: formData.published,
     cover_image: formData.cover_image,
-    title_id: formData.title_id || null,
-    content_id: formData.content_id || null,
-    excerpt_id: formData.excerpt_id || null,
-    seo_title_id: formData.metaTitle_id || null,
-    seo_description_id: formData.metaDescription_id || null,
   };
 };
 
@@ -121,6 +118,8 @@ export const createArticle = async (
     .from(TABLE_NAME)
     .insert({
       ...mapFormDataToDb(formData),
+      created_at: now,
+      updated_at: now,
     })
     .select()
     .single();
@@ -143,7 +142,19 @@ export const updateArticle = async (
   const { data, error } = await supabase
     .from(TABLE_NAME)
     .update({
-      ...mapFormDataToDb(formData),
+      title: formData.title,
+      title_id: formData.title_id || null,
+      slug: formData.slug,
+      content: formData.content,
+      content_id: formData.content_id || null,
+      excerpt: formData.excerpt || null,
+      excerpt_id: formData.excerpt_id || null,
+      seo_title: formData.seoTitle || null,
+      seo_title_id: formData.seoTitle_id || null,
+      seo_description: formData.seoDescription || null,
+      seo_description_id: formData.seoDescription_id || null,
+      publish: formData.published,
+      cover_image: formData.cover_image,
       updated_at: new Date().toISOString(),
     })
     .eq("id", id)
