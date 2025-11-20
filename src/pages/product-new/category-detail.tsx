@@ -396,7 +396,9 @@ const CategoryDetailPage = () => {
                           >
                             {(provided, snapshot) => {
                               const images =
-                                item.image.split(",,,").filter(Boolean) || [];
+                                (item.image &&
+                                  item.image.split(",,,").filter(Boolean)) ||
+                                [];
                               return (
                                 <TableRow
                                   ref={provided.innerRef}

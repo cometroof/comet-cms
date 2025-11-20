@@ -32,7 +32,7 @@ export async function getCompanyProfile(): Promise<CompanyProfile | null> {
 
 export async function updateCompanyProfile(
   profileData: CompanyProfileUpdate,
-  id?: string,
+  id?: string
 ): Promise<CompanyProfile | null> {
   // If we have an existing profile, update it
   if (id) {
@@ -75,7 +75,7 @@ export async function updateCompanyProfile(
 }
 
 export async function uploadCompanyProfileFile(
-  formData: FormData,
+  formData: FormData
 ): Promise<LibraryImage | null> {
   try {
     return await uploadToR2(formData);
@@ -103,7 +103,7 @@ export async function getCertificates(): Promise<Certificate[]> {
 }
 
 export async function getCertificateById(
-  id: string,
+  id: string
 ): Promise<Certificate | null> {
   const { data, error } = await supabase
     .from("certificates")
@@ -120,7 +120,7 @@ export async function getCertificateById(
 }
 
 export async function createCertificate(
-  certData: CertificateInsert,
+  certData: CertificateInsert
 ): Promise<Certificate | null> {
   // Get the highest order value from existing certificates
   const { data: certificates } = await supabase
@@ -156,7 +156,7 @@ export async function createCertificate(
 
 export async function updateCertificate(
   id: string,
-  certData: CertificateUpdate,
+  certData: CertificateUpdate
 ): Promise<Certificate | null> {
   const { data, error } = await supabase
     .from("certificates")
@@ -177,7 +177,7 @@ export async function updateCertificate(
 }
 
 export async function updateCertificateOrder(
-  certificates: { id: string; order: number }[],
+  certificates: { id: string; order: number }[]
 ): Promise<boolean> {
   try {
     // Use Promise.all to perform multiple updates concurrently
@@ -186,8 +186,8 @@ export async function updateCertificateOrder(
         supabase
           .from("certificates")
           .update({ order, updated_at: new Date().toISOString() })
-          .eq("id", id),
-      ),
+          .eq("id", id)
+      )
     );
 
     return true;
@@ -229,7 +229,7 @@ export async function deleteCertificate(id: string): Promise<boolean> {
 }
 
 export async function uploadCertificateFile(
-  formData: FormData,
+  formData: FormData
 ): Promise<LibraryImage | null> {
   try {
     return await uploadToR2(formData);
@@ -244,6 +244,7 @@ export async function getProductBadges(): Promise<ProductBadge[]> {
   const { data, error } = await supabase
     .from("product_badges")
     .select("*")
+    .order("order", { ascending: true })
     .order("name", { ascending: true });
 
   if (error) {
@@ -255,7 +256,7 @@ export async function getProductBadges(): Promise<ProductBadge[]> {
 }
 
 export async function getProductBadgeById(
-  id: string,
+  id: string
 ): Promise<ProductBadge | null> {
   const { data, error } = await supabase
     .from("product_badges")
@@ -272,12 +273,25 @@ export async function getProductBadgeById(
 }
 
 export async function createProductBadge(
-  badgeData: ProductBadgeInsert,
+  badgeData: ProductBadgeInsert
 ): Promise<ProductBadge | null> {
+  // Determine highest existing order to append this badge at the end
+  const { data: badges } = await supabase
+    .from("product_badges")
+    .select("order")
+    .order("order", { ascending: false })
+    .limit(1);
+
+  const highestOrder =
+    badges && badges.length > 0 && badges[0].order != null
+      ? badges[0].order
+      : -1;
+
   const { data, error } = await supabase
     .from("product_badges")
     .insert({
       ...badgeData,
+      order: highestOrder + 1,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     })
@@ -294,7 +308,7 @@ export async function createProductBadge(
 
 export async function updateProductBadge(
   id: string,
-  badgeData: ProductBadgeUpdate,
+  badgeData: ProductBadgeUpdate
 ): Promise<ProductBadge | null> {
   const { data, error } = await supabase
     .from("product_badges")
@@ -312,6 +326,26 @@ export async function updateProductBadge(
   }
 
   return data;
+}
+
+export async function updateProductBadgeOrder(
+  badges: { id: string; order: number }[]
+): Promise<boolean> {
+  try {
+    await Promise.all(
+      badges.map(({ id, order }) =>
+        supabase
+          .from("product_badges")
+          .update({ order, updated_at: new Date().toISOString() })
+          .eq("id", id)
+      )
+    );
+
+    return true;
+  } catch (error) {
+    console.error("Error updating product badge orders:", error);
+    return false;
+  }
 }
 
 export async function deleteProductBadge(id: string): Promise<boolean> {

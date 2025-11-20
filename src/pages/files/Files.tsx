@@ -73,6 +73,7 @@ import {
   getProductBadges,
   createProductBadge,
   updateProductBadge,
+  updateProductBadgeOrder,
   deleteProductBadge,
 } from "@/lib/files-service";
 import { Link } from "react-router-dom";
@@ -89,7 +90,7 @@ const Files = () => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [certificateToDelete, setCertificateToDelete] = useState<string | null>(
-    null,
+    null
   );
   const [badgeDialogOpen, setBadgeDialogOpen] = useState(false);
   const [editingBadge, setEditingBadge] = useState<ProductBadge | null>(null);
@@ -184,6 +185,28 @@ const Files = () => {
     },
   });
 
+  // Mutation for updating product badge order
+  const updateBadgeOrderMutation = useMutation({
+    mutationFn: (badges: { id: string; order: number }[]) =>
+      updateProductBadgeOrder(badges),
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Product badge order updated successfully",
+      });
+    },
+    onError: (error) => {
+      console.error("Error updating product badge order:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to update product badge order",
+      });
+      // Refetch to restore original order
+      queryClient.invalidateQueries({ queryKey: ["productBadges"] });
+    },
+  });
+
   // Handle drag and drop reordering
   const handleDragEnd = (result: DropResult) => {
     // dropped outside the list
@@ -219,7 +242,33 @@ const Files = () => {
       reorderedCertificates.map((cert) => ({
         id: cert.id,
         order: cert.order as number,
-      })),
+      }))
+    );
+  };
+
+  // Handle drag and drop reordering for product badges
+  const handleBadgeDragEnd = (result: DropResult) => {
+    if (!result.destination) return;
+
+    const sourceIndex = result.source.index;
+    const destinationIndex = result.destination.index;
+
+    if (sourceIndex === destinationIndex) return;
+
+    const updatedBadges = [...productBadges];
+    const [removed] = updatedBadges.splice(sourceIndex, 1);
+    updatedBadges.splice(destinationIndex, 0, removed);
+
+    const reordered = updatedBadges.map((b, index) => ({
+      ...b,
+      order: index,
+    }));
+
+    // Optimistically update cache
+    queryClient.setQueryData(["productBadges"], reordered);
+
+    updateBadgeOrderMutation.mutate(
+      reordered.map((b) => ({ id: b.id as string, order: b.order as number }))
     );
   };
 
@@ -290,7 +339,7 @@ const Files = () => {
           clearInterval(interval);
           setUploadProgress(100);
         },
-      },
+      }
     );
   };
 
@@ -317,7 +366,7 @@ const Files = () => {
         // Update react-query cache
         queryClient.setQueryData(
           ["certificates"],
-          (oldData: Certificate[] = []) => oldData.filter((c) => c.id !== id),
+          (oldData: Certificate[] = []) => oldData.filter((c) => c.id !== id)
         );
 
         toast({
@@ -363,7 +412,7 @@ const Files = () => {
           queryClient.setQueryData(
             ["certificates"],
             (oldData: Certificate[] = []) =>
-              oldData.map((c) => (c.id === editingCertificate.id ? result : c)),
+              oldData.map((c) => (c.id === editingCertificate.id ? result : c))
           );
 
           toast({
@@ -374,7 +423,7 @@ const Files = () => {
           // Add new certificate to cache
           queryClient.setQueryData(
             ["certificates"],
-            (oldData: Certificate[] = []) => [...oldData, result],
+            (oldData: Certificate[] = []) => [...oldData, result]
           );
 
           toast({
@@ -398,7 +447,7 @@ const Files = () => {
   });
 
   const handleSaveCertificate = async (
-    certData: CertificateFormData,
+    certData: CertificateFormData
   ): Promise<void> => {
     await saveCertificateMutation.mutateAsync({
       id: editingCertificate?.id,
@@ -430,7 +479,7 @@ const Files = () => {
         // Update react-query cache
         queryClient.setQueryData(
           ["productBadges"],
-          (oldData: ProductBadge[] = []) => oldData.filter((b) => b.id !== id),
+          (oldData: ProductBadge[] = []) => oldData.filter((b) => b.id !== id)
         );
 
         toast({
@@ -474,7 +523,7 @@ const Files = () => {
           queryClient.setQueryData(
             ["productBadges"],
             (oldData: ProductBadge[] = []) =>
-              oldData.map((b) => (b.id === editingBadge.id ? result : b)),
+              oldData.map((b) => (b.id === editingBadge.id ? result : b))
           );
 
           toast({
@@ -485,7 +534,7 @@ const Files = () => {
           // Add new badge to cache
           queryClient.setQueryData(
             ["productBadges"],
-            (oldData: ProductBadge[] = []) => [...oldData, result],
+            (oldData: ProductBadge[] = []) => [...oldData, result]
           );
 
           toast({
@@ -509,7 +558,7 @@ const Files = () => {
   });
 
   const handleSaveBadge = async (
-    badgeData: ProductBadgeFormData,
+    badgeData: ProductBadgeFormData
   ): Promise<void> => {
     await saveProductBadgeMutation.mutateAsync({
       id: editingBadge?.id || undefined,
@@ -567,7 +616,7 @@ const Files = () => {
                         <p className="text-sm text-muted-foreground">
                           Uploaded:{" "}
                           {new Date(
-                            companyProfile.uploaded_at || "",
+                            companyProfile.uploaded_at || ""
                           ).toLocaleDateString()}
                         </p>
                       </div>
@@ -784,7 +833,7 @@ const Files = () => {
                                             size="sm"
                                             onClick={() =>
                                               handleConfirmDeleteCertificate(
-                                                cert.id,
+                                                cert.id
                                               )
                                             }
                                           >
@@ -833,6 +882,7 @@ const Files = () => {
                   <Table>
                     <TableHeader>
                       <TableRow>
+                        <TableHead className="w-8"></TableHead>
                         <TableHead className="w-16">Image</TableHead>
                         <TableHead>Name</TableHead>
                         <TableHead className="w-32 text-right">
@@ -840,70 +890,109 @@ const Files = () => {
                         </TableHead>
                       </TableRow>
                     </TableHeader>
-                    <TableBody>
-                      {badgesLoading ? (
-                        <TableRow>
-                          <TableCell colSpan={3} className="text-center py-8">
-                            <div className="flex justify-center items-center">
-                              <Loader2 className="w-6 h-6 animate-spin text-primary mr-2" />
-                              <span>Loading badges...</span>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ) : productBadges.length === 0 ? (
-                        <TableRow>
-                          <TableCell
-                            colSpan={3}
-                            className="text-center text-muted-foreground py-8"
+                    <DragDropContext onDragEnd={handleBadgeDragEnd}>
+                      <Droppable droppableId="productBadges">
+                        {(provided) => (
+                          <TableBody
+                            {...provided.droppableProps}
+                            ref={provided.innerRef}
                           >
-                            No product badges found
-                          </TableCell>
-                        </TableRow>
-                      ) : (
-                        productBadges.map((badge) => (
-                          <TableRow key={badge.id}>
-                            <TableCell>
-                              {badge.image ? (
-                                <div className="flex justify-center items-center">
-                                  <img
-                                    src={badge.image}
-                                    alt={badge.name}
-                                    className="h-10 w-10 object-contain"
-                                  />
-                                </div>
-                              ) : (
-                                <div className="flex justify-center items-center h-10 w-10">
-                                  <Image className="h-6 w-6 text-muted-foreground" />
-                                </div>
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              <span className="font-medium">{badge.name}</span>
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex justify-end gap-2">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleEditBadge(badge)}
+                            {badgesLoading ? (
+                              <TableRow>
+                                <TableCell
+                                  colSpan={4}
+                                  className="text-center py-8"
                                 >
-                                  <Edit className="w-4 h-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() =>
-                                    handleConfirmDeleteBadge(badge.id as string)
-                                  }
+                                  <div className="flex justify-center items-center">
+                                    <Loader2 className="w-6 h-6 animate-spin text-primary mr-2" />
+                                    <span>Loading badges...</span>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            ) : productBadges.length === 0 ? (
+                              <TableRow>
+                                <TableCell
+                                  colSpan={4}
+                                  className="text-center text-muted-foreground py-8"
                                 >
-                                  <Trash2 className="w-4 h-4 text-destructive" />
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ))
-                      )}
-                    </TableBody>
+                                  No product badges found
+                                </TableCell>
+                              </TableRow>
+                            ) : (
+                              productBadges.map((badge, index) => (
+                                <Draggable
+                                  key={badge.id}
+                                  draggableId={badge.id}
+                                  index={index}
+                                >
+                                  {(provided, snapshot) => (
+                                    <TableRow
+                                      ref={provided.innerRef}
+                                      {...provided.draggableProps}
+                                      className={
+                                        snapshot.isDragging ? "opacity-50" : ""
+                                      }
+                                    >
+                                      <TableCell
+                                        {...provided.dragHandleProps}
+                                        className="w-8 cursor-grab"
+                                      >
+                                        <GripVertical className="h-5 w-5 text-muted-foreground" />
+                                      </TableCell>
+                                      <TableCell>
+                                        {badge.image ? (
+                                          <div className="flex justify-center items-center">
+                                            <img
+                                              src={badge.image}
+                                              alt={badge.name}
+                                              className="h-10 w-10 object-contain"
+                                            />
+                                          </div>
+                                        ) : (
+                                          <div className="flex justify-center items-center h-10 w-10">
+                                            <Image className="h-6 w-6 text-muted-foreground" />
+                                          </div>
+                                        )}
+                                      </TableCell>
+                                      <TableCell>
+                                        <span className="font-medium">
+                                          {badge.name}
+                                        </span>
+                                      </TableCell>
+                                      <TableCell className="text-right">
+                                        <div className="flex justify-end gap-2">
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() =>
+                                              handleEditBadge(badge)
+                                            }
+                                          >
+                                            <Edit className="w-4 h-4" />
+                                          </Button>
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() =>
+                                              handleConfirmDeleteBadge(
+                                                badge.id as string
+                                              )
+                                            }
+                                          >
+                                            <Trash2 className="w-4 h-4 text-destructive" />
+                                          </Button>
+                                        </div>
+                                      </TableCell>
+                                    </TableRow>
+                                  )}
+                                </Draggable>
+                              ))
+                            )}
+                            {provided.placeholder}
+                          </TableBody>
+                        )}
+                      </Droppable>
+                    </DragDropContext>
                   </Table>
                 </div>
               </CardContent>
