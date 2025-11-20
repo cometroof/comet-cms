@@ -314,33 +314,47 @@ const CategoryDetailPage = () => {
         </div>
 
         {/* Category Info Card */}
-        {category.subtitle && (
-          <Card>
-            <CardHeader>
-              <div className="flex flex-col lg:flex-row justify-between gap-10">
-                <CardTitle>Category Information</CardTitle>
-                <Button
-                  onClick={handleEditCategory}
-                  variant="secondary"
-                  className="flex items-center gap-2"
-                >
-                  <Edit size={16} />
-                  Edit Category
-                </Button>
-              </div>
-            </CardHeader>
+        {/* {category.subtitle && ( */}
+        <Card>
+          <CardHeader>
+            <div className="flex flex-col lg:flex-row justify-between gap-10">
+              <CardTitle>Category Information</CardTitle>
+              <Button
+                onClick={handleEditCategory}
+                variant="secondary"
+                className="flex items-center gap-2"
+              >
+                <Edit size={16} />
+                Edit Category
+              </Button>
+            </div>
+          </CardHeader>
+          {category.subtitle && (
             <CardContent>
               <div>
                 <p className="text-sm text-muted-foreground">Subtitle</p>
                 <p className="text-sm">{category.subtitle}</p>
               </div>
             </CardContent>
-          </Card>
-        )}
+          )}
+        </Card>
+        {/* )} */}
 
         {/* Items List */}
         {items.length === 0 ? (
           <Card>
+            <CardHeader>
+              <div className="flex flex-col lg:flex-row justify-between gap-10">
+                <CardTitle>Items</CardTitle>
+                <Button
+                  onClick={handleAddItem}
+                  className="flex items-center gap-2"
+                >
+                  <Plus size={16} />
+                  Add Item
+                </Button>
+              </div>
+            </CardHeader>
             <CardContent className="flex flex-col items-center justify-center py-12">
               <Package className="w-16 h-16 text-muted-foreground/50 mb-4" />
               <h3 className="text-lg font-semibold mb-2">No items yet</h3>
