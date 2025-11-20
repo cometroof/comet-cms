@@ -387,6 +387,7 @@ export type Database = {
           product_id: string | null;
           product_profile_id: string | null;
           subtitle: string | null;
+          subtitle_id: string | null;
           updated_at: string | null;
         };
         Insert: {
@@ -397,6 +398,7 @@ export type Database = {
           product_id?: string | null;
           product_profile_id?: string | null;
           subtitle?: string | null;
+          subtitle_id?: string | null;
           updated_at?: string | null;
         };
         Update: {
@@ -407,6 +409,7 @@ export type Database = {
           product_id?: string | null;
           product_profile_id?: string | null;
           subtitle?: string | null;
+          subtitle_id?: string | null;
           updated_at?: string | null;
         };
         Relationships: [

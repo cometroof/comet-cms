@@ -302,14 +302,7 @@ const CategoryDetailPage = () => {
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <div>
-              <h1 className="text-3xl font-bold text-foreground">
-                {category.name}
-              </h1>
-              <p className="text-muted-foreground mt-1">
-                {category.subtitle || "Manage category items"}. Drag to reorder.
-              </p>
-            </div>
+            <div></div>
           </div>
         </div>
 
@@ -331,9 +324,27 @@ const CategoryDetailPage = () => {
           </CardHeader>
           {category.subtitle && (
             <CardContent>
-              <div>
-                <p className="text-sm text-muted-foreground">Subtitle</p>
-                <p className="text-sm">{category.subtitle}</p>
+              <div className="flex gap-10 items-end">
+                <div>
+                  <p className="text-sm text-muted-foreground font-medium">
+                    Name
+                  </p>
+                  <h1 className="text-3xl font-bold text-foreground">
+                    {category.name}
+                  </h1>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground font-medium">
+                    Subtitle (EN)
+                  </p>
+                  <p className="text-sm">{category.subtitle}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground font-medium">
+                    Subtitle (ID)
+                  </p>
+                  <p className="text-sm">{category.subtitle_id || "-"}</p>
+                </div>
               </div>
             </CardContent>
           )}
@@ -391,8 +402,6 @@ const CategoryDetailPage = () => {
                       <TableHead className="w-12"></TableHead>
                       <TableHead>Name</TableHead>
                       <TableHead>Image</TableHead>
-                      <TableHead>Length</TableHead>
-                      <TableHead>Weight</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -439,12 +448,6 @@ const CategoryDetailPage = () => {
                                         <Package className="w-6 h-6 text-muted-foreground" />
                                       </div>
                                     )}
-                                  </TableCell>
-                                  <TableCell className="text-muted-foreground">
-                                    {item.length || "-"}
-                                  </TableCell>
-                                  <TableCell className="text-muted-foreground">
-                                    {item.weight || "-"}
                                   </TableCell>
                                   <TableCell className="text-right">
                                     <div className="flex items-center justify-end gap-2">

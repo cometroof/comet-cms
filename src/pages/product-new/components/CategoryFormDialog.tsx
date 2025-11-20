@@ -28,6 +28,7 @@ interface CategoryFormDialogProps {
 interface CategoryFormData {
   name: string;
   subtitle: string;
+  subtitle_id: string;
 }
 
 const CategoryFormDialog = ({
@@ -47,6 +48,7 @@ const CategoryFormDialog = ({
     defaultValues: {
       name: "",
       subtitle: "",
+      subtitle_id: "",
     },
   });
 
@@ -56,11 +58,13 @@ const CategoryFormDialog = ({
       reset({
         name: category.name,
         subtitle: category.subtitle || "",
+        subtitle_id: category.subtitle_id || "",
       });
     } else {
       reset({
         name: "",
         subtitle: "",
+        subtitle_id: "",
       });
     }
   }, [category, reset]);
@@ -74,6 +78,7 @@ const CategoryFormDialog = ({
           .update({
             name: data.name,
             subtitle: data.subtitle,
+            subtitle_id: data.subtitle_id,
             updated_at: new Date().toISOString(),
           })
           .eq("id", category.id);
@@ -86,6 +91,7 @@ const CategoryFormDialog = ({
           product_profile_id: profileId,
           name: data.name,
           subtitle: data.subtitle,
+          subtitle_id: data.subtitle_id,
         });
 
         if (error) throw error;
@@ -141,15 +147,27 @@ const CategoryFormDialog = ({
             )}
           </div>
 
-          {/* Subtitle */}
-          <div className="space-y-2">
-            <Label htmlFor="subtitle">Subtitle</Label>
-            <Textarea
-              id="subtitle"
-              {...register("subtitle")}
-              placeholder="Enter category subtitle or description"
-              rows={3}
-            />
+          <div className="grid lg:grid-cols-2 gap-8">
+            {/* Subtitle */}
+            <div className="space-y-2">
+              <Label htmlFor="subtitle">Subtitle</Label>
+              <Textarea
+                id="subtitle"
+                {...register("subtitle")}
+                placeholder="Enter category subtitle or description"
+                rows={3}
+              />
+            </div>
+            {/* Subtitle ID */}
+            <div className="space-y-2">
+              <Label htmlFor="subtitle">Subtitle (ID)</Label>
+              <Textarea
+                id="subtitle_id"
+                {...register("subtitle_id")}
+                placeholder="Enter category subtitle or description"
+                rows={3}
+              />
+            </div>
           </div>
 
           {/* Actions */}
