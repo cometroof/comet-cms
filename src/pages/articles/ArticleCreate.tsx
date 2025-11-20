@@ -218,36 +218,6 @@ const ArticleCreate = () => {
                 <CardTitle>Article Content</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {/* Language Toggle */}
-                <div className="flex items-center justify-between gap-4 p-3 bg-muted rounded-lg">
-                  <div className="flex items-center gap-2">
-                    <Languages className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-sm font-medium">
-                      {currentLang === "en" ? "English" : "Indonesian"}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2 bg-background rounded-lg p-1">
-                    <Button
-                      type="button"
-                      variant={currentLang === "en" ? "default" : "ghost"}
-                      size="sm"
-                      onClick={() => setCurrentLang("en")}
-                      className="h-8 px-3"
-                    >
-                      EN
-                    </Button>
-                    <Button
-                      type="button"
-                      variant={currentLang === "id" ? "default" : "ghost"}
-                      size="sm"
-                      onClick={() => setCurrentLang("id")}
-                      className="h-8 px-3"
-                    >
-                      ID
-                    </Button>
-                  </div>
-                </div>
-
                 <div className="space-y-2">
                   <Label htmlFor="title">
                     Title * ({currentLang.toUpperCase()})
@@ -264,58 +234,6 @@ const ArticleCreate = () => {
                     required
                   />
                 </div>
-
-                {currentLang === "en" && (
-                  <div className="space-y-2">
-                    <Label htmlFor="slug">Slug *</Label>
-                    <Input
-                      id="slug"
-                      value={formData.slug}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          slug: e.target.value,
-                        }))
-                      }
-                      placeholder="article-url-slug"
-                      required
-                    />
-                    <p className="text-sm text-muted-foreground">
-                      URL-friendly version of the title
-                    </p>
-                  </div>
-                )}
-
-                {currentLang === "en" && (
-                  <div className="space-y-2">
-                    <Label htmlFor="cover_image">Cover Image</Label>
-                    <div className="flex items-center gap-2">
-                      <Input
-                        id="cover_image"
-                        value={formData.cover_image || ""}
-                        readOnly
-                        placeholder="Select a cover image..."
-                        className="flex-1"
-                      />
-                      <Button
-                        type="button"
-                        onClick={() => setImageSelectorOpen(true)}
-                        variant="outline"
-                      >
-                        Select Image
-                      </Button>
-                    </div>
-                    {formData.cover_image && (
-                      <div className="mt-2">
-                        <img
-                          src={formData.cover_image}
-                          alt="Cover preview"
-                          className="max-h-40 rounded-md object-cover"
-                        />
-                      </div>
-                    )}
-                  </div>
-                )}
 
                 <div className="space-y-2">
                   <Label htmlFor="excerpt">
@@ -428,6 +346,45 @@ const ArticleCreate = () => {
           </div>
 
           <div className="space-y-6">
+            {/* Language Toggle */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Language / Bahasa</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-2">
+                    <Languages className="w-4 h-4 text-muted-foreground" />
+                    <span className="text-sm font-medium">
+                      {currentLang === "en" ? "English" : "Indonesian"}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 bg-muted rounded-lg p-1">
+                    <Button
+                      type="button"
+                      variant={currentLang === "en" ? "default" : "ghost"}
+                      size="sm"
+                      onClick={() => setCurrentLang("en")}
+                      className="h-8 px-3"
+                    >
+                      EN
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={currentLang === "id" ? "default" : "ghost"}
+                      size="sm"
+                      onClick={() => setCurrentLang("id")}
+                      className="h-8 px-3"
+                    >
+                      ID
+                    </Button>
+                  </div>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Switch between English and Indonesian content
+                </p>
+              </CardContent>
+            </Card>
             <Card>
               <CardHeader>
                 <CardTitle>Publish Settings</CardTitle>
@@ -435,7 +392,7 @@ const ArticleCreate = () => {
               <CardContent className="space-y-4">
                 <div className="flex items-center justify-between">
                   <Label htmlFor="published" className="text-sm font-medium">
-                    Publish immediately
+                    {formData.published ? "Published" : "Save as Draft"}
                   </Label>
                   <Switch
                     id="published"
@@ -451,7 +408,58 @@ const ArticleCreate = () => {
               </CardContent>
             </Card>
 
-            <Card>
+            <div className="space-y-2">
+              <Label htmlFor="slug">Slug *</Label>
+              <Input
+                id="slug"
+                value={formData.slug}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    slug: e.target.value,
+                  }))
+                }
+                placeholder="article-url-slug"
+                required
+              />
+              <p className="text-sm text-muted-foreground">
+                URL-friendly version of the title
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="cover_image">Cover Image</Label>
+              <div className="flex items-center gap-2">
+                {/* <Input
+                  id="cover_image"
+                  value={formData.cover_image || ""}
+                  readOnly
+                  placeholder="Select a cover image..."
+                  className="flex-1"
+                /> */}
+                {formData.cover_image ? (
+                  <div
+                    className="relative rounded-md overflow-hidden w-full ring-2 ring-transparent hover:ring-primary"
+                    role="button"
+                    onClick={() => setImageSelectorOpen(true)}
+                  >
+                    <img
+                      src={formData.cover_image}
+                      alt="Cover preview"
+                      className="size-full object-cover"
+                    />
+                  </div>
+                ) : (
+                  <div
+                    className="rounded-md bg-gray-500 h-40"
+                    role="button"
+                    onClick={() => setImageSelectorOpen(true)}
+                  />
+                )}
+              </div>
+            </div>
+
+            {/* <Card>
               <CardHeader>
                 <CardTitle>Preview ({currentLang.toUpperCase()})</CardTitle>
               </CardHeader>
@@ -482,7 +490,7 @@ const ArticleCreate = () => {
                   </Button>
                 </div>
               </CardContent>
-            </Card>
+            </Card> */}
 
             <div className="space-y-3">
               <Button

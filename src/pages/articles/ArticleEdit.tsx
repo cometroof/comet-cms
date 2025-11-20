@@ -342,7 +342,7 @@ const ArticleEdit = () => {
   const handleTitleChange = (value: string) => {
     if (currentLang === "en") {
       setValue("title", value, { shouldValidate: true });
-      setValue("slug", generateSlug(value), { shouldValidate: true });
+      // setValue("slug", generateSlug(value), { shouldValidate: true });
     } else {
       setValue("title_id", value, { shouldValidate: true });
     }
@@ -466,57 +466,6 @@ const ArticleEdit = () => {
                     </p>
                   )}
                 </div>
-
-                {currentLang === "en" && (
-                  <div className="space-y-2">
-                    <Label htmlFor="slug">Slug *</Label>
-                    <Input
-                      id="slug"
-                      {...register("slug")}
-                      placeholder="article-url-slug"
-                      required
-                    />
-                    {errors.slug && (
-                      <p className="text-sm text-destructive">
-                        {errors.slug.message}
-                      </p>
-                    )}
-                    <p className="text-sm text-muted-foreground">
-                      URL-friendly version of the title
-                    </p>
-                  </div>
-                )}
-
-                {currentLang === "en" && (
-                  <div className="space-y-2">
-                    <Label htmlFor="cover_image">Cover Image</Label>
-                    <div className="flex items-center gap-2">
-                      <Input
-                        id="cover_image"
-                        value={cover_image || ""}
-                        readOnly
-                        placeholder="Select a cover image..."
-                        className="flex-1"
-                      />
-                      <Button
-                        type="button"
-                        onClick={() => setImageSelectorOpen(true)}
-                        variant="outline"
-                      >
-                        Select Image
-                      </Button>
-                    </div>
-                    {cover_image && (
-                      <div className="mt-2">
-                        <img
-                          src={cover_image}
-                          alt="Cover preview"
-                          className="max-h-40 rounded-md object-cover"
-                        />
-                      </div>
-                    )}
-                  </div>
-                )}
 
                 <div className="space-y-2">
                   <Label htmlFor="excerpt">
@@ -717,6 +666,56 @@ const ArticleEdit = () => {
               </CardContent>
             </Card>
 
+            <Card>
+              <CardHeader>
+                <CardTitle>Meta</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="slug">Slug *</Label>
+                    <div className="py-2 px-4 rounded-md bg-gray-100">
+                      {formValues.slug}
+                    </div>
+                    {/* <Input
+                      id="slug"
+                      {...register("slug")}
+                      placeholder="article-url-slug"
+                      required
+                      readOnly
+                    />
+                    {errors.slug && (
+                      <p className="text-sm text-destructive">
+                        {errors.slug.message}
+                      </p>
+                    )} */}
+                    <p className="text-sm text-muted-foreground">
+                      URL-friendly version of the title
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="cover_image">Cover Image</Label>
+                    <div className="flex items-center gap-2 ring-2 ring-transparent hover:ring-primary rounded-md ">
+                      {cover_image && (
+                        <div
+                          className="rounded-md relative overflow-hidden"
+                          role="button"
+                          onClick={() => setImageSelectorOpen(true)}
+                        >
+                          <img
+                            src={cover_image}
+                            alt="Cover preview"
+                            className="object-cover"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Article Info */}
             <Card>
               <CardHeader>
@@ -753,7 +752,7 @@ const ArticleEdit = () => {
             </Card>
 
             {/* Article Preview */}
-            <Card>
+            {/* <Card>
               <CardHeader>
                 <CardTitle>Preview ({currentLang.toUpperCase()})</CardTitle>
               </CardHeader>
@@ -784,7 +783,7 @@ const ArticleEdit = () => {
                   </Button>
                 </div>
               </CardContent>
-            </Card>
+            </Card> */}
 
             {/* Action Buttons */}
             <div className="space-y-3">

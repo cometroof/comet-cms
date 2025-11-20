@@ -322,32 +322,31 @@ const CategoryDetailPage = () => {
               </Button>
             </div>
           </CardHeader>
-          {category.subtitle && (
-            <CardContent>
-              <div className="flex gap-10 items-end">
-                <div>
-                  <p className="text-sm text-muted-foreground font-medium">
-                    Name
-                  </p>
-                  <h1 className="text-3xl font-bold text-foreground">
-                    {category.name}
-                  </h1>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground font-medium">
-                    Subtitle (EN)
-                  </p>
-                  <p className="text-sm">{category.subtitle}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground font-medium">
-                    Subtitle (ID)
-                  </p>
-                  <p className="text-sm">{category.subtitle_id || "-"}</p>
-                </div>
+
+          <CardContent>
+            <div className="flex gap-10 items-end">
+              <div>
+                <p className="text-sm text-muted-foreground font-medium">
+                  Name
+                </p>
+                <h1 className="text-3xl font-bold text-foreground">
+                  {category.name}
+                </h1>
               </div>
-            </CardContent>
-          )}
+              <div>
+                <p className="text-sm text-muted-foreground font-medium">
+                  Subtitle (EN)
+                </p>
+                <p className="text-sm">{category.subtitle || "-"}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground font-medium">
+                  Subtitle (ID)
+                </p>
+                <p className="text-sm">{category.subtitle_id || "-"}</p>
+              </div>
+            </div>
+          </CardContent>
         </Card>
         {/* )} */}
 

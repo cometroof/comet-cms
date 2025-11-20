@@ -441,7 +441,7 @@ const ImageSelectorDialog = ({
                   className={`grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-[300px] overflow-y-auto`}
                 >
                   {previewUrls.map((url, index) => (
-                    <div key={index} className="relative group">
+                    <div key={`${url}-${index}`} className="relative group">
                       <img
                         src={url}
                         alt={`Preview ${index + 1}`}
@@ -567,10 +567,13 @@ const ImageSelectorDialog = ({
                       {/* Show existing library images */}
                       {libraryImages
                         .filter((item) => item.size > 0)
-                        .map((image) => {
+                        .map((image, index) => {
                           const isSelected = selectedUrls.includes(image.url);
                           return (
-                            <div key={image.id} className="group relative">
+                            <div
+                              key={`${image.id}-${index}`}
+                              className="group relative"
+                            >
                               <button
                                 type="button"
                                 onClick={() => handleLibrarySelect(image.url)}
