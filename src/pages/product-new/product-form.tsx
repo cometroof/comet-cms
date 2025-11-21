@@ -372,7 +372,7 @@ const ProductFormPage = () => {
           ? "Product updated successfully"
           : "Product created successfully"
       );
-      navigate("/dashboard/product-new");
+      navigate(`/dashboard/product-new/${id || ""}`);
     },
     onError: (error) => {
       toast.error(

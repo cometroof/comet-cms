@@ -160,7 +160,7 @@ const ProductAccessoriesFormPage = () => {
   const updateSuitableRow = (
     index: number,
     field: "en" | "id",
-    value: string,
+    value: string
   ) => {
     const updated = [...suitables];
     updated[index][field] = value;
@@ -225,15 +225,15 @@ const ProductAccessoriesFormPage = () => {
       toast.success(
         isEditMode
           ? "Accessories brand updated successfully"
-          : "Accessories brand created successfully",
+          : "Accessories brand created successfully"
       );
-      navigate("/dashboard/product-accessories");
+      navigate(`/dashboard/product-accessories/${id || ""}`);
     },
     onError: (error) => {
       toast.error(
         isEditMode
           ? "Failed to update accessories brand"
-          : "Failed to create accessories brand",
+          : "Failed to create accessories brand"
       );
       console.error(error);
     },
@@ -646,8 +646,8 @@ const ProductAccessoriesFormPage = () => {
               {saveMutation.isPending
                 ? "Saving..."
                 : isEditMode
-                  ? "Update Product"
-                  : "Create Product"}
+                ? "Update Product"
+                : "Create Product"}
             </Button>
           </div>
         </form>

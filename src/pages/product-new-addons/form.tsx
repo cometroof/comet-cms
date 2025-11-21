@@ -287,7 +287,7 @@ const AddonFormPage = () => {
       toast.success(
         isEdit ? "Add-on updated successfully" : "Add-on created successfully"
       );
-      navigate("/dashboard/product-add-ons");
+      navigate(`/dashboard/product-add-ons/${isEdit ? id : ""}`);
     },
     onError: (error) => {
       toast.error(

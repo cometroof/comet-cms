@@ -63,7 +63,7 @@ const ProductListPage = () => {
           `
           *,
           profiles:product_profile(count)
-        `,
+        `
         )
         .eq("is_under_product", true)
         .eq("type", "product")
@@ -78,7 +78,7 @@ const ProductListPage = () => {
   const reorderMutation = useMutation({
     mutationFn: async (updates: { id: string; order: number }[]) => {
       const promises = updates.map(({ id, order }) =>
-        supabase.from("product").update({ order }).eq("id", id),
+        supabase.from("product").update({ order }).eq("id", id)
       );
       const results = await Promise.all(promises);
       const errors = results.filter((r) => r.error);
@@ -160,7 +160,7 @@ const ProductListPage = () => {
   };
 
   const getProfilesCount = (
-    product: Product & { profiles?: Array<{ count: number }> },
+    product: Product & { profiles?: Array<{ count: number }> }
   ) => {
     return product.profiles?.[0]?.count || 0;
   };
@@ -187,13 +187,13 @@ const ProductListPage = () => {
               Manage your brands and their profiles. Drag to reorder.
             </p>
           </div>
-          <Button
+          {/* <Button
             onClick={handleAddProduct}
             className="flex items-center gap-2"
           >
             <Plus size={16} />
             Add Brand
-          </Button>
+          </Button> */}
         </div>
 
         {/* Products List */}
@@ -205,10 +205,10 @@ const ProductListPage = () => {
               <p className="text-muted-foreground mb-4 text-center">
                 Get started by creating your first product
               </p>
-              <Button onClick={handleAddProduct}>
+              {/* <Button onClick={handleAddProduct}>
                 <Plus size={16} className="mr-2" />
                 Add Brand
-              </Button>
+              </Button> */}
             </CardContent>
           </Card>
         ) : (

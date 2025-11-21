@@ -553,7 +553,9 @@ const ProfileFormPage = () => {
           ? "Profile updated successfully"
           : "Profile created successfully"
       );
-      navigate(`/dashboard/product-new/${productId}`);
+      navigate(
+        `/dashboard/product-new/${productId}/profile/${profileId || ""}`
+      );
     },
     onError: (error) => {
       toast.error(

@@ -8,7 +8,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import ImageSelectorDialog from "@/components/ImageSelectorDialog";
-import { ArrowLeft, Save, Eye, Loader2, Languages } from "lucide-react";
+import {
+  ArrowLeft,
+  Save,
+  Eye,
+  Loader2,
+  Languages,
+  ImagePlus,
+} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ArticleFormData, Article } from "./types";
 import { RichTextEditor } from "@/components/RichTextEditor";
@@ -451,10 +458,12 @@ const ArticleCreate = () => {
                   </div>
                 ) : (
                   <div
-                    className="rounded-md bg-gray-500 h-40"
+                    className="rounded-md bg-gray-100 hover:bg-gray-200 w-full h-44 relative flex items-center justify-center"
                     role="button"
                     onClick={() => setImageSelectorOpen(true)}
-                  />
+                  >
+                    <ImagePlus className="size-8" />
+                  </div>
                 )}
               </div>
             </div>

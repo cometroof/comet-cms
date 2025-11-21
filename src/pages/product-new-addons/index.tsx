@@ -71,7 +71,7 @@ const AddonListPage = () => {
   const reorderMutation = useMutation({
     mutationFn: async (updates: { id: string; order: number }[]) => {
       const promises = updates.map(({ id, order }) =>
-        supabase.from("product").update({ order }).eq("id", id),
+        supabase.from("product").update({ order }).eq("id", id)
       );
       const results = await Promise.all(promises);
       const errors = results.filter((r) => r.error);
@@ -173,10 +173,10 @@ const AddonListPage = () => {
               Manage your product add-ons. Drag to reorder.
             </p>
           </div>
-          <Button onClick={handleAddAddon} className="flex items-center gap-2">
+          {/* <Button onClick={handleAddAddon} className="flex items-center gap-2">
             <Plus size={16} />
             Add Product Add-on
-          </Button>
+          </Button> */}
         </div>
 
         {/* Add-ons List */}

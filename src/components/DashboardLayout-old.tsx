@@ -200,13 +200,15 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           // Desktop: expand/collapse width
           desktopCollapsed ? "lg:w-16" : "lg:w-64",
           // Mobile always full width when open
-          "w-64",
+          "w-64"
         )}
       >
         <div className="flex flex-col h-full">
           {/* Logo */}
           <div
-            className={`flex items-center gap-3 ${desktopCollapsed ? "px-0 justify-center" : "px-6"} py-5 border-b border-sidebar-border`}
+            className={`flex items-center gap-3 ${
+              desktopCollapsed ? "px-0 justify-center" : "px-6"
+            } py-5 border-b border-sidebar-border`}
           >
             <div className="flex items-center justify-center size-10 max-w-full aspect-square bg-sidebar-foreground rounded-lg flex-shrink-0">
               <img className="size-5" src="/comet-icon.svg" alt="Comet Icon" />
@@ -247,7 +249,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                           isActive(item.href)
                             ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm"
                             : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-white/5",
-                          desktopCollapsed && "lg:justify-center",
+                          desktopCollapsed && "lg:justify-center"
                         )}
                         title={desktopCollapsed ? item.name : undefined}
                       >
@@ -278,10 +280,10 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                                 location.pathname ===
                                   `/dashboard/product-new/${product.id}` ||
                                   location.pathname.includes(
-                                    `/dashboard/product-new/${product.id}`,
+                                    `/dashboard/product-new/${product.id}`
                                   )
                                   ? "bg-sidebar-primary/70 text-sidebar-primary-foreground"
-                                  : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-white/5",
+                                  : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-white/5"
                               )}
                               onClick={() => setMobileOpen(false)}
                             >
@@ -289,7 +291,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                             </Link>
                           ))}
                           {/* Add Product Button */}
-                          <Link
+                          {/* <Link
                             to="/dashboard/product-new/create"
                             className={cn(
                               "flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors",
@@ -300,7 +302,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                           >
                             <Plus className="w-4 h-4" />
                             <span>Add Brand</span>
-                          </Link>
+                          </Link> */}
                         </div>
                       )}
                     </div>
@@ -321,7 +323,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                           isActive(item.href)
                             ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm"
                             : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-white/5",
-                          desktopCollapsed && "lg:justify-center",
+                          desktopCollapsed && "lg:justify-center"
                         )}
                         title={desktopCollapsed ? item.name : undefined}
                       >
@@ -352,7 +354,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                                 location.pathname ===
                                   `/dashboard/product-accessories/${accessory.id}`
                                   ? "bg-sidebar-primary/70 text-sidebar-primary-foreground"
-                                  : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-white/5",
+                                  : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-white/5"
                               )}
                               onClick={() => setMobileOpen(false)}
                             >
@@ -365,7 +367,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                             className={cn(
                               "flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors",
                               "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-white/5",
-                              "border border-sidebar-foreground/20 border-dashed mt-2",
+                              "border border-sidebar-foreground/20 border-dashed mt-2"
                             )}
                             onClick={() => setMobileOpen(false)}
                           >
@@ -390,7 +392,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                           isActive(item.href)
                             ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm"
                             : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-white/5",
-                          desktopCollapsed && "lg:justify-center",
+                          desktopCollapsed && "lg:justify-center"
                         )}
                         title={desktopCollapsed ? item.name : undefined}
                       >
@@ -421,7 +423,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                                 location.pathname ===
                                   `/dashboard/product-add-ons/${addon.id}/edit`
                                   ? "bg-sidebar-primary/70 text-sidebar-primary-foreground"
-                                  : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-white/5",
+                                  : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-white/5"
                               )}
                               onClick={() => setMobileOpen(false)}
                             >
@@ -434,7 +436,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                             className={cn(
                               "flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors",
                               "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-white/5",
-                              "border border-sidebar-foreground/20 border-dashed mt-2",
+                              "border border-sidebar-foreground/20 border-dashed mt-2"
                             )}
                             onClick={() => setMobileOpen(false)}
                           >
@@ -460,11 +462,11 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                           "w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors",
                           location.pathname.includes("/dashboard/projects") ||
                             location.pathname.includes(
-                              "/dashboard/project-categories",
+                              "/dashboard/project-categories"
                             )
                             ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm"
                             : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-white/5",
-                          desktopCollapsed && "lg:justify-center",
+                          desktopCollapsed && "lg:justify-center"
                         )}
                         title={desktopCollapsed ? item.name : undefined}
                       >
@@ -493,7 +495,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                               "flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors",
                               location.pathname === "/dashboard/projects"
                                 ? "bg-sidebar-primary/70 text-sidebar-primary-foreground"
-                                : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-white/5",
+                                : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-white/5"
                             )}
                             onClick={() => setMobileOpen(false)}
                           >
@@ -509,7 +511,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                               location.pathname ===
                                 "/dashboard/project-categories"
                                 ? "bg-sidebar-primary/70 text-sidebar-primary-foreground"
-                                : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-white/5",
+                                : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-white/5"
                             )}
                             onClick={() => setMobileOpen(false)}
                           >
@@ -531,7 +533,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                       isActive(item.href)
                         ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm"
                         : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-white/5",
-                      desktopCollapsed && "lg:justify-center",
+                      desktopCollapsed && "lg:justify-center"
                     )}
                     title={desktopCollapsed ? item.name : undefined}
                     onClick={() => setMobileOpen(false)}
@@ -593,7 +595,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       <div
         className={cn(
           "transition-all duration-200",
-          desktopCollapsed ? "lg:pl-16" : "lg:pl-64",
+          desktopCollapsed ? "lg:pl-16" : "lg:pl-64"
         )}
       >
         {/* Top bar */}
