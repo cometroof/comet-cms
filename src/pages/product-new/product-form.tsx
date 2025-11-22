@@ -45,6 +45,8 @@ interface ProductFormData {
   product_main_image: string;
   banner_url: string;
   catalogue: string;
+  meta_desc_en: string;
+  meta_desc_id: string;
 }
 
 interface ProductPremiumData {
@@ -112,6 +114,8 @@ const ProductFormPage = () => {
       product_main_image: "",
       banner_url: "",
       catalogue: "",
+      meta_desc_en: "",
+      meta_desc_id: "",
     },
   });
 
@@ -168,6 +172,8 @@ const ProductFormPage = () => {
         product_main_image: product.product_main_image || "",
         banner_url: product.banner_url || "",
         catalogue: product.catalogue || "",
+        meta_desc_en: product.meta_desc_en || "",
+        meta_desc_id: product.meta_desc_id || "",
       });
 
       // Parse suitables from JSON
@@ -253,6 +259,8 @@ const ProductFormPage = () => {
             title_id: data.title_id,
             description_en: data.description_en,
             description_id: data.description_id,
+            meta_desc_en: data.meta_desc_en || null,
+            meta_desc_id: data.meta_desc_id || null,
             order: data.order,
             slug: data.slug,
             brand_image: data.brand_image || null,
@@ -329,6 +337,8 @@ const ProductFormPage = () => {
             title_id: data.title_id,
             description_en: data.description_en,
             description_id: data.description_id,
+            meta_desc_en: data.meta_desc_en || null,
+            meta_desc_id: data.meta_desc_id || null,
             order: data.order,
             slug: data.slug,
             brand_image: data.brand_image || null,
@@ -432,7 +442,7 @@ const ProductFormPage = () => {
             <CardHeader>
               <CardTitle>Basic Information</CardTitle>
               <CardDescription>
-                Core product details and identification
+                Core product details and identificationsss
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -490,6 +500,35 @@ const ProductFormPage = () => {
                     placeholder="product-slug"
                   />
                 )}
+              </div>
+
+              {/* Meta Descriptions */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="meta_desc_en">
+                    Meta Description (English)
+                  </Label>
+                  <Textarea
+                    id="meta_desc_en"
+                    {...register("meta_desc_en")}
+                    placeholder="Enter meta description (EN)"
+                    rows={3}
+                    className="resize-none"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="meta_desc_id">
+                    Meta Description (Indonesian)
+                  </Label>
+                  <Textarea
+                    id="meta_desc_id"
+                    {...register("meta_desc_id")}
+                    placeholder="Masukkan meta deskripsi (ID)"
+                    rows={3}
+                    className="resize-none"
+                  />
+                </div>
               </div>
 
               {/* Order */}

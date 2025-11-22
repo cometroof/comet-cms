@@ -45,6 +45,8 @@ interface AddonFormData {
   product_main_image: string;
   banner_url: string;
   catalogue: string;
+  meta_desc_en: string;
+  meta_desc_id: string;
   // Highlight section fields
   is_highlight_section: boolean;
   highlight_section_image_url: string;
@@ -111,6 +113,8 @@ const AddonFormPage = () => {
       product_main_image: "",
       banner_url: "",
       catalogue: "",
+      meta_desc_en: "",
+      meta_desc_id: "",
       is_highlight_section: false,
       highlight_section_image_url: "",
       highlight_section_description_en: "",
@@ -166,6 +170,8 @@ const AddonFormPage = () => {
         product_main_image: addon.product_main_image || "",
         banner_url: addon.banner_url || "",
         catalogue: addon.catalogue || "",
+        meta_desc_en: addon.meta_desc_en || "",
+        meta_desc_id: addon.meta_desc_id || "",
         is_highlight_section: addon.is_highlight_section || false,
         highlight_section_image_url: addon.highlight_section_image_url || "",
         highlight_section_description_en:
@@ -243,6 +249,8 @@ const AddonFormPage = () => {
         title_id: data.title_id,
         description_en: data.description_en,
         description_id: data.description_id,
+        meta_desc_en: data.meta_desc_en || null,
+        meta_desc_id: data.meta_desc_id || null,
         order: data.order,
         brand_image: data.brand_image || null,
         product_main_image: data.product_main_image || null,
@@ -405,6 +413,34 @@ const AddonFormPage = () => {
                     placeholder="add-on-slug"
                   />
                 )}
+              </div>
+              {/* Meta Descriptions */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="meta_desc_en">
+                    Meta Description (English)
+                  </Label>
+                  <Textarea
+                    id="meta_desc_en"
+                    {...register("meta_desc_en")}
+                    placeholder="Enter meta description (EN)"
+                    rows={3}
+                    className="resize-none"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="meta_desc_id">
+                    Meta Description (Indonesian)
+                  </Label>
+                  <Textarea
+                    id="meta_desc_id"
+                    {...register("meta_desc_id")}
+                    placeholder="Masukkan meta deskripsi (ID)"
+                    rows={3}
+                    className="resize-none"
+                  />
+                </div>
               </div>
             </CardContent>
           </Card>

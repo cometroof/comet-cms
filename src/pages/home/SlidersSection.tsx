@@ -33,6 +33,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import ImageSelectorDialog from "@/components/ImageSelectorDialog";
 import { toast } from "sonner";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
 import {
   DragDropContext,
   Droppable,
@@ -50,6 +53,7 @@ type SliderFormData = {
   description_id: string;
   link?: string;
   link_text?: string;
+  link_text_id?: string;
   order: number;
 };
 
@@ -60,19 +64,51 @@ const SlidersSection = () => {
   const [imageSelectorOpen, setImageSelectorOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("en");
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [formData, setFormData] = useState<SliderFormData>({
-    image: "",
-    title_en: "",
-    title_id: "",
-    description_en: "",
-    description_id: "",
-    link: "",
-    link_text: "",
-    order: 0,
-  });
-  const [errors, setErrors] = useState<Record<string, string>>({});
   const [sliders, setSliders] = useState<Slider[]>([]);
+
+  // Zod schema for slider form
+  const sliderSchema = z.object({
+    image: z.string().min(1, "Image is required"),
+    title_en: z.string().min(1, "Title (EN) is required").max(200),
+    title_id: z.string().min(1, "Title (ID) is required").max(200),
+    description_en: z.string().min(1, "Description (EN) is required").max(500),
+    description_id: z.string().min(1, "Description (ID) is required").max(500),
+    link: z
+      .string()
+      .optional()
+      .refine(
+        (val) => !val || val.trim() === "" || /^\/[a-zA-Z0-9\-_\/]*$/.test(val),
+        {
+          message:
+            "Please enter a valid path starting with / (e.g., /about-us)",
+        }
+      ),
+    link_text: z.string().optional(),
+    link_text_id: z.string().optional(),
+    order: z.number().optional(),
+  });
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    setValue,
+    watch,
+    formState: { errors, isSubmitting },
+  } = useForm<SliderFormData>({
+    resolver: zodResolver(sliderSchema),
+    defaultValues: {
+      image: "",
+      title_en: "",
+      title_id: "",
+      description_en: "",
+      description_id: "",
+      link: "",
+      link_text: "",
+      link_text_id: "",
+      order: 0,
+    },
+  });
 
   // Load sliders on mount
   useEffect(() => {
@@ -96,24 +132,27 @@ const SlidersSection = () => {
     .filter(
       (slider) =>
         slider.title_en.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        slider.title_id.toLowerCase().includes(searchQuery.toLowerCase()),
+        slider.title_id.toLowerCase().includes(searchQuery.toLowerCase())
     )
     .sort((a, b) => a.order - b.order);
 
   useEffect(() => {
+    // Reset react-hook-form values when editing slider changes or form toggles
     if (editingSlider) {
-      setFormData({
+      reset({
         image: editingSlider.image || "",
         title_en: editingSlider.title_en || "",
         title_id: editingSlider.title_id || "",
         description_en: editingSlider.description_en || "",
         description_id: editingSlider.description_id || "",
         link: editingSlider.link || "",
-        link_text: editingSlider.link_text || "",
+        link_text: editingSlider.link_text || "", //eslint-disable-next-line
+        link_text_id: (editingSlider as any).link_text_id || "",
         order: editingSlider.order || 0,
       });
+      setActiveTab("en");
     } else {
-      setFormData({
+      reset({
         image: "",
         title_en: "",
         title_id: "",
@@ -121,15 +160,11 @@ const SlidersSection = () => {
         description_id: "",
         link: "",
         link_text: "",
+        link_text_id: "",
         order: 0,
       });
     }
-    setErrors({});
-    // Set active tab to EN if slider has ID
-    if (editingSlider?.id) {
-      setActiveTab("en");
-    }
-  }, [editingSlider, showSliderForm]);
+  }, [editingSlider, showSliderForm, reset]);
 
   const handleAddSlider = () => {
     setEditingSlider(null);
@@ -144,7 +179,7 @@ const SlidersSection = () => {
   const handleCancelForm = () => {
     setShowSliderForm(false);
     setEditingSlider(null);
-    setFormData({
+    reset({
       image: "",
       title_en: "",
       title_id: "",
@@ -152,9 +187,9 @@ const SlidersSection = () => {
       description_id: "",
       link: "",
       link_text: "",
+      link_text_id: "",
       order: 0,
     });
-    setErrors({});
   };
 
   const handleDeleteSlider = async (id: string) => {
@@ -201,51 +236,18 @@ const SlidersSection = () => {
     }
   };
 
-  const validateForm = (): boolean => {
-    const newErrors: Record<string, string> = {};
+  // Validation now handled by zod + react-hook-form
 
-    if (!formData.image) newErrors.image = "Image is required";
-    if (!formData.title_en) newErrors.title_en = "Title (EN) is required";
-    if (formData.title_en.length > 200)
-      newErrors.title_en = "Title must be less than 200 characters";
-    if (!formData.title_id) newErrors.title_id = "Title (ID) is required";
-    if (formData.title_id.length > 200)
-      newErrors.title_id = "Title must be less than 200 characters";
-    if (!formData.description_en)
-      newErrors.description_en = "Description (EN) is required";
-    if (formData.description_en.length > 500)
-      newErrors.description_en = "Description must be less than 500 characters";
-    if (!formData.description_id)
-      newErrors.description_id = "Description (ID) is required";
-    if (formData.description_id.length > 500)
-      newErrors.description_id = "Description must be less than 500 characters";
-
-    // if (formData.link) {
-    //   try {
-    //     new URL(formData.link);
-    //   } catch {
-    //     newErrors.link = "Please enter a valid URL";
-    //   }
-    // }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSaveSlider = async () => {
-    if (!validateForm()) return;
-
-    setSaving(true);
+  const onSubmit = async (data: SliderFormData) => {
     try {
       if (editingSlider) {
-        // Update existing
         const updated = await sliderService.updateSlider(
           editingSlider.id,
-          formData,
+          data
         );
         if (updated) {
           setSliders(
-            sliders.map((s) => (s.id === editingSlider.id ? updated : s)),
+            sliders.map((s) => (s.id === editingSlider.id ? updated : s))
           );
           toast.success("Slider updated successfully");
           handleCancelForm();
@@ -253,9 +255,8 @@ const SlidersSection = () => {
           toast.error("Failed to update slider");
         }
       } else {
-        // Create new
         const sliderData = {
-          ...formData,
+          ...data,
           type: "home-cover",
           order: filteredSliders.length + 1,
         };
@@ -272,8 +273,6 @@ const SlidersSection = () => {
     } catch (error) {
       console.error("Error saving slider:", error);
       toast.error("Failed to save slider");
-    } finally {
-      setSaving(false);
     }
   };
 
@@ -320,9 +319,9 @@ const SlidersSection = () => {
                 <div className="space-y-2">
                   <Label htmlFor="image">Image *</Label>
                   <div className="flex gap-2">
-                    {formData.image && (
+                    {(watch("image") ?? "") !== "" && (
                       <img
-                        src={formData.image}
+                        src={watch("image")}
                         alt="Preview"
                         className="w-32 h-24 object-cover rounded border"
                       />
@@ -334,11 +333,15 @@ const SlidersSection = () => {
                       className="gap-2"
                     >
                       <ImageIcon className="w-4 h-4" />
-                      {formData.image ? "Change Image" : "Select Image"}
+                      {(watch("image") ?? "") !== ""
+                        ? "Change Image"
+                        : "Select Image"}
                     </Button>
                   </div>
-                  {errors.image && (
-                    <p className="text-sm text-destructive">{errors.image}</p>
+                  {errors.image?.message && (
+                    <p className="text-sm text-destructive">
+                      {errors.image.message}
+                    </p>
                   )}
                 </div>
 
@@ -355,22 +358,16 @@ const SlidersSection = () => {
                       <Label htmlFor="title_en">Title (English) *</Label>
                       <Input
                         id="title_en"
-                        value={formData.title_en}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            title_en: e.target.value,
-                          })
-                        }
                         placeholder="Enter English title"
                         maxLength={200}
+                        {...register("title_en")}
                       />
                       <p className="text-xs text-muted-foreground">
-                        {formData.title_en.length}/200
+                        {(watch("title_en") ?? "").length}/200
                       </p>
-                      {errors.title_en && (
+                      {errors.title_en?.message && (
                         <p className="text-sm text-destructive">
-                          {errors.title_en}
+                          {errors.title_en.message}
                         </p>
                       )}
                     </div>
@@ -382,23 +379,32 @@ const SlidersSection = () => {
                       </Label>
                       <Textarea
                         id="description_en"
-                        value={formData.description_en}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            description_en: e.target.value,
-                          })
-                        }
                         placeholder="Enter English description"
                         rows={3}
                         maxLength={500}
+                        {...register("description_en")}
                       />
                       <p className="text-xs text-muted-foreground">
-                        {formData.description_en.length}/500
+                        {(watch("description_en") ?? "").length}/500
                       </p>
-                      {errors.description_en && (
+                      {errors.description_en?.message && (
                         <p className="text-sm text-destructive">
-                          {errors.description_en}
+                          {errors.description_en.message}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Link Text EN */}
+                    <div className="space-y-2">
+                      <Label htmlFor="link_text">Link Text (English)</Label>
+                      <Input
+                        id="link_text"
+                        placeholder="e.g., Learn More"
+                        {...register("link_text")}
+                      />
+                      {errors.link_text?.message && (
+                        <p className="text-sm text-destructive">
+                          {errors.link_text.message}
                         </p>
                       )}
                     </div>
@@ -410,22 +416,16 @@ const SlidersSection = () => {
                       <Label htmlFor="title_id">Title (Indonesian) *</Label>
                       <Input
                         id="title_id"
-                        value={formData.title_id}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            title_id: e.target.value,
-                          })
-                        }
                         placeholder="Enter Indonesian title"
                         maxLength={200}
+                        {...register("title_id")}
                       />
                       <p className="text-xs text-muted-foreground">
-                        {formData.title_id.length}/200
+                        {(watch("title_id") ?? "").length}/200
                       </p>
-                      {errors.title_id && (
+                      {errors.title_id?.message && (
                         <p className="text-sm text-destructive">
-                          {errors.title_id}
+                          {errors.title_id.message}
                         </p>
                       )}
                     </div>
@@ -437,23 +437,34 @@ const SlidersSection = () => {
                       </Label>
                       <Textarea
                         id="description_id"
-                        value={formData.description_id}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            description_id: e.target.value,
-                          })
-                        }
                         placeholder="Enter Indonesian description"
                         rows={3}
                         maxLength={500}
+                        {...register("description_id")}
                       />
                       <p className="text-xs text-muted-foreground">
-                        {formData.description_id.length}/500
+                        {(watch("description_id") ?? "").length}/500
                       </p>
-                      {errors.description_id && (
+                      {errors.description_id?.message && (
                         <p className="text-sm text-destructive">
-                          {errors.description_id}
+                          {errors.description_id.message}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Link Text ID */}
+                    <div className="space-y-2">
+                      <Label htmlFor="link_text_id">
+                        Link Text (Indonesian)
+                      </Label>
+                      <Input
+                        id="link_text_id"
+                        placeholder="e.g., Pelajari Lebih Lanjut"
+                        {...register("link_text_id")}
+                      />
+                      {errors.link_text_id?.message && (
+                        <p className="text-sm text-destructive">
+                          {errors.link_text_id.message}
                         </p>
                       )}
                     </div>
@@ -466,44 +477,30 @@ const SlidersSection = () => {
                   <Input
                     id="link"
                     type="url"
-                    value={formData.link}
-                    onChange={(e) =>
-                      setFormData({ ...formData, link: e.target.value })
-                    }
                     placeholder="https://example.com"
+                    {...register("link")}
                   />
-                  {errors.link && (
-                    <p className="text-sm text-destructive">{errors.link}</p>
+                  {errors.link?.message && (
+                    <p className="text-sm text-destructive">
+                      {errors.link.message}
+                    </p>
                   )}
-                </div>
-
-                {/* Link Text */}
-                <div className="space-y-2">
-                  <Label htmlFor="link_text">Link Text (Optional)</Label>
-                  <Input
-                    id="link_text"
-                    value={formData.link_text}
-                    onChange={(e) =>
-                      setFormData({ ...formData, link_text: e.target.value })
-                    }
-                    placeholder="e.g., Learn More, View Products"
-                  />
                 </div>
 
                 <div className="flex gap-2 justify-end pt-4">
                   <Button
                     variant="outline"
                     onClick={handleCancelForm}
-                    disabled={saving}
+                    disabled={isSubmitting}
                   >
                     Cancel
                   </Button>
                   <Button
-                    onClick={handleSaveSlider}
+                    onClick={handleSubmit(onSubmit)}
                     className="gap-2"
-                    disabled={saving}
+                    disabled={isSubmitting}
                   >
-                    {saving ? (
+                    {isSubmitting ? (
                       <>
                         <Loader2 className="w-4 h-4 animate-spin" />
                         Saving...
@@ -655,7 +652,7 @@ const SlidersSection = () => {
         open={imageSelectorOpen}
         onOpenChange={setImageSelectorOpen}
         onSelect={(url) => {
-          setFormData({ ...formData, image: url });
+          setValue("image", url, { shouldValidate: true });
           setImageSelectorOpen(false);
         }}
         title="Select Slider Image"

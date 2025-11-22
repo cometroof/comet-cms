@@ -910,6 +910,7 @@ export type Database = {
           image: string;
           link: string | null;
           link_text: string | null;
+          link_text_id: string | null;
           order: number;
           title_en: string;
           title_id: string;
@@ -924,6 +925,7 @@ export type Database = {
           image: string;
           link?: string | null;
           link_text?: string | null;
+          link_text_id?: string | null;
           order?: number;
           title_en: string;
           title_id: string;
@@ -938,6 +940,7 @@ export type Database = {
           image?: string;
           link?: string | null;
           link_text?: string | null;
+          link_text_id?: string | null;
           order?: number;
           title_en?: string;
           title_id?: string;
