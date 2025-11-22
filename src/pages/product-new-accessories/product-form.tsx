@@ -34,6 +34,7 @@ import { Badge } from "@/components/ui/badge";
 interface ProductFormData {
   name: string;
   title: string;
+  title_id: string;
   description_en: string;
   description_id: string;
   order: number;
@@ -73,6 +74,7 @@ const ProductAccessoriesFormPage = () => {
     defaultValues: {
       name: "",
       title: "",
+      title_id: "",
       description_en: "",
       description_id: "",
       order: 0,
@@ -104,7 +106,7 @@ const ProductAccessoriesFormPage = () => {
       if (error) throw error;
       return data as Product;
     },
-    enabled: isEditMode,
+    // enabled: isEditMode,
   });
 
   // Reset form when product data is loaded
@@ -113,6 +115,7 @@ const ProductAccessoriesFormPage = () => {
       reset({
         name: product.name,
         title: product.title || "",
+        title_id: product.title_id || "",
         description_en: product.description_en || "",
         description_id: product.description_id || "",
         order: product.order,
@@ -184,6 +187,7 @@ const ProductAccessoriesFormPage = () => {
           .update({
             name: data.name,
             title: data.title,
+            title_id: data.title_id,
             description_en: data.description_en,
             description_id: data.description_id,
             order: data.order,
@@ -204,6 +208,7 @@ const ProductAccessoriesFormPage = () => {
         const { error } = await supabase.from("product").insert({
           name: data.name,
           title: data.title,
+          title_id: data.title_id,
           description_en: data.description_en,
           description_id: data.description_id,
           order: data.order,
@@ -314,12 +319,24 @@ const ProductAccessoriesFormPage = () => {
 
               {/* Title */}
               <div className="space-y-2">
-                <Label htmlFor="title">Title</Label>
-                <Input
-                  id="title"
-                  {...register("title")}
-                  placeholder="Enter product title"
-                />
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Label htmlFor="title">Title</Label>
+                    <Input
+                      id="title"
+                      {...register("title")}
+                      placeholder="Enter product title"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="title_id">Title ID</Label>
+                    <Input
+                      id="title_id"
+                      {...register("title_id")}
+                      placeholder="Masukkan judul (ID)"
+                    />
+                  </div>
+                </div>
               </div>
 
               {/* Slug */}
@@ -362,10 +379,10 @@ const ProductAccessoriesFormPage = () => {
             <CardContent className="space-y-4">
               <div className="grid grid-cols-4 gap-4">
                 {/* Brand Image */}
-                <div className="space-y-2 col-span-1">
+                <div className="space-y-2 col-span-1 flex flex-col">
                   <Label>Brand Image</Label>
                   <div
-                    className="relative size-full border rounded overflow-hidden group cursor-pointer"
+                    className="relative flex-1 border rounded overflow-hidden group cursor-pointer"
                     onClick={() => setShowBrandImageSelector(true)}
                   >
                     {brandImage ? (
@@ -400,10 +417,10 @@ const ProductAccessoriesFormPage = () => {
                 </div>
 
                 {/* Product Main Image */}
-                <div className="space-y-2 col-span-1">
+                <div className="space-y-2 col-span-1 flex flex-col">
                   <Label>Product Main Image</Label>
                   <div
-                    className="relative size-full border rounded overflow-hidden group cursor-pointer"
+                    className="relative flex-1 border rounded overflow-hidden group cursor-pointer"
                     onClick={() => setShowMainImageSelector(true)}
                   >
                     {mainImage ? (
@@ -438,10 +455,10 @@ const ProductAccessoriesFormPage = () => {
                 </div>
 
                 {/* Banner Image */}
-                <div className="space-y-2 col-span-2">
+                <div className="space-y-2 col-span-2 flex flex-col">
                   <Label>Banner Image</Label>
                   <div
-                    className="relative w-full aspect-[2.5/1] border rounded overflow-hidden group cursor-pointer"
+                    className="relative w-full aspect-[2/1] border rounded overflow-hidden group cursor-pointer"
                     onClick={() => setShowBannerSelector(true)}
                   >
                     {bannerUrl ? (

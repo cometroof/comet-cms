@@ -32,7 +32,15 @@ import ItemAccessoriesDetailPage from "./pages/product-new-accessories/item-deta
 import DirectItemsPage from "./pages/product-new-accessories/direct-items";
 import ProjectFormPage from "./pages/projects/ProjectFormPage";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      staleTime: 1 * 60 * 1000, // 1 minutes
+      retry: 1,
+    },
+  },
+});
 
 const App = () => {
   return (

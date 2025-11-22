@@ -35,6 +35,8 @@ import { Badge } from "@/components/ui/badge";
 // Add product_main_image to the form data
 interface AddonFormData {
   name: string;
+  title: string;
+  title_id: string;
   slug: string;
   description_en: string;
   description_id: string;
@@ -100,6 +102,8 @@ const AddonFormPage = () => {
   } = useForm<AddonFormData>({
     defaultValues: {
       name: "",
+      title: "",
+      title_id: "",
       description_en: "",
       description_id: "",
       order: 0,
@@ -153,6 +157,8 @@ const AddonFormPage = () => {
     if (addon) {
       reset({
         name: addon.name,
+        title: addon.title || "",
+        title_id: addon.title_id || "",
         description_en: addon.description_en || "",
         description_id: addon.description_id || "",
         order: addon.order,
@@ -233,6 +239,8 @@ const AddonFormPage = () => {
 
       const addonData = {
         name: data.name,
+        title: data.title,
+        title_id: data.title_id,
         description_en: data.description_en,
         description_id: data.description_id,
         order: data.order,
@@ -287,7 +295,7 @@ const AddonFormPage = () => {
       toast.success(
         isEdit ? "Add-on updated successfully" : "Add-on created successfully"
       );
-      navigate(`/dashboard/product-add-ons/${isEdit ? id : ""}`);
+      navigate(`/dashboard/product-add-ons/${isEdit ? `${id}/edit` : ""}`);
     },
     onError: (error) => {
       toast.error(
@@ -361,6 +369,27 @@ const AddonFormPage = () => {
                     {errors.name.message}
                   </p>
                 )}
+              </div>
+              {/* Title & Title ID */}
+              <div className="space-y-2">
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Label htmlFor="title">Title</Label>
+                    <Input
+                      id="title"
+                      {...register("title")}
+                      placeholder="Enter title (EN)"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="title_id">Title ID</Label>
+                    <Input
+                      id="title_id"
+                      {...register("title_id")}
+                      placeholder="Masukkan judul (ID)"
+                    />
+                  </div>
+                </div>
               </div>
               {/* Slug */}
               <div className="space-y-2">

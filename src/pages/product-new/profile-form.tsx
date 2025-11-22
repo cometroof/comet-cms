@@ -343,7 +343,7 @@ const ProfileFormPage = () => {
         content_image_url?: string;
       };
     },
-    enabled: isEditMode,
+    // enabled: isEditMode,
   });
 
   // Reset form when profile data is loaded

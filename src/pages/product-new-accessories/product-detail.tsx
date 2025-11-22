@@ -421,9 +421,15 @@ const ProductAccessoriesDetailPage = () => {
                   <p className="text-sm text-muted-foreground">Name</p>
                   <p className="font-medium">{product.name}</p>
                 </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Title</p>
-                  <p className="font-medium">{product.title || "-"}</p>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Title</p>
+                    <p className="font-medium">{product.title || "-"}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Title ID</p>
+                    <p className="font-medium">{product.title_id || "-"}</p>
+                  </div>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Slug</p>

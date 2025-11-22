@@ -2,12 +2,26 @@ import { useEffect, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm, useFieldArray } from "react-hook-form";
+import {
+  DragDropContext,
+  Droppable,
+  Draggable,
+  DropResult,
+} from "@hello-pangea/dnd";
 import { supabase } from "@/lib/supabase";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ChevronLeft, Loader2, ImageIcon, X, Plus, Trash2 } from "lucide-react";
+import {
+  ChevronLeft,
+  Loader2,
+  X,
+  Plus,
+  Trash2,
+  ImagePlus,
+  GripVertical,
+} from "lucide-react";
 import { toast } from "sonner";
 import {
   Card,
@@ -201,7 +215,7 @@ const ItemAccessoriesDetailPage = () => {
   const imageUrl = watch("image");
   const selectedCategoryId = watch("product_category_id");
 
-  const { fields, append, remove } = useFieldArray({
+  const { fields, append, remove, move } = useFieldArray({
     name: "spec_info_entries",
     control,
   });
@@ -321,6 +335,13 @@ const ItemAccessoriesDetailPage = () => {
     append({ label: { en: "", id: "" }, value: "" });
   const removeSpecInfoEntry = (index: number) => remove(index);
 
+  const onDragEnd = (result: DropResult) => {
+    const { source, destination } = result;
+    if (!destination) return;
+    if (source.index === destination.index) return;
+    move(source.index, destination.index);
+  };
+
   if (itemLoading || categoriesLoading) {
     return (
       <DashboardLayout>
@@ -365,113 +386,113 @@ const ItemAccessoriesDetailPage = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">
-                  Name <span className="text-destructive">*</span>
-                </Label>
-                <Input
-                  id="name"
-                  {...register("name", { required: "Name is required" })}
-                  placeholder="Enter item name"
-                />
-                {errors.name && (
-                  <p className="text-sm text-destructive">
-                    {errors.name.message}
-                  </p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="product_category_id">Product Category</Label>
-                <Select
-                  value={selectedCategoryId}
-                  onValueChange={(value) =>
-                    setValue("product_category_id", value)
-                  }
-                  disabled={isFromCategoryPage}
-                >
-                  <SelectTrigger id="product_category_id">
-                    <SelectValue placeholder="Select a category (optional)" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">None</SelectItem>
-                    {categories.map((category) => (
-                      <SelectItem key={category.id} value={category.id}>
-                        {category.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {isFromCategoryPage && (
-                  <p className="text-sm text-muted-foreground">
-                    Category is auto-selected and cannot be changed when
-                    creating from a category page
-                  </p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label>Item Image</Label>
-                <div className="flex gap-2">
-                  <Input
-                    value={imageUrl}
-                    onChange={(e) => setValue("image", e.target.value)}
-                    placeholder="Item image URL"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setShowImageSelector(true)}
-                  >
-                    <ImageIcon className="w-4 h-4" />
-                  </Button>
-                </div>
-                {imageUrl && (
-                  <div className="relative w-full h-48 border rounded overflow-hidden group">
-                    <img
-                      src={imageUrl}
-                      alt="Item preview"
-                      className="w-full h-full object-contain"
+              <div className="grid md:grid-cols-2 gap-8">
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="name">
+                      Name <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                      id="name"
+                      {...register("name", { required: "Name is required" })}
+                      placeholder="Enter item name"
                     />
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="icon"
-                      className="absolute top-2 right-2 h-8 w-8 opacity-0 group-hover:opacity-100"
-                      onClick={() => setValue("image", "")}
-                    >
-                      <X className="w-4 h-4" />
-                    </Button>
+                    {errors.name && (
+                      <p className="text-sm text-destructive">
+                        {errors.name.message}
+                      </p>
+                    )}
                   </div>
-                )}
-              </div>
 
-              {/*<div className="grid grid-cols-2 gap-4  hidden">
-                <div className="space-y-2">
-                  <Label htmlFor="length">Length</Label>
-                  <Input
-                    id="length"
-                    {...register("length")}
-                    placeholder="e.g., 6000mm"
-                  />
+                  <div className="space-y-2">
+                    <Label htmlFor="product_category_id">
+                      Product Category
+                    </Label>
+                    <Select
+                      value={selectedCategoryId}
+                      onValueChange={(value) =>
+                        setValue("product_category_id", value)
+                      }
+                      disabled={isFromCategoryPage}
+                    >
+                      <SelectTrigger id="product_category_id">
+                        <SelectValue placeholder="Select a category (optional)" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">None</SelectItem>
+                        {categories.map((category) => (
+                          <SelectItem key={category.id} value={category.id}>
+                            {category.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {isFromCategoryPage && (
+                      <p className="text-sm text-muted-foreground">
+                        Category is auto-selected and cannot be changed when
+                        creating from a category page
+                      </p>
+                    )}
+                  </div>
                 </div>
+
                 <div className="space-y-2">
-                  <Label htmlFor="weight">Weight</Label>
-                  <Input
-                    id="weight"
-                    {...register("weight")}
-                    placeholder="e.g., 5.5 kg/m²"
-                  />
+                  <Label>Item Image</Label>
+                  <div className="flex gap-2">
+                    {/* <Input
+                      value={imageUrl}
+                      onChange={(e) => setValue("image", e.target.value)}
+                      placeholder="Item image URL"
+                    /> */}
+                    {imageUrl ? (
+                      <div className="relative w-40 h-40 border rounded overflow-hidden group">
+                        <img
+                          src={imageUrl}
+                          alt="Item preview"
+                          className="w-full h-full object-contain"
+                        />
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="icon"
+                          className="absolute top-2 right-2 h-8 w-8 opacity-0 group-hover:opacity-100"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setValue("image", "");
+                          }}
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <div
+                        className="relative size-40 bg-gray-100 rounded flex items-center justify-center"
+                        role="button"
+                        onClick={() => {
+                          setShowImageSelector(true);
+                        }}
+                      >
+                        <ImagePlus className="size-8" />
+                      </div>
+                    )}
+                    {/* <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setShowImageSelector(true)}
+                    >
+                      <ImageIcon className="w-4 h-4" />
+                    </Button> */}
+                  </div>
                 </div>
-              </div>*/}
+              </div>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader>
               <div className="flex items-start justify-between">
-                <div>
-                  <CardTitle>Specification Informationxxx</CardTitle>
+                <div className="space-y-1">
+                  <CardTitle>Specification Information</CardTitle>
                   <CardDescription>
                     Add custom key-value pairs for additional specifications
                   </CardDescription>
@@ -511,74 +532,105 @@ const ItemAccessoriesDetailPage = () => {
                   No specification fields yet. Click "Add Field" to create one.
                 </div>
               ) : (
-                <div className="space-y-3">
-                  {fields.map((field, index) => (
-                    <div
-                      key={field.id}
-                      className="grid grid-cols-2 gap-6 lg:gap-8"
-                    >
-                      {specLanguage === "id" ? (
-                        <div className="flex-1 space-y-1">
-                          <Label
-                            htmlFor={`spec-id-${index}`}
-                            className="text-xs"
+                <DragDropContext onDragEnd={onDragEnd}>
+                  <Droppable droppableId="spec-fields-droppable">
+                    {(provided) => (
+                      <div
+                        className="space-y-3"
+                        ref={provided.innerRef}
+                        {...provided.droppableProps}
+                      >
+                        {fields.map((field, index) => (
+                          <Draggable
+                            key={field.id}
+                            draggableId={field.id}
+                            index={index}
                           >
-                            Label (Indonesian)
-                          </Label>
-                          <Input
-                            id={`spec-id-${index}`}
-                            placeholder="e.g., Material"
-                            {...register(
-                              `spec_info_entries.${index}.label.id` as const
+                            {(provided) => (
+                              <div
+                                ref={provided.innerRef}
+                                {...provided.draggableProps}
+                                style={provided.draggableProps.style}
+                                className="flex items-end gap-4"
+                              >
+                                <div
+                                  {...provided.dragHandleProps}
+                                  className="mb-3"
+                                >
+                                  <GripVertical className="h-5 w-5 text-muted-foreground cursor-grab active:cursor-grabbing" />
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-6 lg:gap-8 flex-1">
+                                  {specLanguage === "id" ? (
+                                    <div className="flex-1 space-y-1">
+                                      <Label
+                                        htmlFor={`spec-id-${index}`}
+                                        className="text-xs"
+                                      >
+                                        Label (Indonesian)
+                                      </Label>
+                                      <Input
+                                        id={`spec-id-${index}`}
+                                        placeholder="e.g., Material"
+                                        {...register(
+                                          `spec_info_entries.${index}.label.id` as const
+                                        )}
+                                      />
+                                    </div>
+                                  ) : (
+                                    <div className="flex-1 space-y-1">
+                                      <Label
+                                        htmlFor={`spec-en-${index}`}
+                                        className="text-xs"
+                                      >
+                                        Label (English)
+                                      </Label>
+                                      <Input
+                                        id={`spec-en-${index}`}
+                                        placeholder="e.g., Material"
+                                        {...register(
+                                          `spec_info_entries.${index}.label.en` as const
+                                        )}
+                                      />
+                                    </div>
+                                  )}
+
+                                  <div className="flex gap-2">
+                                    <div className="flex-1 space-y-1">
+                                      <Label
+                                        htmlFor={`spec-value-${index}`}
+                                        className="text-xs"
+                                      >
+                                        Value
+                                      </Label>
+                                      <Input
+                                        id={`spec-value-${index}`}
+                                        placeholder="e.g., Aluminum"
+                                        {...register(
+                                          `spec_info_entries.${index}.value` as const
+                                        )}
+                                      />
+                                    </div>
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => removeSpecInfoEntry(index)}
+                                      className="text-destructive hover:text-destructive mt-6"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </Button>
+                                  </div>
+                                </div>
+                              </div>
                             )}
-                          />
-                        </div>
-                      ) : (
-                        <div className="flex-1 space-y-1">
-                          <Label
-                            htmlFor={`spec-en-${index}`}
-                            className="text-xs"
-                          >
-                            Label (English)
-                          </Label>
-                          <Input
-                            id={`spec-en-${index}`}
-                            placeholder="e.g., Material"
-                            {...register(
-                              `spec_info_entries.${index}.label.en` as const
-                            )}
-                          />
-                        </div>
-                      )}
-                      <div className="flex gap-2">
-                        <div className="flex-1 space-y-1">
-                          <Label
-                            htmlFor={`spec-value-${index}`}
-                            className="text-xs"
-                          >
-                            Value
-                          </Label>
-                          <Input
-                            id={`spec-value-${index}`}
-                            placeholder="e.g., Aluminum"
-                            {...register(
-                              `spec_info_entries.${index}.value` as const
-                            )}
-                          />
-                        </div>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => removeSpecInfoEntry(index)}
-                          className="text-destructive hover:text-destructive mt-6"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                          </Draggable>
+                        ))}
+                        {provided.placeholder}
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    )}
+                  </Droppable>
+                </DragDropContext>
               )}
             </CardContent>
           </Card>
