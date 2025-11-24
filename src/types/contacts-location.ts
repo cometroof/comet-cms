@@ -1,6 +1,8 @@
 // Types for Contacts & Location feature
 // These types are structured to be compatible with Supabase tables
 
+import { Database } from "@/lib/supabase-types";
+
 // Base Supabase entry type for contacts-location table
 export interface ContactLocationEntry {
   id: string;
@@ -27,6 +29,20 @@ export interface SocialMediaItem {
   value: string; // Social media URL
   image?: string; // Optional image URL
 }
+
+export interface SocialMediaEntry {
+  id?: string;
+  type: string; // e.g., 'twitter', 'instagram', or custom
+  value: string; // social url
+  image?: string;
+  order?: number;
+  is_social_media?: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+// export type SocialMediaEntry = Partial<
+//   Database["public"]["Tables"]["contacts-location"]["Row"]
+// >;
 
 export interface SocialMedia {
   id: string;

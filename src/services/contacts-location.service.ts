@@ -7,8 +7,10 @@ import type {
   Province,
   Location,
   Area,
+  SocialMediaEntry,
 } from "@/types/contacts-location";
 import provinceData from "@/pages/contacts-location/province.json";
+import { Database } from "@/lib/supabase-types";
 
 const TABLE_NAME = "contacts-location";
 
@@ -165,6 +167,105 @@ export const getSocialMedia = async (): Promise<SocialMedia | null> => {
 };
 
 /**
+ * Get social media entries stored as rows with `is_social_media = true`.
+ * Returns an array of SocialMediaEntry sorted by `order`.
+ */
+export const getSocialMediaList = async (): Promise<
+  Partial<Database["public"]["Tables"]["contacts-location"]["Row"]>[]
+> => {
+  const { data, error } = await supabase
+    .from(TABLE_NAME)
+    .select("*")
+    .eq("is_social_media", true)
+    .order("order", { ascending: true });
+
+  if (error) {
+    console.error("Error fetching social media list:", error);
+    return [];
+  }
+
+  return (data || []).map((row: any) => {
+    let parsed = { value: "", image: "" };
+    try {
+      parsed = JSON.parse(row.value || "{}");
+    } catch (err) {
+      // ignore
+    }
+
+    return {
+      id: row.id,
+      type: row.type,
+      value: parsed.value || "",
+      image: parsed.image || "",
+      order: row.order || 0,
+      is_social_media: row.is_social_media || true,
+      created_at: row.created_at,
+      updated_at: row.updated_at,
+    } as SocialMedia;
+  });
+};
+
+/**
+ * Update list of social media entries. Each entry is upserted by `type`.
+ * If backend schema differs, this function may need adjustments.
+ */
+export const updateSocialMediaList = async (
+  list: SocialMediaEntry[]
+): Promise<boolean> => {
+  const itemsWithId = list.filter((item) => item.id);
+  const itemsWithoutId = list.filter((item) => !item.id);
+
+  // Update items yang sudah punya ID
+  if (itemsWithId.length > 0) {
+    const updates = itemsWithId.map((item) => ({
+      id: item.id,
+      type: item.type,
+      value: JSON.stringify({
+        value: item.value || "",
+        image: item.image || "",
+      }),
+      order: item.order || 0,
+      is_social_media: true,
+      updated_at: new Date().toISOString(),
+    }));
+
+    const { error } = await supabase
+      .from(TABLE_NAME)
+      .upsert(updates, { onConflict: "id" });
+
+    if (error) {
+      console.error("Error updating existing items:", error);
+      return false;
+    }
+  }
+
+  // Insert items baru tanpa ID
+  if (itemsWithoutId.length > 0) {
+    const inserts = itemsWithoutId.map((item) => ({
+      type: item.type,
+      value: JSON.stringify({
+        value: item.value || "",
+        image: item.image || "",
+      }),
+      order: item.order || 0,
+      is_social_media: true,
+      data_type: item.type,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }));
+
+    const { error } = await supabase.from(TABLE_NAME).insert(inserts);
+
+    if (error) {
+      console.error("Error inserting new items:", error);
+      return false;
+    }
+  }
+
+  return true;
+};
+
+/**
  * Update social media information
  */
 export const updateSocialMedia = async (
@@ -186,6 +287,17 @@ export const updateSocialMedia = async (
     return false;
   }
 
+  return true;
+};
+
+/**
+ * Delete social media information
+ */
+export const deleteSocialMedia = async (id: string) => {
+  const { data, error } = await supabase.from(TABLE_NAME).delete().eq("id", id);
+  if (error) {
+    return false;
+  }
   return true;
 };
 

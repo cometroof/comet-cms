@@ -185,6 +185,8 @@ export type Database = {
           created_at: string | null;
           data_type: string | null;
           id: string;
+          is_social_media: boolean;
+          order: number | null;
           type: string;
           updated_at: string | null;
           value: string;
@@ -193,6 +195,8 @@ export type Database = {
           created_at?: string | null;
           data_type?: string | null;
           id?: string;
+          is_social_media?: boolean;
+          order?: number | null;
           type: string;
           updated_at?: string | null;
           value: string;
@@ -201,6 +205,8 @@ export type Database = {
           created_at?: string | null;
           data_type?: string | null;
           id?: string;
+          is_social_media?: boolean;
+          order?: number | null;
           type?: string;
           updated_at?: string | null;
           value?: string;

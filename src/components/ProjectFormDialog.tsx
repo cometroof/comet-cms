@@ -88,7 +88,7 @@ const ProjectFormDialog = ({
   const [images, setImages] = useState<ProjectImage[]>([]);
   const [imageDialogOpen, setImageDialogOpen] = useState(false);
   const [editingImageIndex, setEditingImageIndex] = useState<number | null>(
-    null,
+    null
   );
 
   useEffect(() => {
@@ -142,7 +142,7 @@ const ProjectFormDialog = ({
       images.map((img, i) => ({
         ...img,
         is_highlight: i === index ? !img.is_highlight : false,
-      })),
+      }))
     );
   };
 
@@ -228,7 +228,7 @@ const ProjectFormDialog = ({
 
     const now = new Date().toISOString();
     const finalSlug = slug.trim() || generateSlug(name);
-
+    // eslint-disable-next-line
     const projectData: any = {
       ...(project?.id && { id: project.id }), // Only include id if editing
       name: name.trim(),
@@ -361,13 +361,13 @@ const ProjectFormDialog = ({
                                 setSelectedCategoryIds((prev) =>
                                   prev.includes(category.id)
                                     ? prev.filter((id) => id !== category.id)
-                                    : [...prev, category.id],
+                                    : [...prev, category.id]
                                 );
                               }}
                             >
                               <Checkbox
                                 checked={selectedCategoryIds.includes(
-                                  category.id,
+                                  category.id
                                 )}
                                 className="mr-2"
                               />
@@ -393,7 +393,7 @@ const ProjectFormDialog = ({
                               type="button"
                               onClick={() =>
                                 setSelectedCategoryIds((prev) =>
-                                  prev.filter((id) => id !== catId),
+                                  prev.filter((id) => id !== catId)
                                 )
                               }
                               className="ml-1 hover:bg-secondary-foreground/20 rounded-full"

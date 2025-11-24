@@ -1,8 +1,9 @@
-import { useState, useEffect } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import type { Contacts, SocialMedia } from "@/types/contacts-location";
 import * as contactsLocationService from "@/services/contacts-location.service";
 import { ContactsTab } from "./ContactsTab";
@@ -10,7 +11,17 @@ import { LocationsTab } from "./LocationsTab";
 import { SocialMediaTab } from "./SocialMediaTab";
 
 const ContactsLocation = () => {
-  const [contacts, setContacts] = useState<Contacts>({
+  // Fetch contacts via react-query
+  const {
+    data: contacts,
+    isLoading: isContactsLoading,
+    isError: isContactsError,
+  } = useQuery<Contacts, Error, Contacts>({
+    queryKey: ["contacts"],
+    queryFn: () => contactsLocationService.getContacts(),
+  });
+
+  const defaultContacts: Contacts = {
     id: "1",
     head_office: "",
     head_office_link: "",
@@ -19,45 +30,16 @@ const ContactsLocation = () => {
     email: "",
     email_form: "",
     whatsapp_contact_service: "",
-  });
-
-  const [socialMedia, setSocialMedia] = useState<SocialMedia>({
-    id: "1",
-    twitter: { value: "", image: "" },
-    instagram: { value: "", image: "" },
-    facebook: { value: "", image: "" },
-    youtube: { value: "", image: "" },
-    telegram: { value: "", image: "" },
-  });
-
-  const [loading, setLoading] = useState(true);
-
-  // Load data from Supabase on mount
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  const loadData = async () => {
-    setLoading(true);
-    try {
-      const contactsData = await contactsLocationService.getContacts();
-      const socialMediaData = await contactsLocationService.getSocialMedia();
-
-      if (contactsData) {
-        setContacts(contactsData);
-      }
-      if (socialMediaData) {
-        setSocialMedia(socialMediaData);
-      }
-    } catch (error) {
-      console.error("Error loading data:", error);
-      toast.error("Failed to load data");
-    } finally {
-      setLoading(false);
-    }
   };
 
-  if (loading) {
+  useEffect(() => {
+    if (isContactsError) {
+      console.error("Error loading contacts");
+      toast.error("Failed to load contacts");
+    }
+  }, [isContactsError]);
+
+  if (isContactsLoading) {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center min-h-[400px]">
@@ -87,7 +69,7 @@ const ContactsLocation = () => {
           </TabsList>
 
           <TabsContent value="contacts" className="space-y-6">
-            <ContactsTab initialContacts={contacts} />
+            <ContactsTab initialContacts={contacts ?? defaultContacts} />
           </TabsContent>
 
           <TabsContent value="locations" className="space-y-6">
@@ -95,7 +77,7 @@ const ContactsLocation = () => {
           </TabsContent>
 
           <TabsContent value="social-media" className="space-y-6">
-            <SocialMediaTab initialSocialMedia={socialMedia} />
+            <SocialMediaTab />
           </TabsContent>
         </Tabs>
       </div>
