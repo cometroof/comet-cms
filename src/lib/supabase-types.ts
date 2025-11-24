@@ -383,6 +383,7 @@ export type Database = {
           created_at: string | null;
           id: string;
           name: string;
+          name_id: string | null;
           order: number | null;
           product_id: string | null;
           product_profile_id: string | null;
@@ -394,6 +395,7 @@ export type Database = {
           created_at?: string | null;
           id?: string;
           name: string;
+          name_id?: string | null;
           order?: number | null;
           product_id?: string | null;
           product_profile_id?: string | null;
@@ -405,6 +407,7 @@ export type Database = {
           created_at?: string | null;
           id?: string;
           name?: string;
+          name_id?: string | null;
           order?: number | null;
           product_id?: string | null;
           product_profile_id?: string | null;

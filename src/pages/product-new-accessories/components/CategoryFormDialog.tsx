@@ -28,6 +28,8 @@ interface CategoryFormDialogProps {
 interface CategoryFormData {
   name: string;
   subtitle: string;
+  name_id?: string;
+  subtitle_id?: string;
 }
 
 const CategoryFormDialog = ({
@@ -47,6 +49,8 @@ const CategoryFormDialog = ({
     defaultValues: {
       name: "",
       subtitle: "",
+      name_id: "",
+      subtitle_id: "",
     },
   });
 
@@ -56,11 +60,15 @@ const CategoryFormDialog = ({
       reset({
         name: category.name,
         subtitle: category.subtitle || "",
+        name_id: (category as ProductCategory).name_id || "",
+        subtitle_id: (category as ProductCategory).subtitle_id || "",
       });
     } else {
       reset({
         name: "",
         subtitle: "",
+        name_id: "",
+        subtitle_id: "",
       });
     }
   }, [category, reset]);
@@ -73,7 +81,9 @@ const CategoryFormDialog = ({
           .from("product_category")
           .update({
             name: data.name,
+            name_id: data.name_id,
             subtitle: data.subtitle,
+            subtitle_id: data.subtitle_id,
             updated_at: new Date().toISOString(),
           })
           .eq("id", category.id);
@@ -85,7 +95,9 @@ const CategoryFormDialog = ({
           product_id: productId,
           product_profile_id: profileId,
           name: data.name,
+          name_id: data.name_id,
           subtitle: data.subtitle,
+          subtitle_id: data.subtitle_id,
         });
 
         if (error) throw error;
@@ -126,30 +138,55 @@ const CategoryFormDialog = ({
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          {/* Name */}
-          <div className="space-y-2">
-            <Label htmlFor="name">
-              Name <span className="text-destructive">*</span>
-            </Label>
-            <Input
-              id="name"
-              {...register("name", { required: "Name is required" })}
-              placeholder="Enter category name"
-            />
-            {errors.name && (
-              <p className="text-sm text-destructive">{errors.name.message}</p>
-            )}
+          {/* Name + Name ID */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">
+                Name <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="name"
+                {...register("name", { required: "Name is required" })}
+                placeholder="Enter category name"
+              />
+              {errors.name && (
+                <p className="text-sm text-destructive">
+                  {errors.name.message}
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="name_id">Name ID</Label>
+              <Input
+                id="name_id"
+                {...register("name_id")}
+                placeholder="Enter name id"
+              />
+            </div>
           </div>
 
-          {/* Subtitle */}
-          <div className="space-y-2">
-            <Label htmlFor="subtitle">Subtitle</Label>
-            <Textarea
-              id="subtitle"
-              {...register("subtitle")}
-              placeholder="Enter category subtitle or description"
-              rows={3}
-            />
+          {/* Subtitle + Subtitle ID */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="subtitle">Subtitle</Label>
+              <Textarea
+                id="subtitle"
+                {...register("subtitle")}
+                placeholder="Enter category subtitle or description"
+                rows={3}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="subtitle_id">Subtitle ID</Label>
+              <Textarea
+                id="subtitle_id"
+                {...register("subtitle_id")}
+                placeholder="Enter subtitle id"
+                rows={3}
+              />
+            </div>
           </div>
 
           {/* Actions */}
