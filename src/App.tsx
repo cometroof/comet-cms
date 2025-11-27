@@ -31,6 +31,12 @@ import CategoryAccessoriesDetailPage from "./pages/product-new-accessories/categ
 import ItemAccessoriesDetailPage from "./pages/product-new-accessories/item-detail";
 import DirectItemsPage from "./pages/product-new-accessories/direct-items";
 import ProjectFormPage from "./pages/projects/ProjectFormPage";
+import SpecialityProductListPage from "./pages/product-new-speciality";
+import SpecialityProductFormPage from "./pages/product-new-speciality/form";
+import SpecialityProductDetailPage from "./pages/product-new-speciality/product-detail";
+import SpecialityProfileFormPage from "./pages/product-new-speciality/profile-form";
+import SpecialityProfileDetailPage from "./pages/product-new-speciality/profile-detail";
+import SpecialityCategoryDetailPage from "./pages/product-new-speciality/category-detail";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -344,6 +350,73 @@ const App = () => {
                 element={
                   <ProtectedRoute>
                     <ItemAccessoriesDetailPage />
+                  </ProtectedRoute>
+                }
+              />
+              {/* Speciality Product Routes */}
+              <Route
+                path="/dashboard/product-speciality"
+                element={
+                  <ProtectedRoute>
+                    <SpecialityProductListPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/dashboard/product-speciality/create"
+                element={
+                  <ProtectedRoute>
+                    <SpecialityProductFormPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/dashboard/product-speciality/edit/:id"
+                element={
+                  <ProtectedRoute>
+                    <SpecialityProductFormPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/dashboard/product-speciality/:id"
+                element={
+                  <ProtectedRoute>
+                    <SpecialityProductDetailPage />
+                  </ProtectedRoute>
+                }
+              />
+              {/* Speciality Product Profile Routes */}
+              <Route
+                path="/dashboard/product-speciality/:productId/profile/create"
+                element={
+                  <ProtectedRoute>
+                    <SpecialityProfileFormPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/dashboard/product-speciality/:productId/profile/:profileId/edit"
+                element={
+                  <ProtectedRoute>
+                    <SpecialityProfileFormPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/dashboard/product-speciality/:productId/profile/:profileId"
+                element={
+                  <ProtectedRoute>
+                    <SpecialityProfileDetailPage />
+                  </ProtectedRoute>
+                }
+              />
+              {/* Speciality Product Category Routes */}
+              <Route
+                path="/dashboard/product-speciality/:productId/profile/:profileId/category/:categoryId"
+                element={
+                  <ProtectedRoute>
+                    <SpecialityCategoryDetailPage />
                   </ProtectedRoute>
                 }
               />

@@ -23,6 +23,7 @@ import {
   SidebarClose,
   FolderKanban,
   Tags,
+  PackageCheck,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -41,6 +42,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const [productsExpanded, setProductsExpanded] = useState(false);
   const [accessoriesExpanded, setAccessoriesExpanded] = useState(false);
   const [addonsExpanded, setAddonsExpanded] = useState(false);
+  const [specialityExpanded, setSpecialityExpanded] = useState(false);
   const [projectsMenuExpanded, setProjectsMenuExpanded] = useState(false);
   const location = useLocation();
   const { user, logout } = useAuth();
@@ -90,6 +92,21 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     },
   });
 
+  // Fetch speciality products for submenu
+  const { data: specialityProducts = [] } = useQuery({
+    queryKey: ["speciality-menu"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("product")
+        .select("id, name, slug")
+        .eq("type", "speciality")
+        .order("order", { ascending: true });
+
+      if (error) throw error;
+      return data;
+    },
+  });
+
   // Auto-expand menus based on current path
   useEffect(() => {
     if (location.pathname.includes("/dashboard/product-new/")) {
@@ -100,6 +117,9 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     }
     if (location.pathname.includes("/dashboard/product-add-ons/")) {
       setAddonsExpanded(true);
+    }
+    if (location.pathname.includes("/dashboard/product-speciality/")) {
+      setSpecialityExpanded(true);
     }
     if (
       location.pathname.includes("/dashboard/projects") ||
@@ -141,6 +161,12 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       href: "/dashboard/product-add-ons",
       icon: PackagePlus,
       keyMenu: MENU_PERMISSIONS.PRODUCT_ADDONS,
+    },
+    {
+      name: "Speciality Product",
+      href: "/dashboard/product-speciality",
+      icon: PackageCheck,
+      keyMenu: MENU_PERMISSIONS.SPECIALITY_PRODUCT,
     },
     {
       name: "Files",
@@ -243,6 +269,8 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                 const isAccessoriesMenu =
                   item.href === "/dashboard/product-accessories";
                 const isAddonsMenu = item.href === "/dashboard/product-add-ons";
+                const isSpecialityMenu =
+                  item.href === "/dashboard/product-speciality";
                 const isProjectsMenu = item.href === "/dashboard/projects-menu";
 
                 // Products Menu with Submenu
@@ -441,6 +469,77 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                           >
                             <Plus className="w-4 h-4" />
                             <span>Add Product Add-on</span>
+                          </Link> */}
+                        </div>
+                      )}
+                    </div>
+                  );
+                }
+
+                // Speciality Product Menu with Submenu
+                if (isSpecialityMenu) {
+                  return (
+                    <div key={item.name} className="space-y-1">
+                      <button
+                        onClick={() =>
+                          setSpecialityExpanded(!specialityExpanded)
+                        }
+                        className={cn(
+                          "w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors",
+                          isActive(item.href)
+                            ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm"
+                            : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-white/5",
+                          desktopCollapsed && "lg:justify-center"
+                        )}
+                        title={desktopCollapsed ? item.name : undefined}
+                      >
+                        <Icon className="w-5 h-5 flex-shrink-0" />
+                        {!desktopCollapsed && (
+                          <>
+                            <span className="flex-1 text-left">
+                              {item.name}
+                            </span>
+                            {specialityExpanded ? (
+                              <ChevronDown className="w-4 h-4" />
+                            ) : (
+                              <ChevronRightIcon className="w-4 h-4" />
+                            )}
+                          </>
+                        )}
+                      </button>
+
+                      {specialityExpanded && !desktopCollapsed && (
+                        <div className="ml-8 space-y-1">
+                          {specialityProducts.map((product) => (
+                            <Link
+                              key={product.id}
+                              to={`/dashboard/product-speciality/${product.id}`}
+                              className={cn(
+                                "block px-3 py-2 text-sm rounded-lg transition-colors",
+                                location.pathname ===
+                                  `/dashboard/product-speciality/${product.id}` ||
+                                  location.pathname.includes(
+                                    `/dashboard/product-speciality/${product.id}`
+                                  )
+                                  ? "bg-sidebar-primary/70 text-sidebar-primary-foreground"
+                                  : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-white/5"
+                              )}
+                              onClick={() => setMobileOpen(false)}
+                            >
+                              {product.name}
+                            </Link>
+                          ))}
+                          {/* <Link
+                            to="/dashboard/product-speciality/create"
+                            className={cn(
+                              "flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors",
+                              "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-white/5",
+                              "border border-sidebar-foreground/20 border-dashed mt-2"
+                            )}
+                            onClick={() => setMobileOpen(false)}
+                          >
+                            <Plus className="w-4 h-4" />
+                            <span>Add Speciality</span>
                           </Link> */}
                         </div>
                       )}

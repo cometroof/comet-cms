@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog,
@@ -26,62 +27,115 @@ interface Props {
   isOpen: boolean;
   onClose: () => void;
   profileId?: string | null;
+  onSave?: (certificateIds: string[], badgeIds: string[]) => Promise<void>;
 }
 
 const CertificatesBadgesProfileDialog = ({
   isOpen,
   onClose,
   profileId,
+  onSave,
 }: Props) => {
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-
-  const [certificates, setCertificates] = useState<Certificate[]>([]);
-  const [badges, setBadges] = useState<ProductBadge[]>([]);
-
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<string>("certificates");
-
   const [selectedCertificates, setSelectedCertificates] = useState<string[]>(
     []
   );
   const [selectedBadges, setSelectedBadges] = useState<string[]>([]);
 
+  // Fetch all certificates
+  const { data: certificates = [], isLoading: certificatesLoading } = useQuery({
+    queryKey: ["all-certificates"],
+    queryFn: productService.getAllCertificates,
+    enabled: isOpen,
+  });
+
+  // Fetch all badges
+  const { data: badges = [], isLoading: badgesLoading } = useQuery({
+    queryKey: ["all-badges"],
+    queryFn: productService.getAllBadges,
+    enabled: isOpen,
+  });
+
+  // Fetch assigned certificates (only in edit mode)
+  const { data: assignedCertificates = [] } = useQuery({
+    queryKey: ["profile-certificates", profileId],
+    queryFn: () => productService.getProfileCertificates(profileId!),
+    enabled: isOpen && !!profileId,
+  });
+
+  // Fetch assigned badges (only in edit mode)
+  const { data: assignedBadges = [] } = useQuery({
+    queryKey: ["profile-badges", profileId],
+    queryFn: () => productService.getProfileBadges(profileId!),
+    enabled: isOpen && !!profileId,
+  });
+
+  // Update selected items when assigned data changes
   useEffect(() => {
-    // Load lists and assigned items when dialog opens for a profile
-    if (!isOpen || !profileId) return;
+    if (assignedCertificates.length > 0) {
+      setSelectedCertificates(assignedCertificates.map((c) => c.id));
+    } else if (isOpen && !profileId) {
+      // Create mode - reset to empty
+      setSelectedCertificates([]);
+    }
+  }, [assignedCertificates, isOpen, profileId]);
 
-    let mounted = true;
-    const doLoad = async () => {
-      setLoading(true);
-      try {
-        const [allCerts, allBadges, assignedCerts, assignedBadges] =
-          await Promise.all([
-            productService.getAllCertificates(),
-            productService.getAllBadges(),
-            productService.getProfileCertificates(profileId),
-            productService.getProfileBadges(profileId),
-          ]);
+  useEffect(() => {
+    if (assignedBadges.length > 0) {
+      setSelectedBadges(assignedBadges.map((b) => b.id));
+    } else if (isOpen && !profileId) {
+      // Create mode - reset to empty
+      setSelectedBadges([]);
+    }
+  }, [assignedBadges, isOpen, profileId]);
 
-        if (!mounted) return;
-
-        setCertificates(allCerts || []);
-        setBadges(allBadges || []);
-        setSelectedCertificates((assignedCerts || []).map((c) => c.id));
-        setSelectedBadges((assignedBadges || []).map((b) => b.id));
-      } catch (error) {
-        console.error("Error loading profile certificates/badges:", error);
-        toast.error("Failed to load certificates or badges");
-      } finally {
-        if (mounted) setLoading(false);
+  // Save mutation
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      // If onSave callback is provided (create mode), use it
+      if (onSave) {
+        await onSave(selectedCertificates, selectedBadges);
+        return;
       }
-    };
 
-    doLoad();
+      // Edit mode - save directly
+      if (!profileId) {
+        throw new Error("Profile ID is missing");
+      }
 
-    return () => {
-      mounted = false;
-    };
-  }, [isOpen, profileId]);
+      const [certOk, badgesOk] = await Promise.all([
+        productService.assignCertificatesToProfile(
+          profileId,
+          selectedCertificates
+        ),
+        productService.assignBadgesToProfile(profileId, selectedBadges),
+      ]);
+
+      if (!certOk || !badgesOk) {
+        throw new Error("Failed to save certificates or badges");
+      }
+    },
+    onSuccess: () => {
+      if (onSave) {
+        toast.success("Certificates and badges will be saved with the profile");
+      } else {
+        toast.success("Certificates and badges saved");
+        // Invalidate queries to refresh data
+        queryClient.invalidateQueries({
+          queryKey: ["profile-certificates", profileId],
+        });
+        queryClient.invalidateQueries({
+          queryKey: ["profile-badges", profileId],
+        });
+      }
+      onClose();
+    },
+    onError: (error) => {
+      console.error("Error saving certificates/badges:", error);
+      toast.error("An error occurred while saving");
+    },
+  });
 
   const toggleCertificate = (id: string) => {
     setSelectedCertificates((prev) =>
@@ -95,31 +149,8 @@ const CertificatesBadgesProfileDialog = ({
     );
   };
 
-  const handleSave = async () => {
-    if (!profileId) return toast.error("Profile ID is missing");
-    setSaving(true);
-    try {
-      const certOk = await productService.assignCertificatesToProfile(
-        profileId,
-        selectedCertificates
-      );
-      const badgesOk = await productService.assignBadgesToProfile(
-        profileId,
-        selectedBadges
-      );
-
-      if (certOk && badgesOk) {
-        toast.success("Certificates and badges saved");
-        onClose();
-      } else {
-        toast.error("Failed to save certificates or badges");
-      }
-    } catch (error) {
-      console.error("Error saving certificates/badges:", error);
-      toast.error("An error occurred while saving");
-    } finally {
-      setSaving(false);
-    }
+  const handleSave = () => {
+    saveMutation.mutate();
   };
 
   return (
@@ -148,7 +179,7 @@ const CertificatesBadgesProfileDialog = ({
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  {loading ? (
+                  {certificatesLoading || badgesLoading ? (
                     <div className="flex justify-center py-8">
                       <Loader2 className="w-8 h-8 animate-spin text-primary" />
                     </div>
@@ -208,7 +239,7 @@ const CertificatesBadgesProfileDialog = ({
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  {loading ? (
+                  {certificatesLoading || badgesLoading ? (
                     <div className="flex justify-center py-8">
                       <Loader2 className="w-8 h-8 animate-spin text-primary" />
                     </div>
@@ -261,12 +292,18 @@ const CertificatesBadgesProfileDialog = ({
 
         <DialogFooter>
           <DialogClose asChild>
-            <Button variant="outline" type="button" disabled={saving}>
+            <Button
+              variant="outline"
+              type="button"
+              disabled={saveMutation.isPending}
+            >
               Cancel
             </Button>
           </DialogClose>
-          <Button disabled={saving} onClick={handleSave}>
-            {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          <Button disabled={saveMutation.isPending} onClick={handleSave}>
+            {saveMutation.isPending && (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            )}
             Save Changes
           </Button>
         </DialogFooter>
