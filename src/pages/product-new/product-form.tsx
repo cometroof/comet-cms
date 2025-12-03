@@ -631,7 +631,7 @@ const ProductFormPage = () => {
                 </div>
 
                 {/* Banner Image */}
-                <div className="col-span-2 flex flex-col gap-2">
+                {/* <div className="col-span-2 flex flex-col gap-2">
                   <Label>Banner Image</Label>
                   <div
                     className="relative w-full aspect-[2.5/1] border rounded overflow-hidden group cursor-pointer"
@@ -666,7 +666,7 @@ const ProductFormPage = () => {
                       </div>
                     )}
                   </div>
-                </div>
+                </div> */}
               </div>
 
               {/* Catalogue */}
