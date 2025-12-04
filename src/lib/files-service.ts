@@ -20,6 +20,7 @@ export async function getCompanyProfile(): Promise<CompanyProfile | null> {
   const { data, error } = await supabase
     .from("company_profile")
     .select("*")
+    .eq("type", "company_profile")
     .single();
 
   if (error) {
@@ -40,9 +41,11 @@ export async function updateCompanyProfile(
       .from("company_profile")
       .update({
         ...profileData,
+        type: "company_profile",
         updated_at: new Date().toISOString(),
       })
       .eq("id", id)
+      .eq("type", "company_profile")
       .select()
       .single();
 
@@ -59,6 +62,7 @@ export async function updateCompanyProfile(
       .from("company_profile")
       .insert({
         ...(profileData as CompanyProfileInsert),
+        type: "company_profile",
         uploaded_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       })
@@ -82,6 +86,69 @@ export async function uploadCompanyProfileFile(
   } catch (error) {
     console.error("Error uploading company profile file:", error);
     return null;
+  }
+}
+
+// Product Catalogue Functions
+export async function getProductCatalogue(): Promise<CompanyProfile | null> {
+  const { data, error } = await supabase
+    .from("company_profile")
+    .select("*")
+    .eq("type", "product_catalogue")
+    .single();
+
+  if (error) {
+    console.error("Error fetching product catalogue:", error);
+    return null;
+  }
+
+  return data;
+}
+
+export async function updateProductCatalogue(
+  catalogueData: CompanyProfileUpdate,
+  id?: string
+): Promise<CompanyProfile | null> {
+  // If we have an existing catalogue, update it
+  if (id) {
+    const { data, error } = await supabase
+      .from("company_profile")
+      .update({
+        ...catalogueData,
+        type: "product_catalogue",
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", id)
+      .eq("type", "product_catalogue")
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error updating product catalogue:", error);
+      return null;
+    }
+
+    return data;
+  }
+  // Otherwise create a new one
+  else {
+    const { data, error } = await supabase
+      .from("company_profile")
+      .insert({
+        ...(catalogueData as CompanyProfileInsert),
+        type: "product_catalogue",
+        uploaded_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error creating product catalogue:", error);
+      return null;
+    }
+
+    return data;
   }
 }
 

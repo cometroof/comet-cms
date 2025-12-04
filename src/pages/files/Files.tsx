@@ -65,6 +65,8 @@ import type {
 import {
   getCompanyProfile,
   updateCompanyProfile,
+  getProductCatalogue,
+  updateProductCatalogue,
   getCertificates,
   createCertificate,
   updateCertificate,
@@ -95,6 +97,9 @@ const Files = () => {
   const [badgeDialogOpen, setBadgeDialogOpen] = useState(false);
   const [editingBadge, setEditingBadge] = useState<ProductBadge | null>(null);
   const [badgeToDelete, setBadgeToDelete] = useState<string | null>(null);
+  const [catalogueFileSelectorOpen, setCatalogueFileSelectorOpen] =
+    useState(false);
+  const [catalogueUploadProgress, setCatalogueUploadProgress] = useState(0);
 
   // Query for company profile
   const {
@@ -126,6 +131,16 @@ const Files = () => {
     queryFn: getProductBadges,
   });
 
+  // Query for product catalogue
+  const {
+    data: productCatalogue,
+    isLoading: catalogueLoading,
+    error: catalogueError,
+  } = useQuery({
+    queryKey: ["productCatalogue"],
+    queryFn: getProductCatalogue,
+  });
+
   // Show toast for query errors
   React.useEffect(() => {
     if (profileError) {
@@ -154,7 +169,16 @@ const Files = () => {
         description: "Failed to load product badges",
       });
     }
-  }, [profileError, certificatesError, badgesError, toast]);
+
+    if (catalogueError) {
+      console.error("Error loading product catalogue:", catalogueError);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to load product catalogue",
+      });
+    }
+  }, [profileError, certificatesError, badgesError, catalogueError, toast]);
 
   const filteredCertificates = certificates.filter((cert) => {
     const matchesSearch =
@@ -329,6 +353,7 @@ const Files = () => {
       file_url: fileUrl,
       filename: filename,
       file_size: 1000000, // Estimate file size since we don't have actual size
+      type: "company_profile",
     };
 
     updateProfileMutation.mutate(
@@ -338,6 +363,72 @@ const Files = () => {
           // Clear interval and set progress to 100%
           clearInterval(interval);
           setUploadProgress(100);
+        },
+      }
+    );
+  };
+
+  // Mutation for updating product catalogue
+  const updateCatalogueMutation = useMutation({
+    mutationFn: ({
+      catalogueData,
+      id,
+    }: {
+      catalogueData: CompanyProfileFormData;
+      id?: string;
+    }) => updateProductCatalogue(catalogueData, id),
+    onSuccess: (result) => {
+      // Update react-query cache
+      queryClient.setQueryData(["productCatalogue"], result);
+
+      toast({
+        title: "Success",
+        description: "Product catalogue updated successfully",
+      });
+
+      // Reset progress after a delay
+      setTimeout(() => {
+        setCatalogueUploadProgress(0);
+      }, 1000);
+    },
+    onError: (error) => {
+      console.error("Error updating product catalogue:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to update product catalogue",
+      });
+
+      setTimeout(() => {
+        setCatalogueUploadProgress(0);
+      }, 1000);
+    },
+  });
+
+  const handleSelectProductCatalogue = (fileUrl: string) => {
+    setCatalogueUploadProgress(0);
+    const filename = fileUrl.split("/").pop() || "product_catalogue.pdf";
+
+    // Simulate progress for user feedback
+    const interval = setInterval(() => {
+      setCatalogueUploadProgress((prev) => Math.min(prev + 10, 90));
+    }, 100);
+
+    // Create or update product catalogue in Supabase
+    const catalogueData: CompanyProfileFormData = {
+      file_url: fileUrl,
+      filename: filename,
+      file_size: 1000000, // Estimate file size since we don't have actual size
+      type: "product_catalogue",
+    };
+
+    updateCatalogueMutation.mutate(
+      { catalogueData, id: productCatalogue?.id },
+      {
+        onSettled: () => {
+          // Clear interval and set progress to 100%
+          clearInterval(interval);
+          setCatalogueUploadProgress(100);
         },
       }
     );
@@ -581,6 +672,9 @@ const Files = () => {
         <Tabs defaultValue="profile" className="w-full">
           <TabsList>
             <TabsTrigger value="profile">Company Profile</TabsTrigger>
+            <TabsTrigger value="product-catalogue">
+              Product Catalogue
+            </TabsTrigger>
             <TabsTrigger value="certificates">Certificates</TabsTrigger>
             <TabsTrigger value="product-badges">Product Badges</TabsTrigger>
           </TabsList>
@@ -998,6 +1092,97 @@ const Files = () => {
               </CardContent>
             </Card>
           </TabsContent>
+
+          {/* Product Catalogue Tab */}
+          <TabsContent value="product-catalogue" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Product Catalogue Document</CardTitle>
+                <CardDescription>
+                  Upload and manage your product catalogue PDF
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {catalogueLoading ? (
+                  <div className="flex justify-center items-center p-12">
+                    <Loader2 className="w-8 h-8 animate-spin text-primary mr-2" />
+                    <p>Loading product catalogue...</p>
+                  </div>
+                ) : productCatalogue ? (
+                  <div className="space-y-4">
+                    <div className="flex items-start gap-4 p-4 border rounded-lg">
+                      <div className="w-16 h-16 bg-muted rounded flex items-center justify-center">
+                        <FileText className="w-8 h-8 text-primary" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-foreground">
+                          {productCatalogue.filename}
+                        </h3>
+                        <p className="text-sm text-muted-foreground">
+                          Size: {formatFileSize(productCatalogue.file_size)}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          Uploaded:{" "}
+                          {new Date(
+                            productCatalogue.uploaded_at || ""
+                          ).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="gap-2"
+                          onClick={() =>
+                            window.open(productCatalogue.file_url, "_blank")
+                          }
+                        >
+                          <Download className="w-4 h-4" />
+                          Download
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="gap-2"
+                          onClick={() => setCatalogueFileSelectorOpen(true)}
+                        >
+                          <Upload className="w-4 h-4" />
+                          Replace
+                        </Button>
+                      </div>
+                    </div>
+
+                    {catalogueUploadProgress > 0 && (
+                      <div className="space-y-2">
+                        <Label>Uploading...</Label>
+                        <Progress value={catalogueUploadProgress} />
+                        <p className="text-sm text-muted-foreground">
+                          {catalogueUploadProgress}%
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <FileText className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
+                    <h3 className="text-lg font-semibold text-foreground mb-2">
+                      No product catalogue uploaded
+                    </h3>
+                    <p className="text-muted-foreground mb-4">
+                      Upload your product catalogue PDF
+                    </p>
+                    <Button
+                      onClick={() => setCatalogueFileSelectorOpen(true)}
+                      className="gap-2"
+                    >
+                      <Upload className="w-4 h-4" />
+                      Upload Catalogue
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
       </div>
 
@@ -1023,6 +1208,15 @@ const Files = () => {
         onOpenChange={setBadgeDialogOpen}
         badge={editingBadge}
         onSave={handleSaveBadge}
+      />
+
+      <FileSelectorDialog
+        open={catalogueFileSelectorOpen}
+        onOpenChange={setCatalogueFileSelectorOpen}
+        onSelect={handleSelectProductCatalogue}
+        title="Select Product Catalogue"
+        acceptedFileTypes=".pdf"
+        maxFileSize={10}
       />
 
       {/* Alert Dialog for Delete Confirmation */}
